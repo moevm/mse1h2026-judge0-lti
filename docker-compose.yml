@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: mse1h2026-judge0-lti_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    env_file:
+      .env
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "mongosh","--eval","db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.0
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-python-fastapi
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+
+  frontend:
+    image: mse1h2026-judge0-lti_frontend-nginx-react:v.0.0
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-nginx-react
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+
+volumes:
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+
+networks:
+  app-net:
+    driver: bridge
+
+
+

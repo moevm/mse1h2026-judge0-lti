@@ -8,7 +8,6 @@ __pycache__/
 venv/
 .venv/
 env/
-.env
 *.env
 
 # Development & build files
@@ -27,14 +26,7 @@ env/
 *.swp
 *.swo
 
-# Test / coverage files
-.pytest_cache/
-.coverage
-htmlcov/
-tests/
-
 # Docker specific files that are not needed in the final image build context
 Dockerfile
 docker-compose.yml
-docker-compose.prod.yml
 *.md

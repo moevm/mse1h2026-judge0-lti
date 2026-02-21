@@ -1,17 +1,16 @@
-FROM python:3.12-slim
+FROM python:3.14.3-alpine3.22
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN useradd -m appuser
-WORKDIR /home/appuser/app
+WORKDIR /app
 
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-USER appuser
-
-COPY --chown=appuser:appuser . .
+COPY . .
 
 EXPOSE 8000
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -4,8 +4,6 @@ services:
   mongodb:
     image: mongo:8.0
     container_name: mse1h2026-judge0-lti_mongodb
-    ports:
-      - "27017:27017"
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb

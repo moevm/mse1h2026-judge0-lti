@@ -1,7 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
+from app.routers import lti
+
 
 app = FastAPI()
+app.include_router(lti.router)
 
 @app.get("/", tags=["root"], summary="Главная страница")
 async def root():

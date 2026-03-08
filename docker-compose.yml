@@ -1,5 +1,13 @@
 version: '3.8'
 
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 100M
+
+
 services:
   mongodb:
     image: mongo:8.0
@@ -17,7 +25,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
   backend:
     image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.0
@@ -52,13 +60,95 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 10s
+    
+  postgresdb:
+    image: postgres:16.2
+    container_name: postgresql
+    env_file: ./judge0/judge0.conf
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7.2.4
+    container_name: redis
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: ./judge0/judge0.conf
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  judge0_server:
+    image: judge0/judge0:latest
+    build:
+      context: ./judge0
+      target: production
+    env_file: ./judge0/judge0.conf
+    container_name: judge0_server
+    volumes:
+      - ./judge0/judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
+    privileged: true
+    <<: *default-logging
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgresdb:
+        condition: service_healthy
+    networks:
+      - app-net
+  
+  judge0_worker:
+    image: judge0/judge0:latest
+    build:
+      context: ./judge0
+      target: production
+    container_name: judge0_worker
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0/judge0.conf:/judge0.conf:ro
+    privileged: true
+    <<: *default-logging
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgresdb:
+        condition: service_healthy
+      judge0_server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - app-net
 
 
 volumes:
   mongodb-data:
     driver: local
   mongodb-config:
+    driver: local
+  postgres-data:
     driver: local
 
 networks:

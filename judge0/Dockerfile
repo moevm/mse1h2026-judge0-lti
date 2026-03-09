@@ -12,6 +12,12 @@ LABEL maintainer=$JUDGE0_MAINTAINER
 ENV PATH "/usr/local/ruby-2.7.0/bin:/opt/.gem/bin:$PATH"
 ENV GEM_HOME "/opt/.gem/"
 
+RUN rm -f /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian/ buster main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian/ buster-updates main" >> /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security/ buster/updates main" >> /etc/apt/sources.list && \
+    mv /etc/apt/sources.list.d/mono-official-stable.list /etc/apt/sources.list.d/mono-official-stable.list.bak 2>/dev/null || true
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       cron \
@@ -33,6 +39,7 @@ COPY cron /etc/cron.d
 RUN cat /etc/cron.d/* | crontab -
 
 COPY . .
+RUN chmod +x /api/docker-entrypoint.sh /api/scripts/workers /api/scripts/server
 
 ENTRYPOINT ["/api/docker-entrypoint.sh"]
 CMD ["/api/scripts/server"]

@@ -1,3 +1,5 @@
+# Надо сделать для прода: везде ограничение по ресурсам, мониторинг и сеть, резервное копирование дб
+# В проде убрать имена контейнеров
 version: '3.8'
 
 x-logging:
@@ -5,63 +7,12 @@ x-logging:
   logging:
     driver: json-file
     options:
-      max-size: 100M
+      max-size: ${LOG_MAX_SIZE:-100M}
+      max-file: ${LOG_MAX_FILE:-3}
+      compress: "${LOG_COMPRESS:-true}"
 
 
 services:
-  mongodb:
-    image: mongo:8.0
-    container_name: mse1h2026-judge0-lti_mongodb
-    volumes:
-      - mongodb-data:/data/db
-      - mongodb-config:/data/configdb
-    env_file:
-      .env
-    restart: unless-stopped
-    networks:
-      - app-net
-    healthcheck:
-      test: ["CMD", "mongosh","--eval","db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-
-  backend:
-    image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.0
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: backend-python-fastapi
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - app-net
-
-
-  frontend:
-    image: mse1h2026-judge0-lti_frontend-nginx-react:v.0.0
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend-nginx-react
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_started
-    restart: unless-stopped
-    networks:
-      - app-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-    
   postgresdb:
     image: postgres:16.2
     container_name: postgresql
@@ -99,7 +50,7 @@ services:
       start_period: 10s
 
   judge0_server:
-    image: judge0/judge0:latest
+    image: mse1h2026-judge0-lti_judge0:1.0
     build:
       context: ./judge0
       target: production
@@ -108,8 +59,8 @@ services:
     volumes:
       - ./judge0/judge0.conf:/judge0.conf:ro
     ports:
-      - "2358:2358"
-    privileged: true
+      - "2358:2358" # В проде надо будет закрыть порт 
+    privileged: true   # нехорошо            <---------
     <<: *default-logging
     restart: unless-stopped
     depends_on:
@@ -119,17 +70,20 @@ services:
         condition: service_healthy
     networks:
       - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2358/about"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
   
   judge0_worker:
-    image: judge0/judge0:latest
-    build:
-      context: ./judge0
-      target: production
+    image: mse1h2026-judge0-lti_judge0:1.0
     container_name: judge0_worker
     command: ["./scripts/workers"]
     volumes:
       - ./judge0/judge0.conf:/judge0.conf:ro
-    privileged: true
+    privileged: true   # нехорошо            <---------
     <<: *default-logging
     depends_on:
       redis:
@@ -137,10 +91,87 @@ services:
       postgresdb:
         condition: service_healthy
       judge0_server:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app-net
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "bin/rails"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  mongodb:
+    image: mongo:8.0
+    container_name: mse1h2026-judge0-lti_mongodb
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    env_file: .env
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "mongosh","--eval","db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.0
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-python-fastapi
+    env_file: .env
+    <<: *default-logging
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      judge0_worker:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 1024M
+
+
+  frontend:
+    image: mse1h2026-judge0-lti_frontend-nginx-react:v.0.0
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-nginx-react
+    env_file: .env
+    <<: *default-logging
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
 
 volumes:
@@ -154,6 +185,4 @@ volumes:
 networks:
   app-net:
     driver: bridge
-
-
 

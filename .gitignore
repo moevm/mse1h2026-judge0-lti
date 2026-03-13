@@ -1,0 +1,5 @@
+.env
+/judge0/judge0.conf
+
+*.sh
+!build-and-run.sh

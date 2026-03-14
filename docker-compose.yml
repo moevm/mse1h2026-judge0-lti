@@ -1,5 +1,6 @@
 # Надо сделать для прода: везде ограничение по ресурсам, мониторинг и сеть, резервное копирование дб
 # В проде убрать имена контейнеров
+# docker exec postgresql psql -U judge0 -c "ALTER USER judge0 WITH PASSWORD 'judge0';"
 version: '3.8'
 
 x-logging:
@@ -15,10 +16,10 @@ x-logging:
 services:
   postgresdb:
     image: postgres:16.2
-    container_name: postgresql
-    env_file: ./judge0/judge0.conf
+    container_name: postgresql_judge0
+    env_file: ./judge0.conf
     volumes:
-      - postgres-data:/var/lib/postgresql/data/
+      - postgres-data-judge0:/var/lib/postgresql/data/
     <<: *default-logging
     restart: unless-stopped
     networks:
@@ -37,7 +38,7 @@ services:
       "bash", "-c",
       'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
     ]
-    env_file: ./judge0/judge0.conf
+    env_file: ./judge0.conf
     <<: *default-logging
     restart: unless-stopped
     networks:
@@ -50,14 +51,12 @@ services:
       start_period: 10s
 
   judge0_server:
-    image: mse1h2026-judge0-lti_judge0:1.0
-    build:
-      context: ./judge0
-      target: production
-    env_file: ./judge0/judge0.conf
+    image: judge0/judge0:1.13.1
+
+    env_file: ./judge0.conf
     container_name: judge0_server
     volumes:
-      - ./judge0/judge0.conf:/judge0.conf:ro
+      - ./judge0.conf:/judge0.conf:ro
     ports:
       - "2358:2358" # В проде надо будет закрыть порт 
     privileged: true   # нехорошо            <---------
@@ -78,11 +77,11 @@ services:
       start_period: 10s
   
   judge0_worker:
-    image: mse1h2026-judge0-lti_judge0:1.0
+    image: judge0/judge0:1.13.1
     container_name: judge0_worker
     command: ["./scripts/workers"]
     volumes:
-      - ./judge0/judge0.conf:/judge0.conf:ro
+      - ./judge0.conf:/judge0.conf:ro
     privileged: true   # нехорошо            <---------
     <<: *default-logging
     depends_on:
@@ -102,19 +101,18 @@ services:
       retries: 5
       start_period: 10s
 
-  mongodb:
-    image: mongo:8.0
-    container_name: mse1h2026-judge0-lti_mongodb
+  postgresdb_data:
+    image: postgres:16.2
+    container_name: mse1h2026-judge0-lti_postgresdb_data
     volumes:
-      - mongodb-data:/data/db
-      - mongodb-config:/data/configdb
+      - postgresdb-data:/var/lib/postgresql/data/
     env_file: .env
     <<: *default-logging
     restart: unless-stopped
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "mongosh","--eval","db.adminCommand('ping')"]
+      test: ["CMD", "pg_isready"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -129,7 +127,7 @@ services:
     env_file: .env
     <<: *default-logging
     depends_on:
-      mongodb:
+      postgresdb_data:
         condition: service_healthy
       judge0_worker:
         condition: service_healthy
@@ -175,11 +173,9 @@ services:
 
 
 volumes:
-  mongodb-data:
+  postgresdb-data:
     driver: local
-  mongodb-config:
-    driver: local
-  postgres-data:
+  postgres-data-judge0:
     driver: local
 
 networks:

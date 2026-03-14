@@ -14,12 +14,12 @@ x-logging:
 
 
 services:
-  postgresdb_judge0:
+  postgresdb:
     image: postgres:16.2
-    container_name: postgresql
+    container_name: postgresql_judge0
     env_file: ./judge0.conf
     volumes:
-      - postgres-data:/var/lib/postgresql/data/
+      - postgres-data-judge0:/var/lib/postgresql/data/
     <<: *default-logging
     restart: unless-stopped
     networks:
@@ -65,7 +65,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      postgresdb_judge0:
+      postgresdb:
         condition: service_healthy
     networks:
       - app-net
@@ -87,7 +87,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      postgresdb_judge0:
+      postgresdb:
         condition: service_healthy
       judge0_server:
         condition: service_healthy
@@ -101,19 +101,18 @@ services:
       retries: 5
       start_period: 10s
 
-  mongodb:
-    image: mongo:8.0
-    container_name: mse1h2026-judge0-lti_mongodb
+  postgresdb_data:
+    image: postgres:16.2
+    container_name: mse1h2026-judge0-lti_postgresdb_data
     volumes:
-      - mongodb-data:/data/db
-      - mongodb-config:/data/configdb
+      - postgresdb-data:/var/lib/postgresql/data/
     env_file: .env
     <<: *default-logging
     restart: unless-stopped
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "mongosh","--eval","db.adminCommand('ping')"]
+      test: ["CMD", "pg_isready"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -128,7 +127,7 @@ services:
     env_file: .env
     <<: *default-logging
     depends_on:
-      mongodb:
+      postgresdb_data:
         condition: service_healthy
       judge0_worker:
         condition: service_healthy
@@ -174,11 +173,9 @@ services:
 
 
 volumes:
-  mongodb-data:
+  postgresdb-data:
     driver: local
-  mongodb-config:
-    driver: local
-  postgres-data:
+  postgres-data-judge0:
     driver: local
 
 networks:

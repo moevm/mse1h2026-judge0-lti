@@ -9,20 +9,20 @@
 .rightTop,
 .rightBottom {
   padding: 10px;
-  background-color: #161b22;
+  background-color: $background-color;
   color: #fff;
   height: 100%;
   overflow: auto;
 }
 
 .gutterHorizontal {
-  background-color: #444;
+  background-color: $background-secondary-color;
   cursor: col-resize;
   width: 6px;
 }
 
 .gutterVertical {
-  background-color: #444;
+  background-color: $background-secondary-color;
   cursor: row-resize;
   height: 6px;
 }

@@ -1,6 +1,7 @@
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 import CodeEditor from "../../components/CodeEditor/CodeEditor";
 import styles from "./IDEPage.module.scss";
+import TasksSection from "../../components/TasksSection/TasksSection.tsx";
 
 interface IDEPageProps {
   language: string;
@@ -19,7 +20,9 @@ const IDEPage = ({ language }: IDEPageProps) => {
                 <Panel defaultSize={30} minSize={10} maxSize={80}>
                     <PanelGroup direction="vertical">
                         <Panel defaultSize={60} minSize={20} maxSize={80}>
-                            <div className={styles.rightTop}>Задачи / Тесты</div>
+                            <div className={styles.rightTop}>
+                                <TasksSection/>
+                            </div>
                         </Panel>
                         <PanelResizeHandle className={styles.gutterVertical}/>
                         <Panel defaultSize={40} minSize={20} maxSize={80}>

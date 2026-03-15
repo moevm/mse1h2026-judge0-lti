@@ -1,8 +1,9 @@
 import enum
 from sqlalchemy import *
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship,  declarative_base
 from sqlalchemy.dialects.postgresql import JSON, BIGINT, TIMESTAMP, ENUM
-from database import Base
+
+Base = declarative_base()
 
 class UserTypeEnum(enum.Enum):
     admin   = "admin"
@@ -53,7 +54,7 @@ class Language(Base):
 
 class TaskLanguage(Base):
     __tablename__       = "tasks_languages"
-    __table_args__      = (PrimaryKeyConstraint("task_id", "language_id", name="task_language_pk"))
+    __table_args__      = (PrimaryKeyConstraint("task_id", "language_id", name="task_language_pk"),)
 
     task_id             = Column(BIGINT, ForeignKey('tasks.id'), nullable=False, index=True)
     language_id         = Column(BIGINT, ForeignKey('languages.id'), nullable=False, index=True)
@@ -61,7 +62,7 @@ class TaskLanguage(Base):
 
 class Solution(Base):
     __tablename__   = "solutions"
-    __table_args__  = (PrimaryKeyConstraint("user_id", "task_id", name="solution_pk"))
+    __table_args__  = (PrimaryKeyConstraint("user_id", "task_id", name="solution_pk"),)
 
     user_id         = Column(BIGINT, ForeignKey('users.id'), nullable=False, index=True)
     task_id         = Column(BIGINT, ForeignKey('tasks.id'), nullable=False, index=True)
@@ -84,7 +85,7 @@ class Attempt(Base):
                 ["solution_user_id", "solution_task_id"],
                 ["solutions.user_id", "solutions.task_id"],
                 name="attempt_solution_fk"
-            )
+            ),
         )
 
     id                  = Column(BIGINT, primary_key=True, index=True)

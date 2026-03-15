@@ -2,7 +2,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from app.routers import lti
+from app.database.database import *
 
+# создает таблицы в postgres
+create_tables()
 
 app = FastAPI()
 app.include_router(lti.router)

@@ -24,3 +24,8 @@ alembic==1.15.2
 
 # env
 python-dotenv==1.2.2
+
+# testing
+pytest==8.3.5
+pytest-cov==6.1.1
+httpx==0.28.1

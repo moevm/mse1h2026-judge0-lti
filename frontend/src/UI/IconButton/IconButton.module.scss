@@ -1,0 +1,26 @@
+@use "../../styles/variables" as *;
+.iconButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 25px;
+  cursor: pointer;
+  font-weight: bold;
+
+  &.run {
+    background-color: $success-color;
+    color: $text-color;
+  }
+
+  &.submit {
+    background-color: $secondary-color;
+    color: $text-color;
+  }
+
+  img {
+    width: 15px;
+    height: 15px;
+  }
+}

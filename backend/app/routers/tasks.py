@@ -11,12 +11,4 @@ async def get_task(task_id: int, db: Session = Depends(session_generator)):
     task = db.query(Task).filter(Task.id == task_id).first()
     if task is None:
         raise HTTPException(status_code=404, detail="Задача не найдена")
-    return {
-        "id": task.id,
-        "title": task.title,
-        "description": task.description,
-        "timeout": task.timeout,
-        "languages": [lang.language for lang in task.languages],
-        "created_at": task.created_at,
-        "updated_at": task.updated_at,
-    }
+    return task

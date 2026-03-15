@@ -1,4 +1,3 @@
-import {useState} from "react";
 import styles from "./Header.module.scss";
 import runIcon from '../../assets/icons/run_icon.svg';
 import submitIcon from '../../assets/icons/submit_icon.svg';
@@ -9,8 +8,12 @@ import profileIcon from '../../assets/icons/profile_icon.svg';
 import logoutIcon from '../../assets/icons/logout_icon.svg';
 import IconButton from "../../UI/IconButton/IconButton.tsx"
 
-const Header = () => {
-    const [language, setLanguage] = useState("javascript");
+interface HeaderProps {
+  language: string;
+  setLanguage: (lang: string) => void;
+}
+
+const Header = ({ language, setLanguage }: HeaderProps) => {
 
     return (
         <div className={styles.header}>

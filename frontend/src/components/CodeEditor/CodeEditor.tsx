@@ -3,7 +3,7 @@ import Editor, {loader} from '@monaco-editor/react';
 import styles from "../../pages/IDEPage/IDEPage.module.scss";
 
 const CodeEditor = ({language}: { language: string }) => {
-    const [theme, setTheme] = useState('myCustomTheme');
+    const [theme] = useState('myCustomTheme');
     useEffect(() => {
         loader.init().then((monaco) => {
             monaco.editor.defineTheme('myCustomTheme', {
@@ -21,7 +21,7 @@ const CodeEditor = ({language}: { language: string }) => {
             <Editor
                 height="100%"
                 language={language}
-                defaultValue={"// some comment\n\n\n"}
+                defaultValue={"\n\n\n"}
                 theme={theme}
                 options={{
                     minimap: {enabled: false},

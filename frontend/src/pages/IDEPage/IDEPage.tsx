@@ -2,6 +2,7 @@ import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 import CodeEditor from "../../components/CodeEditor/CodeEditor";
 import styles from "./IDEPage.module.scss";
 import TasksSection from "../../components/TasksSection/TasksSection.tsx";
+import ConsoleSection from "../../components/ConsoleSection/ConsoleSection.tsx";
 
 interface IDEPageProps {
   language: string;
@@ -26,7 +27,9 @@ const IDEPage = ({ language }: IDEPageProps) => {
                         </Panel>
                         <PanelResizeHandle className={styles.gutterVertical}/>
                         <Panel defaultSize={40} minSize={20} maxSize={80}>
-                            <div className={styles.rightBottom}>Вывод / Результаты</div>
+                            <div className={styles.rightBottom}>
+                                <ConsoleSection/>
+                            </div>
                         </Panel>
                     </PanelGroup>
                 </Panel>

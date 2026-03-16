@@ -5,7 +5,7 @@ interface Task {
     id: number;
     title: string;
     content: string;
-    examples: string[]; // просто текст
+    examples: string[];
 }
 
 const tasks: Task[] = [

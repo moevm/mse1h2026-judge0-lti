@@ -1,4 +1,5 @@
 @use "../../styles/variables" as *;
+
 .iconButton {
   display: flex;
   align-items: center;
@@ -8,15 +9,26 @@
   padding: 10px 25px;
   cursor: pointer;
   font-weight: bold;
+  transition: all 0.2s ease;
 
   &.run {
     background-color: $success-color;
     color: $text-color;
+
+    &:hover {
+      filter: brightness(1.1);
+      //transform: translateY(-1px);
+    }
   }
 
   &.submit {
     background-color: $secondary-color;
     color: $text-color;
+
+    &:hover {
+      filter: brightness(1.1);
+      //transform: translateY(-1px);
+    }
   }
 
   img {

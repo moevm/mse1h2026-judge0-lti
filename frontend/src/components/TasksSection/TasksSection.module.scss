@@ -16,7 +16,7 @@
 .tab {
   padding: 8px 16px;
   background-color: $primary-color;
-  color: #ccc;
+  color: $text-color;
   border: none;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
@@ -31,7 +31,6 @@
 .active {
   background-color: $background-secondary-color;
   color: $secondary-color;
-  font-weight: bold;
 }
 
 .tabContent {
@@ -39,7 +38,7 @@
   background-color: $background-color;
   padding: 12px;
   border-radius: 0 8px 8px 8px;
-  color: #fff;
+  color: $text-color;
   overflow: auto;
 }
 

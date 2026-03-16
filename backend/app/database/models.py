@@ -25,10 +25,25 @@ class User(Base):
     solutions       = relationship("Solution", back_populates="user", cascade="all, delete-orphan")
 
 
+class Module(Base):
+    __tablename__ = "modules"
+
+    id              = Column(BIGINT, primary_key=True, index=True)
+    title           = Column(String(128), index=True)
+    description     = Column(Text, nullable=False)
+
+    created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+
+    tasks           = relationship("Task", back_populates="module")
+    task_orders     = relationship("ModuleTaskOrder", back_populates="module", cascade="all, delete-orphan")
+
+
 class Task(Base):
     __tablename__   = "tasks"
 
     id              = Column(BIGINT, primary_key=True, index=True)
+    module_id       = Column(BIGINT, ForeignKey("modules.id"), index=True, nullable=False)
     title           = Column(String(128), index=True)
     description     = Column(Text, nullable=False)
     timeout         = Column(Integer, nullable=False, index=True)               # секунды 
@@ -37,8 +52,27 @@ class Task(Base):
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
+    module          = relationship("Module", back_populates="tasks")
     languages       = relationship("Language", secondary="tasks_languages", back_populates="tasks")
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")
+    order_info      = relationship("ModuleTaskOrder", back_populates="task", uselist=False, cascade="all, delete-orphan")
+
+
+class ModuleTaskOrder(Base):
+    __tablename__   = "module_tasks_order"
+    __table_args__ = (
+        UniqueConstraint('module_id', 'order', name='unique_module_order'),
+    )
+
+    module_id       = Column(BIGINT, ForeignKey("modules.id"), primary_key=True)
+    task_id         = Column(BIGINT, ForeignKey("tasks.id"), primary_key=True)
+    order           = Column(Integer, nullable=False, index=True)
+
+    created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+
+    task            = relationship("Task", back_populates="order_info")
+    module          = relationship("Module", back_populates="task_orders")
 
 
 class Language(Base):

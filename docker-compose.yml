@@ -15,7 +15,7 @@ x-logging:
 
 services:
   postgresdb:
-    image: postgres:16.2
+    image: postgres:17-alpine
     container_name: postgresql_judge0
     env_file: ./judge0.conf
     volumes:
@@ -101,22 +101,23 @@ services:
       retries: 5
       start_period: 10s
 
+
   postgresdb_data:
-    image: postgres:16.2
+    image: postgres:17-alpine
     container_name: mse1h2026-judge0-lti_postgresdb_data
-    volumes:
-      - postgresdb-data:/var/lib/postgresql/data/
-    env_file: .env
-    <<: *default-logging
     restart: unless-stopped
+    <<: *default-logging
+    env_file: 
+      - .env
+    volumes:
+      - postgresdb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - app-net
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
 
   backend:
     image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.0
@@ -124,28 +125,28 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend-python-fastapi
-    env_file: .env
+    restart: unless-stopped
     <<: *default-logging
+    env_file: 
+      - .env
     depends_on:
       postgresdb_data:
         condition: service_healthy
       judge0_worker:
         condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - app-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - app-net
     # deploy:
     #   resources:
     #     limits:
     #       cpus: '1'
     #       memory: 1024M
-
 
   frontend:
     image: mse1h2026-judge0-lti_frontend-nginx-react:v.0.0
@@ -153,23 +154,24 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: frontend-nginx-react
-    env_file: .env
+    restart: unless-stopped
     <<: *default-logging
+    env_file: 
+      - .env
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       backend:
         condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - app-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 10s
       timeout: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - app-net
 
 
 volumes:
@@ -181,4 +183,3 @@ volumes:
 networks:
   app-net:
     driver: bridge
-

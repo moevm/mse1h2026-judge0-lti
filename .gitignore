@@ -6,3 +6,6 @@ judge0.conf
 !start-example.sh
 
 .idea/
+!backend/tests/task.sh
+
+docker-compose.test.yaml

@@ -18,7 +18,7 @@ export default defineConfig({
           target: '18'
         })
       ],
-    }),
+    } as never),
     // Подключаем Tailwind v4
     tailwindcss(),
   ],

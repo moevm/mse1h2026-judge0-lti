@@ -1,0 +1,64 @@
+@use "../../styles/variables" as *;
+
+.tasksSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tabs {
+  display: flex;
+  gap: 5px;
+  border-bottom: 2px solid $background-secondary-color;
+  margin-bottom: 10px;
+}
+
+.tab {
+  padding: 8px 16px;
+  background-color: $primary-color;
+  color: $text-color;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background-color: $background-secondary-color;
+  color: $secondary-color;
+}
+
+.active {
+  background-color: $background-secondary-color;
+  color: $secondary-color;
+}
+
+.tabContent {
+  flex: 1;
+  background-color: $background-color;
+  padding: 12px;
+  border-radius: 0 8px 8px 8px;
+  color: $text-color;
+  overflow: auto;
+}
+
+.tabContentText {
+  font-weight: normal;
+  font-size: 15px;
+  color: $secondary-color;
+}
+
+.taskStatementText {
+  margin-bottom: 15px;
+}
+
+.taskExampleText{
+  margin-top: 10px;
+}
+
+.exampleBlock{
+  background-color: $background-secondary-color;
+  padding: 12px 12px;
+  border-radius: 6px;
+  margin-top: 15px;
+}

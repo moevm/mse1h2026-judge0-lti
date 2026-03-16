@@ -1,0 +1,28 @@
+@use "../../styles/variables" as *;
+
+.ideContainer {
+  height: calc(100vh - 68px);
+  display: flex;
+  flex-direction: column;
+}
+
+.rightTop,
+.rightBottom {
+  padding: 10px;
+  background-color: $background-color;
+  color: #fff;
+  height: 100%;
+  overflow: auto;
+}
+
+.gutterHorizontal {
+  background-color: $background-secondary-color;
+  cursor: col-resize;
+  width: 6px;
+}
+
+.gutterVertical {
+  background-color: $background-secondary-color;
+  cursor: row-resize;
+  height: 6px;
+}

@@ -1,0 +1,87 @@
+@use "../../styles/variables" as *;
+
+.consoleTitle {
+  font-size: 18px;
+  font-weight: normal;
+  color: $secondary-color;
+}
+
+.consoleSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.consoleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tabs {
+  position: relative;
+  display: flex;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  opacity: 0.6;
+  color: white;
+  transition: all 0.25s;
+}
+
+.tab:hover {
+  opacity: 1;
+  color: white;
+}
+
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  background: $secondary-color;
+  transition: all 0.25s ease;
+}
+
+.slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: $secondary-color;
+  border-radius: 6px;
+  transition: transform 0.25s ease;
+  z-index: 1;
+}
+.active {
+  opacity: 1;
+  color: white;
+}
+
+.consoleBody {
+  margin-top: 10px;
+  flex: 1;
+}
+
+.consoleInput {
+  width: 100%;
+  height: 100%;
+  background: $background-secondary-color;
+  outline: none;
+  border: none;
+  color: $text-color;
+  resize: none;
+}
+
+.consoleOutput {
+  padding: 10px;
+  color: $text-color;
+  background: $background-secondary-color;
+}

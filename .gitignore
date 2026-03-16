@@ -4,6 +4,8 @@ judge0.conf
 *.sh
 !build-and-run.sh
 !start-example.sh
+
+.idea/
 !backend/tests/task.sh
 
 docker-compose.test.yaml

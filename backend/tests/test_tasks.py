@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock, patch
 
-with patch("app.database.database.create_engine"), \
-    patch("app.database.models.Base.metadata.create_all"):
+with patch("app.database.database.create_engine"), patch(
+    "app.database.models.Base.metadata.create_all"
+):
     from fastapi.testclient import TestClient
     from app.main import app
     from app.database.database import session_generator

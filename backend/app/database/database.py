@@ -18,6 +18,7 @@ def session_generator():
     finally:
         db.close()
 
+
 def create_tables():
     from app.database import models
 

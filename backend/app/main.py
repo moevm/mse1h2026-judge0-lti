@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from app.routers import lti, tasks
+from app.routers import lti, tasks, check
 from app.database.database import *
 
 # создает таблицы в postgres
@@ -10,6 +10,7 @@ create_tables()
 app = FastAPI()
 app.include_router(lti.router)
 app.include_router(tasks.router)
+app.include_router(check.router)
 
 @app.get("/", tags=["root"], summary="Главная страница")
 async def root():

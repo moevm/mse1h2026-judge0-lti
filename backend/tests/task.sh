@@ -1,1 +1,5 @@
-python3 -m pytest tests/test_tasks.py -v -s --tb=long
+#!/bin/bash
+
+cd "$(dirname "$0")/../.." || exit 1
+
+cd backend && python3 -m pytest tests/ -v -s --tb=long

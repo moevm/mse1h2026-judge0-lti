@@ -6,6 +6,7 @@ from app.database.database import *
 
 # создает таблицы в postgres
 create_tables()
+seed_database()
 
 app = FastAPI()
 app.include_router(lti.router)

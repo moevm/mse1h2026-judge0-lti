@@ -94,8 +94,8 @@ class ModuleTaskOrder(Base):
 class Language(Base):
     __tablename__ = "languages"
 
-    id = Column(BIGINT, primary_key=True, index=True)
-    language = Column(String(32), nullable=False, index=True)
+    id              = Column(BIGINT, primary_key=True, index=True)
+    language        = Column(String(64), nullable=False, index=True)
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
@@ -121,8 +121,11 @@ class Solution(Base):
     user_id = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
     task_id = Column(BIGINT, ForeignKey("tasks.id"), nullable=False, index=True)
 
-    language = Column(String(32), nullable=False, index=True)
-    is_solved = Column(Boolean, nullable=False, default=False, index=True)
+    language        = Column(String(64), nullable=False, index=True)
+    is_solved       = Column(Boolean, nullable=False, default=False, index=True)
+    
+    created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), onupdate=func.now())
@@ -138,19 +141,19 @@ class Attempt(Base):
     __tablename__ = "attempts"
     __table_args__ = (
         ForeignKeyConstraint(
-            ["solution_user_id", "solution_task_id"],
-            ["solutions.user_id", "solutions.task_id"],
-            name="attempt_solution_fk",
-        ),
-    )
+                ["solution_user_id", "solution_task_id"],
+                ["solutions.user_id", "solutions.task_id"],
+                name="attempt_solution_fk"
+            ),
+        )
 
-    id = Column(BIGINT, primary_key=True, index=True)
-    solution_user_id = Column(BIGINT, nullable=False)
-    solution_task_id = Column(BIGINT, nullable=False)
-    language = Column(String(32), nullable=False, index=True)
-    current_code = Column(Text, nullable=False)
-    message = Column(String(128), nullable=False)
+    id                  = Column(BIGINT, primary_key=True, index=True)
+    solution_user_id    = Column(BIGINT, nullable=False)
+    solution_task_id    = Column(BIGINT, nullable=False)
+    language            = Column(String(64), nullable=False, index=True)
+    current_code	    = Column(Text, nullable=False)
+    message			    = Column(String(128), nullable=False)
 
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at          = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    solution = relationship("Solution", back_populates="attempts")
+    solution            = relationship("Solution", back_populates="attempts")

@@ -28,3 +28,15 @@ def create_tables():
 
     except Exception as e:
         print(f"ERROR: {e}")
+
+def seed_database():
+    from app.database.inserts import run_seed
+
+    db = Session()
+    try:
+        run_seed(db)
+    except Exception as e:
+        db.rollback()
+        print(f"SKIP: Seed already exists or error: {e}")
+    finally:
+        db.close()

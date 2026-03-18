@@ -4,9 +4,53 @@ from sqlalchemy.orm import Session
 
 def insert_languages(db: Session) -> list[Language]:
     languages = [
-        Language(id=1, language="python"),
-        Language(id=2, language="javascript"),
-        Language(id=3, language="java"),
+        Language(id=43, language="Plain Text"),
+        Language(id=44, language="Executable"),
+        Language(id=45, language="Assembly (NASM 2.14.02)"),
+        Language(id=46, language="Bash (5.0.0)"),
+        Language(id=47, language="Basic (FBC 1.07.1)"),
+        Language(id=48, language="C (GCC 7.4.0)"),
+        Language(id=49, language="C (GCC 8.3.0)"),
+        Language(id=50, language="C (GCC 9.2.0)"),
+        Language(id=51, language="C# (Mono 6.6.0.161)"),
+        Language(id=52, language="C++ (GCC 7.4.0)"),
+        Language(id=53, language="C++ (GCC 8.3.0)"),
+        Language(id=54, language="C++ (GCC 9.2.0)"),
+        Language(id=55, language="Common Lisp (SBCL 2.0.0)"),
+        Language(id=56, language="D (DMD 2.089.1)"),
+        Language(id=57, language="Elixir (1.9.4)"),
+        Language(id=58, language="Erlang (OTP 22.2)"),
+        Language(id=59, language="Fortran (GFortran 9.2.0)"),
+        Language(id=60, language="Go (1.13.5)"),
+        Language(id=61, language="Haskell (GHC 8.8.1)"),
+        Language(id=62, language="Java (OpenJDK 13.0.1)"),
+        Language(id=63, language="JavaScript (Node.js 12.14.0)"),
+        Language(id=64, language="Lua (5.3.5)"),
+        Language(id=65, language="OCaml (4.09.0)"),
+        Language(id=66, language="Octave (5.1.0)"),
+        Language(id=67, language="Pascal (FPC 3.0.4)"),
+        Language(id=68, language="PHP (7.4.1)"),
+        Language(id=69, language="Prolog (GNU Prolog 1.4.5)"),
+        Language(id=70, language="Python (2.7.17)"),
+        Language(id=71, language="Python (3.8.1)"),
+        Language(id=72, language="Ruby (2.7.0)"),
+        Language(id=73, language="Rust (1.40.0)"),
+        Language(id=74, language="TypeScript (3.7.4)"),
+        Language(id=75, language="C (Clang 7.0.1)"),
+        Language(id=76, language="C++ (Clang 7.0.1)"),
+        Language(id=77, language="COBOL (GnuCOBOL 2.2)"),
+        Language(id=78, language="Kotlin (1.3.70)"),
+        Language(id=79, language="Objective-C (Clang 7.0.1)"),
+        Language(id=80, language="R (4.0.0)"),
+        Language(id=81, language="Scala (2.13.2)"),
+        Language(id=82, language="SQL (SQLite 3.27.2)"),
+        Language(id=83, language="Swift (5.2.3)"),
+        Language(id=84, language="Visual Basic.Net (vbnc 0.0.0.5943)"),
+        Language(id=85, language="Perl (5.28.1)"),
+        Language(id=86, language="Clojure (1.10.1)"),
+        Language(id=87, language="F# (.NET Core SDK 3.1.202)"),
+        Language(id=88, language="Groovy (3.0.3)"),
+        Language(id=89, language="Multi-file program"),
     ]
     db.add_all(languages)
     db.flush()
@@ -86,11 +130,11 @@ def insert_module_task_orders(db: Session) -> None:
 
 def insert_task_languages(db: Session) -> None:
     links = [
-        TaskLanguage(task_id=1, language_id=1),  # python
-        TaskLanguage(task_id=1, language_id=2),  # javascript
-        TaskLanguage(task_id=2, language_id=1),  # python
-        TaskLanguage(task_id=3, language_id=1),  # python
-        TaskLanguage(task_id=3, language_id=3),  # java
+        TaskLanguage(task_id=1, language_id=71),  # python
+        TaskLanguage(task_id=1, language_id=63),  # javascript
+        TaskLanguage(task_id=2, language_id=71),  # python
+        TaskLanguage(task_id=3, language_id=71),  # python
+        TaskLanguage(task_id=3, language_id=62),  # java
     ]
     db.add_all(links)
     db.flush()
@@ -98,9 +142,9 @@ def insert_task_languages(db: Session) -> None:
 
 def insert_solutions(db: Session) -> None:
     solutions = [
-        Solution(user_id=3, task_id=1, language="python",     is_solved=True),
-        Solution(user_id=3, task_id=2, language="python",     is_solved=False),
-        Solution(user_id=4, task_id=1, language="javascript", is_solved=True),
+        Solution(user_id=3, task_id=1, language="Python (3.8.1)", is_solved=True),
+        Solution(user_id=3, task_id=2, language="Python (3.8.1)", is_solved=False),
+        Solution(user_id=4, task_id=1, language="JavaScript (Node.js 12.14.0)", is_solved=True),
     ]
     db.add_all(solutions)
     db.flush()
@@ -110,19 +154,19 @@ def insert_attempts(db: Session) -> None:
     attempts = [
         Attempt(
             solution_user_id=3, solution_task_id=1,
-            language="python",
+            language="Python (3.8.1)",
             current_code='print("Hello, World!")',
             message="Все тесты пройдены",
         ),
         Attempt(
             solution_user_id=3, solution_task_id=2,
-            language="python",
+            language="Python (3.8.1)",
             current_code="a, b = map(int, input().split())\nprint(a - b)",
             message="Тест 1 не пройден: ожидалось 5, получено -1",
         ),
         Attempt(
             solution_user_id=4, solution_task_id=1,
-            language="javascript",
+            language="JavaScript (Node.js 12.14.0)",
             current_code='console.log("Hello, World!")',
             message="Все тесты пройдены",
         ),

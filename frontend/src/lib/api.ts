@@ -1,18 +1,31 @@
-import axios from 'axios';
-import { toast } from "sonner";
+import axios from 'axios'
+import type { InternalAxiosRequestConfig } from 'axios'
+import { toast } from 'sonner'
+
+declare module 'axios' {
+    interface AxiosRequestConfig {
+        silent?: boolean
+    }
+}
 
 const api = axios.create({
-    baseURL: 'https://jsonplaceholder.typicode.com', // для теста
+    baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000',
 })
 
 api.interceptors.response.use(
     response => response,
-    error => {
-        // Глобальный перехват ошибок
-        const message = error.response?.data?.message ?? `Ошибка запроса: ${error.message}`;
-        toast.error('Что-то пошло не так', { description: message });
-        return Promise.reject(error);
+    (error) => {
+        const config = error.config as InternalAxiosRequestConfig & { silent?: boolean }
+
+        if (!config?.silent) {
+            const message = error.response?.data?.detail
+                ?? error.response?.data?.message
+                ?? `Ошибка запроса: ${error.message}`
+            toast.error('Что-то пошло не так', { description: message })
+        }
+
+        return Promise.reject(error)
     }
 )
 
-export default api;
+export default api

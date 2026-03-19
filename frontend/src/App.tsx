@@ -1,10 +1,14 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
-import IDEPage from "./pages/IDEPage/IDEPage.tsx";
+
+import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom"
+import {useState} from "react"
+
+import IDEPage from "./pages/IDEPage/IDEPage.tsx"
+import TestPage from "./pages/TestPage/TestPage.tsx" // временная страница
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage.tsx";
-import TestPage from "./pages/TestPage/TestPage.tsx"; // временная страница
-import Header from "./components/Header/Header.tsx";
-import {useState} from "react";
+import ForbiddenPage from "./pages/ForbiddenPage/ForbiddenPage.tsx";
+
+import Header from "./components/Header/Header.tsx"
 
 function App() {
   const [language, setLanguage] = useState("python");
@@ -25,6 +29,7 @@ function App() {
 
           {/* 404 — без хедера */}
           <Route path="/test" element={<TestPage />} />
+          <Route path="/403" element={<ForbiddenPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>

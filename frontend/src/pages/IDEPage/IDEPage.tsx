@@ -6,11 +6,16 @@ import ConsoleSection from "../../components/ConsoleSection/ConsoleSection.tsx";
 
 interface IDEPageProps {
   language: string;
+  setLanguage: (lang: string) => void;
 }
 
-const IDEPage = ({ language }: IDEPageProps) => {
+import Header from "../../components/Header/Header";
+
+const IDEPage = ({ language, setLanguage }: IDEPageProps) => {
     return (
         <div>
+            <Header language={language} setLanguage={setLanguage} />
+
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={30} minSize={20} maxSize={90} className={styles.editorPanel}>
                     <CodeEditor language={language} />

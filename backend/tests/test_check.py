@@ -49,7 +49,7 @@ def test_check_solution_mock():
 
     app.dependency_overrides[session_generator] = override
 
-    with patch("app.routers.check.submit_to_judge0") as mock_submit:
+    with patch("app.services.check.CheckService._submit_to_judge0") as mock_submit:
         mock_submit.return_value = {
             "stdout": "5",
             "stderr": None,
@@ -74,7 +74,7 @@ def test_check_solution_fail():
 
     app.dependency_overrides[session_generator] = override
 
-    with patch("app.routers.check.submit_to_judge0") as mock_submit:
+    with patch("app.services.check.CheckService._submit_to_judge0") as mock_submit:
         mock_submit.return_value = {
             "stdout": "999",
             "stderr": None,

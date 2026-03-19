@@ -8,7 +8,7 @@ from app.database.database import create_tables, seed_database
 create_tables()
 seed_database()
 
-app = FastAPI(debug=True)
+app = FastAPI()
 app.include_router(lti.router)
 app.include_router(tasks.router)
 app.include_router(check.router)

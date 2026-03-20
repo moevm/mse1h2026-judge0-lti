@@ -9,3 +9,4 @@ judge0.conf
 !backend/tests/task.sh
 
 docker-compose.test.yaml
+docker-compose.override.yml

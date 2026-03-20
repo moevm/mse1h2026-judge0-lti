@@ -10,7 +10,7 @@ type Tab = 'modules' | 'tasks' | 'errors'
 
 // ─── Таб: Модули ─────────────────────────────────────────────────────────────
 function ModulesTab() {
-    const { data: modules, isLoading, isError, refetch } = useModules()
+    const { data: modules, isLoading, isError, error, refetch } = useModules()
 
     if (isLoading) return (
         <div className="flex flex-col gap-3">
@@ -24,7 +24,7 @@ function ModulesTab() {
         </div>
     )
 
-    if (isError) return <ErrorState message="Не удалось загрузить модули" onRetry={refetch} />
+    if (isError) return <ErrorState message="Не удалось загрузить модули" error={error} onRetry={refetch} />
 
     return (
         <div className="flex flex-col gap-3">
@@ -44,7 +44,8 @@ function ModulesTab() {
 
 // ─── Таб: Задачи ─────────────────────────────────────────────────────────────
 function TasksTab() {
-    const { data: tasks, isLoading, isError, refetch } = useModuleTasks(1)
+    // Модуль 1 — всегда, для простоты демо
+    const { data: tasks, isLoading, isError, error, refetch } = useModuleTasks(1)
 
     if (isLoading) return (
         <div className="flex flex-col gap-3">
@@ -61,7 +62,7 @@ function TasksTab() {
         </div>
     )
 
-    if (isError) return <ErrorState message="Не удалось загрузить задачи" onRetry={refetch} />
+    if (isError) return <ErrorState message="Не удалось загрузить задачи" error={error} onRetry={refetch} />
 
     return (
         <div className="flex flex-col gap-3">
@@ -88,12 +89,16 @@ function TasksTab() {
 
 // ─── Таб: Ошибки ─────────────────────────────────────────────────────────────
 function ErrorsTab() {
+    // Несуществующая задача — вызовет 404 и ErrorState (без toast, silent: true)
     const [showBroken, setShowBroken] = useState(false)
-    const { isLoading, isError } = useTask(showBroken ? 999 : null)
+    const { isLoading, isError, error } = useTask(showBroken ? 999 : null)
+    // refetch здесь не поможет (задача 999 не существует), поэтому
+    // onRetry сбрасывает состояние — пользователь может попробовать снова
 
     return (
         <div className="flex flex-col gap-4">
 
+            {/* Toast */}
             <div className="p-4 rounded-xl bg-zinc-800 border border-zinc-700 flex flex-col gap-3">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Toast</p>
                 <div className="flex flex-wrap gap-2">
@@ -116,6 +121,7 @@ function ErrorsTab() {
                 </div>
             </div>
 
+            {/* Skeleton */}
             <div className="p-4 rounded-xl bg-zinc-800 border border-zinc-700 flex flex-col gap-3">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Skeleton</p>
                 <div className="flex flex-col gap-2">
@@ -125,6 +131,7 @@ function ErrorsTab() {
                 </div>
             </div>
 
+            {/* ErrorState — запрос к несуществующей задаче */}
             <div className="p-4 rounded-xl bg-zinc-800 border border-zinc-700 flex flex-col gap-3">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">ErrorState</p>
                 <p className="text-xs text-zinc-500">
@@ -146,6 +153,7 @@ function ErrorsTab() {
                 {isError && (
                     <ErrorState
                         message="Задача #999 не найдена"
+                        error={error ?? undefined}
                         onRetry={() => setShowBroken(false)}
                     />
                 )}
@@ -176,6 +184,7 @@ export default function TestPage() {
                     </p>
                 </div>
 
+                {/* Табы */}
                 <div className="flex gap-1 p-1 rounded-xl bg-zinc-800 border border-zinc-700 w-fit">
                     {TABS.map(t => (
                         <button
@@ -191,6 +200,7 @@ export default function TestPage() {
                     ))}
                 </div>
 
+                {/* Контент */}
                 {tab === 'modules' && <ModulesTab />}
                 {tab === 'tasks'   && <TasksTab />}
                 {tab === 'errors'  && <ErrorsTab />}

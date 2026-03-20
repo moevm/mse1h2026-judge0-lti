@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { modulesApi } from '../../api/modules.api'
+import type { AxiosError } from 'axios'
+import { modulesApi, type Task } from '../../api/modules.api'
 import { moduleKeys } from '../../lib/query-keys'
 
 export const useModuleTasks = (moduleId: number | null) => {
-    return useQuery({
+    return useQuery<Task[], AxiosError<{ detail?: string }>>({
         queryKey: moduleKeys.tasks(moduleId ?? 0),
         queryFn: () => modulesApi.getModuleTasks(moduleId!),
         enabled: moduleId !== null,

@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { modulesApi } from '../../api/modules.api'
+import type { AxiosError } from 'axios'
+import { modulesApi, type Module } from '../../api/modules.api'
 import { moduleKeys } from '../../lib/query-keys'
 
 export const useModules = () => {
-    return useQuery({
+    return useQuery<Module[], AxiosError<{ detail?: string }>>({
         queryKey: moduleKeys.all,
         queryFn: modulesApi.getModules,
         staleTime: 5 * 60 * 1000,

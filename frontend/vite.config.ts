@@ -7,21 +7,27 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    // Стандартный плагин React (теперь на базе быстрого Oxc)
     react(),
 
-    // Подключение Babel через Rolldown-плагин для компилятора
     babel({
       presets: [
         reactCompilerPreset({
-          // Опции для компилятора (например, для React 18)
           target: '18'
         })
       ],
     } as never),
-    // Подключаем Tailwind v4
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        proxyTimeout: 5000,
+      },
+    },
+  },
   resolve: {
     alias: {
       // Настраиваем быстрый доступ к папке src через @
@@ -29,3 +35,4 @@ export default defineConfig({
     },
   }
 })
+

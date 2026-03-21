@@ -10,5 +10,5 @@ class CheckRequest(BaseModel):
 class CheckResponse(BaseModel):
     success: bool
     error: Optional[str] = None
-    comment: str
+    comment: str | None = None
     passed: str

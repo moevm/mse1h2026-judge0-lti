@@ -11,9 +11,10 @@ import IconButton from "../../UI/IconButton/IconButton.tsx"
 interface HeaderProps {
   language: string;
   setLanguage: (lang: string) => void;
+  onCheck: () => void;
 }
 
-const Header = ({ language, setLanguage }: HeaderProps) => {
+const Header = ({ language, setLanguage, onCheck}: HeaderProps) => {
 
     return (
         <div className={styles.header}>
@@ -36,7 +37,7 @@ const Header = ({ language, setLanguage }: HeaderProps) => {
             </div>
             <div className={styles.actionPanel}>
                 <IconButton icon={runIcon} label="Запустить" type="run" />
-                <IconButton icon={submitIcon} label="Проверить" type="submit" />
+                <IconButton icon={submitIcon} label="Проверить" type="submit" onClick={onCheck} />
                 <div className={styles.infoBadge}>
                     <img src={attemptIcon} alt="attempts"/>
                     <span className={styles.attemptText}>3/5 попыток</span>

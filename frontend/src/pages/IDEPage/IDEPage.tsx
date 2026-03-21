@@ -2,23 +2,66 @@ import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 import CodeEditor from "../../components/CodeEditor/CodeEditor";
 import styles from "./IDEPage.module.scss";
 import TasksSection from "../../components/TasksSection/TasksSection.tsx";
-import ConsoleSection from "../../components/ConsoleSection/ConsoleSection.tsx";
-
-interface IDEPageProps {
-  language: string;
-  setLanguage: (lang: string) => void;
-}
+import ConsoleSection, {type ConsoleOutput} from "../../components/ConsoleSection/ConsoleSection.tsx";
 
 import Header from "../../components/Header/Header";
+import {useCheckSolution} from "../../hooks/queries/useCheckSolution.ts";
+import {useState} from "react";
 
-const IDEPage = ({ language, setLanguage }: IDEPageProps) => {
+interface IDEPageProps {
+    language: string;
+    setLanguage: (lang: string) => void;
+}
+
+const IDEPage = ({language, setLanguage}: IDEPageProps) => {
+    const {mutate: checkSolution} = useCheckSolution();
+
+    const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput | null>(null);
+    const [codes, setCodes] = useState<Record<number, string>>({});
+    const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+
+    const currentCode = activeTaskId ? codes[activeTaskId] ?? "" : "";
+
+    const handleCodeChange = (value: string) => {
+        if (!activeTaskId) return;
+
+        setCodes(prev => ({
+            ...prev,
+            [activeTaskId]: value
+        }));
+    };
+
+    const handleCheck = () => {
+        if (!activeTaskId) return;
+
+        const submitted_at = new Date().toISOString();
+
+        checkSolution(
+            {
+                taskId: activeTaskId,
+                code: currentCode,
+                language,
+                submitted_at
+            },
+            {
+                onSuccess: (data) => {
+                    setConsoleOutput(data);
+                },
+            }
+        );
+    };
+
     return (
         <div>
-            <Header language={language} setLanguage={setLanguage} />
+            <Header language={language} setLanguage={setLanguage} onCheck={handleCheck}/>
 
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={30} minSize={20} maxSize={90} className={styles.editorPanel}>
-                    <CodeEditor language={language} />
+                    <CodeEditor
+                        language={language}
+                        value={currentCode}
+                        onChange={(value) => handleCodeChange(value || "")}
+                    />
                 </Panel>
 
                 <PanelResizeHandle className={styles.gutterHorizontal}/>
@@ -27,13 +70,19 @@ const IDEPage = ({ language, setLanguage }: IDEPageProps) => {
                     <PanelGroup direction="vertical">
                         <Panel defaultSize={60} minSize={20} maxSize={80}>
                             <div className={styles.rightTop}>
-                                <TasksSection/>
+                                <TasksSection
+                                    moduleId={1}
+                                    activeTaskId={activeTaskId}
+                                    setActiveTaskId={setActiveTaskId}
+                                />
                             </div>
                         </Panel>
+
                         <PanelResizeHandle className={styles.gutterVertical}/>
+
                         <Panel defaultSize={40} minSize={20} maxSize={80}>
                             <div className={styles.rightBottom}>
-                                <ConsoleSection/>
+                                <ConsoleSection output={consoleOutput}/>
                             </div>
                         </Panel>
                     </PanelGroup>

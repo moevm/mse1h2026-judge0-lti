@@ -123,7 +123,7 @@ class CheckService:
                 )
 
         return CheckResult(
-            success=True, passed=passed, total=total, comment="Все тесты пройдены"
+            success=True, passed=passed, total=total, comment=None
         )
 
 

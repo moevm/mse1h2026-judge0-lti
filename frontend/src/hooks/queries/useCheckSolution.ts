@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
-import { checkApi } from '../../api/check.api'
+import {useMutation} from '@tanstack/react-query'
+import {checkApi} from '../../api/check.api'
 
 interface CheckPayload {
     taskId: number
@@ -15,10 +15,6 @@ export const useCheckSolution = () => {
                 code: payload.code,
                 language: payload.language,
                 submitted_at: payload.submitted_at,
-            }),
-
-        onSuccess: (data) => {
-            console.log("Результат проверки:", data)
-        },
+            })
     })
 }

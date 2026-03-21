@@ -13,22 +13,32 @@ interface IDEPageProps {
     setLanguage: (lang: string) => void;
 }
 
+const STORAGE_KEY = "ide-task-codes";
+
 const IDEPage = ({language, setLanguage}: IDEPageProps) => {
     const {mutate: checkSolution} = useCheckSolution();
 
-    const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput | null>(null);
-    const [codes, setCodes] = useState<Record<number, string>>({});
+    const [codes, setCodes] = useState<Record<number, string>>(() => {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+    });
+
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+    const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput | null>(null);
 
     const currentCode = activeTaskId ? codes[activeTaskId] ?? "" : "";
 
     const handleCodeChange = (value: string) => {
         if (!activeTaskId) return;
 
-        setCodes(prev => ({
-            ...prev,
-            [activeTaskId]: value
-        }));
+        setCodes(prev => {
+            const newCodes = {
+                ...prev,
+                [activeTaskId]: value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newCodes));
+            return newCodes;
+        });
     };
 
     const handleCheck = () => {

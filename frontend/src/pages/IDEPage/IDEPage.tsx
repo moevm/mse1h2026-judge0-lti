@@ -7,35 +7,33 @@ import ConsoleSection, {type ConsoleOutput} from "../../components/ConsoleSectio
 import Header from "../../components/Header/Header";
 import {useCheckSolution} from "../../hooks/queries/useCheckSolution.ts";
 import {useState} from "react";
+import {useLanguages} from "../../hooks/queries/useLanguages.ts";
+import {mapServerLangToMonaco} from "../../utils/languageMap.ts";
 
-interface IDEPageProps {
-    language: string;
-    setLanguage: (lang: string) => void;
-}
 
 const STORAGE_KEY = "ide-task-codes";
 
-const IDEPage = ({language, setLanguage}: IDEPageProps) => {
+
+const IDEPage = () => {
     const {mutate: checkSolution} = useCheckSolution();
+    const {data: languages = []} = useLanguages();
 
     const [codes, setCodes] = useState<Record<number, string>>(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
         return stored ? JSON.parse(stored) : {};
     });
-
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
-    const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput | null>(null);
+    const [consoleOutputs, setConsoleOutputs] = useState<Record<number, ConsoleOutput | null>>({});
+    const [consoleTab, setConsoleTab] = useState<"input" | "output">("output");
+
+    const [selectedLanguageId, setSelectedLanguageId] = useState<number | null>(languages[0]?.id ?? null);
 
     const currentCode = activeTaskId ? codes[activeTaskId] ?? "" : "";
 
     const handleCodeChange = (value: string) => {
         if (!activeTaskId) return;
-
         setCodes(prev => {
-            const newCodes = {
-                ...prev,
-                [activeTaskId]: value
-            };
+            const newCodes = {...prev, [activeTaskId]: value};
             localStorage.setItem(STORAGE_KEY, JSON.stringify(newCodes));
             return newCodes;
         });
@@ -43,32 +41,48 @@ const IDEPage = ({language, setLanguage}: IDEPageProps) => {
 
     const handleCheck = () => {
         if (!activeTaskId) return;
-
         const submitted_at = new Date().toISOString();
+
+        const selectedLanguage = languages.find(l => l.id === selectedLanguageId);
+        const langNameForServer = selectedLanguage?.language ?? "Plain Text";
 
         checkSolution(
             {
                 taskId: activeTaskId,
                 code: currentCode,
-                language,
+                language: langNameForServer,
                 submitted_at
             },
             {
                 onSuccess: (data) => {
-                    setConsoleOutput(data);
-                },
+                    setConsoleOutputs(prev => ({
+                        ...prev,
+                        [activeTaskId]: data
+                    }));
+                    setConsoleTab("output");
+                }
             }
         );
     };
 
+    const editorLanguage = mapServerLangToMonaco(
+        languages.find(l => l.id === selectedLanguageId)?.language
+    );
+
+
     return (
         <div>
-            <Header language={language} setLanguage={setLanguage} onCheck={handleCheck}/>
+            <Header
+                selectedLanguageId={selectedLanguageId ?? 0}
+                setSelectedLanguageId={setSelectedLanguageId}
+                onCheck={handleCheck}
+                languages={languages}
+            />
 
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={30} minSize={20} maxSize={90} className={styles.editorPanel}>
                     <CodeEditor
-                        language={language}
+                        language={editorLanguage}
                         value={currentCode}
                         onChange={(value) => handleCodeChange(value || "")}
                     />
@@ -92,7 +106,11 @@ const IDEPage = ({language, setLanguage}: IDEPageProps) => {
 
                         <Panel defaultSize={40} minSize={20} maxSize={80}>
                             <div className={styles.rightBottom}>
-                                <ConsoleSection output={consoleOutput}/>
+                                <ConsoleSection
+                                    output={activeTaskId ? consoleOutputs[activeTaskId] ?? null : null}
+                                    activeTab={consoleTab}
+                                    onTabChange={setConsoleTab}
+                                />
                             </div>
                         </Panel>
                     </PanelGroup>

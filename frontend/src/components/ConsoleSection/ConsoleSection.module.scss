@@ -100,12 +100,15 @@
 }
 
 .messageError {
-  color: #f44336;
+  color: $time-label-color;
   font-weight: bold;
+  pre{
+    font-size: 12px;
+  }
 }
 
 .messageComment {
-  color: #ff9800;
+  color: $attempt-label-color;
 }
 
 .messageInfo {

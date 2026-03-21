@@ -1,4 +1,3 @@
-import {useState} from "react";
 import styles from "./ConsoleSection.module.scss";
 
 export interface ConsoleOutput {
@@ -8,28 +7,27 @@ export interface ConsoleOutput {
     passed?: string;
 }
 
-
 interface ConsoleSectionProps {
+    activeTab: "input" | "output";
+    onTabChange?: (tab: "input" | "output") => void;
     output: ConsoleOutput | null;
 }
 
-const ConsoleSection = ({output}: ConsoleSectionProps) => {
-    const [activeTab, setActiveTab] = useState<"input" | "output">("output");
-
+const ConsoleSection = ({output, activeTab, onTabChange}: ConsoleSectionProps) => {
     return (
         <div className={styles.consoleSection}>
             <div className={styles.consoleHeader}>
                 <div className={styles.tabs}>
                     <button
                         className={`${styles.tab} ${activeTab === "input" ? styles.active : ""}`}
-                        onClick={() => setActiveTab("input")}
+                        onClick={() => onTabChange?.("input")}
                     >
                         Input
                     </button>
 
                     <button
                         className={`${styles.tab} ${activeTab === "output" ? styles.active : ""}`}
-                        onClick={() => setActiveTab("output")}
+                        onClick={() => onTabChange?.("output")}
                     >
                         Output
                     </button>
@@ -37,8 +35,7 @@ const ConsoleSection = ({output}: ConsoleSectionProps) => {
                     <div
                         className={styles.indicator}
                         style={{
-                            transform:
-                                activeTab === "input" ? "translateX(0%)" : "translateX(100%)"
+                            transform: activeTab === "input" ? "translateX(0%)" : "translateX(100%)"
                         }}
                     />
                 </div>
@@ -46,40 +43,34 @@ const ConsoleSection = ({output}: ConsoleSectionProps) => {
 
             <div className={styles.consoleBody}>
                 {activeTab === "input" && (
-                    <textarea
-                        className={styles.consoleInput}
-                    />
+                    <textarea className={styles.consoleInput} disabled/>
                 )}
 
                 {activeTab === "output" && (
                     <div className={styles.consoleOutput}>
                         {!output ? (
-                            <div className={styles.messageInfo}>Программа ещё не запускалась</div>
+                            <div className={styles.messageInfo}>Нет вывода</div>
                         ) : (
                             <div className={styles.outputContainer}>
-                                <div
-                                    className={
-                                        output.success ? styles.messageSuccess : styles.messageError
-                                    }
-                                >
+                                <div className={output.success ? styles.messageSuccess : styles.messageError}>
                                     {output.success ? "Passed" : "Failed"}
                                 </div>
 
-                                {output.error && (
-                                    <div className={styles.messageError}>
-                                        <strong>Error:</strong> {output.error}
-                                    </div>
-                                )}
-
                                 {output.comment && (
                                     <div className={styles.messageComment}>
-                                        <strong>Comment:</strong> {output.comment}
+                                        <strong>Комментарий:</strong> {output.comment}
                                     </div>
                                 )}
 
                                 {output.passed !== undefined && (
                                     <div className={styles.messageInfo}>
                                         {output.passed}
+                                    </div>
+                                )}
+                                {output.error && (
+                                    <div className={styles.messageError}>
+                                        <strong>Error:</strong>
+                                        <pre>{output.error}</pre>
                                     </div>
                                 )}
                             </div>

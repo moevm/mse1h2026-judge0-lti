@@ -1,4 +1,4 @@
-import styles from "./Header.module.scss";
+import styles from './Header.module.scss';
 import runIcon from '../../assets/icons/run_icon.svg';
 import submitIcon from '../../assets/icons/submit_icon.svg';
 import attemptIcon from '../../assets/icons/attempt_icon.svg';
@@ -6,8 +6,8 @@ import timeIcon from '../../assets/icons/time_icon.svg';
 import themeIcon from '../../assets/icons/theme_icon.svg';
 import profileIcon from '../../assets/icons/profile_icon.svg';
 import logoutIcon from '../../assets/icons/logout_icon.svg';
-import IconButton from "../../UI/IconButton/IconButton.tsx"
-import type { Language } from "../../api/languages.api.ts";
+import IconButton from '../../UI/IconButton/IconButton.tsx';
+import type { Language } from '../../api/languages.api.ts';
 
 interface HeaderProps {
     selectedLanguageId: number | null;
@@ -16,7 +16,12 @@ interface HeaderProps {
     languages: Language[];
 }
 
-const Header = ({ selectedLanguageId, setSelectedLanguageId, onCheck, languages }: HeaderProps) => {
+const Header = ({
+    selectedLanguageId,
+    setSelectedLanguageId,
+    onCheck,
+    languages,
+}: HeaderProps) => {
     return (
         <div className={styles.header}>
             <div className={styles.logoContainer}>
@@ -25,13 +30,17 @@ const Header = ({ selectedLanguageId, setSelectedLanguageId, onCheck, languages 
                 <div className={styles.controls}>
                     <div className={styles.languageSelector}>
                         <select
-                            value={selectedLanguageId ?? ""}
+                            value={selectedLanguageId ?? ''}
                             onChange={(e) => setSelectedLanguageId(Number(e.target.value))}
                             disabled={languages.length === 0}
                         >
-                            <option value="" disabled>Выберите язык</option>
-                            {languages.map(lang => (
-                                <option key={lang.id} value={lang.id}>{lang.language}</option>
+                            <option value="" disabled>
+                                Выберите язык
+                            </option>
+                            {languages.map((lang) => (
+                                <option key={lang.id} value={lang.id}>
+                                    {lang.language}
+                                </option>
                             ))}
                         </select>
                         <span className={styles.arrow}> › </span>
@@ -40,10 +49,17 @@ const Header = ({ selectedLanguageId, setSelectedLanguageId, onCheck, languages 
             </div>
             <div className={styles.actionPanel}>
                 <IconButton icon={runIcon} label="Запустить" type="run" />
-                <IconButton icon={submitIcon} label="Проверить" type="submit" onClick={onCheck} />
+                <IconButton
+                    icon={submitIcon}
+                    label="Проверить"
+                    type="submit"
+                    onClick={onCheck}
+                />
                 <div className={styles.infoBadge}>
                     <img src={attemptIcon} alt="attempts" />
-                    <span className={styles.attemptText}>3/5 попыток</span>
+                    <span className={styles.attemptText}>
+                        3/5 попыток
+                    </span>
                 </div>
                 <div className={styles.infoBadge}>
                     <img src={timeIcon} alt="time" />
@@ -67,3 +83,5 @@ const Header = ({ selectedLanguageId, setSelectedLanguageId, onCheck, languages 
 };
 
 export default Header;
+
+

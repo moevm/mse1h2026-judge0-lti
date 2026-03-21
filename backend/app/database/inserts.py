@@ -88,7 +88,7 @@ def insert_tasks(db: Session) -> list[Task]:
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
             tests_pipeline=[
-                {"title": "Базовый тест", "input": {}, "output": {"stdout": "Hello, World!\n"}}
+                {"title": "Базовый тест", "input": {"stdin":""}, "output": {"stdout": "Hello, World!\n"}}
             ],
         ),
         Task(

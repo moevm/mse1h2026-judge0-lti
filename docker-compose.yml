@@ -1,6 +1,5 @@
 # Надо сделать для прода: везде ограничение по ресурсам, мониторинг и сеть, резервное копирование дб
 # В проде убрать имена контейнеров
-# docker exec postgresql psql -U judge0 -c "ALTER USER judge0 WITH PASSWORD 'judge0';"
 version: '3.8'
 
 x-logging:

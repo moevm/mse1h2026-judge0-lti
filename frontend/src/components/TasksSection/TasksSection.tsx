@@ -1,47 +1,43 @@
-import {useState} from "react";
+import {useEffect} from "react";
 import styles from "./TasksSection.module.scss";
+import {useModuleTasks} from "../../hooks/queries/useModuleTasks";
+import ErrorState from "../../UI/ErrorState/ErrorState";
+import TasksLoading from "../../UI/TasksLoading/TasksLoading.tsx";
 
-interface Task {
-    id: number;
-    title: string;
-    content: string;
-    examples: string[];
+interface Props {
+    moduleId: number;
+    activeTaskId: number | null;
+    setActiveTaskId: (id: number) => void;
 }
 
-const tasks: Task[] = [
-    {
-        id: 1,
-        title: "Сумма чисел",
-        content: "Напишите программу, которая принимает два числа и выводит их сумму.",
-        examples: [
-            "Ввод:\n2 3\nВывод:\n5",
-            "Ввод:\n10 15\nВывод:\n25",
-        ],
-    },
-    {
-        id: 2,
-        title: "Проверка на четность",
-        content: "Программа получает число и выводит 'YES', если оно чётное, и 'NO', если нечётное.",
-        examples: [
-            "Ввод:\n4\nВывод:\nYES",
-            "Ввод:\n7\nВывод:\nNO",
-        ],
-    },
-    {
-        id: 3,
-        title: "Обратная строка",
-        content: "На вход подается строка, на выходе нужно вывести её в обратном порядке.",
-        examples: [
-            "Ввод:\nhello\nВывод:\nolleh",
-            "Ввод:\nworld\nВывод:\ndlrow",
-        ],
-    },
-];
+const TasksSection = ({moduleId, activeTaskId, setActiveTaskId}: Props) => {
+    const {data: tasks, isLoading, isError, refetch} = useModuleTasks(moduleId);
 
-const TasksSection = () => {
-    const [activeTab, setActiveTab] = useState<number>(tasks[0].id);
+    useEffect(() => {
+        if (tasks?.length && activeTaskId === null) {
+            setActiveTaskId(tasks[0].id);
+        }
+    }, [tasks, activeTaskId, setActiveTaskId]);
 
-    const activeTask = tasks.find((task) => task.id === activeTab);
+    const activeTask =
+        tasks?.find((task) => task.id === activeTaskId) ?? tasks?.[0];
+
+    if (isLoading) {
+        return <TasksLoading/>;
+    }
+
+    if (isError) {
+        return (
+            <ErrorState
+                message="Не удалось загрузить задачи"
+                onRetry={refetch}
+            />
+        );
+    }
+
+    if (!tasks?.length) {
+        return <div className={styles.tasksSection}>Нет задач</div>;
+    }
 
     return (
         <div className={styles.tasksSection}>
@@ -49,27 +45,21 @@ const TasksSection = () => {
                 {tasks.map((task, index) => (
                     <button
                         key={task.id}
-                        className={`${styles.tab} ${activeTab === task.id ? styles.active : ""}`}
-                        onClick={() => setActiveTab(task.id)}
+                        className={`${styles.tab} ${
+                            activeTaskId === task.id ? styles.active : ""
+                        }`}
+                        onClick={() => setActiveTaskId(task.id)}
                     >
                         Задача {index + 1}
                     </button>
                 ))}
             </div>
 
-
             <div className={styles.tabContent}>
-                <h5 className={`${styles.taskStatementText} ${styles.tabContentText}`}>Формулировка задания</h5>
-                <p>{activeTask?.content}</p>
-
-                <h5 className={`${styles.taskExampleText} ${styles.tabContentText}`}>Примеры ввода/вывода</h5>
-                <div className={styles.exampleBlock}>
-                    {activeTask?.examples.map((ex, index) => (
-                        <pre key={index} className={styles.example}>
-                            {ex}
-                        </pre>
-                    ))}
-                </div>
+                <h5 className={`${styles.taskStatementText} ${styles.tabContentText}`}>
+                    Формулировка задания
+                </h5>
+                <p>{activeTask?.description}</p>
             </div>
         </div>
     );

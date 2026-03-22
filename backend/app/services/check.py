@@ -95,7 +95,7 @@ class CheckService:
         passed = 0
 
         for test in tests:
-            stdin = test["input"]["stdin"]
+            stdin = test["input"].get("stdin", "")
             expected = test["output"]["stdout"].strip()
             result = self._submit_to_judge0(body.code, language.id, stdin, task.timeout)
 
@@ -123,7 +123,7 @@ class CheckService:
                 )
 
         return CheckResult(
-            success=True, passed=passed, total=total, comment="Все тесты пройдены"
+            success=True, passed=passed, total=total, comment=None
         )
 
 

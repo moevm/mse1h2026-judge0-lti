@@ -1,27 +1,27 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
-from sqlalchemy.orm import Session
-from app.database.database import session_generator
-from app.database.models import User
+from app.services.users import UserService, get_user_service, UserNotFoundException
 from app.schemas.user import UserResponse
-from app.services.jwt import decode_token
+from app.services.jwt import JwtService, get_jwt_service
 import jwt
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("/me", response_model=UserResponse, summary="Получаем текущего пользователя")
+
+@router.get("/me", response_model=UserResponse)
 def get_me(
     authorization: str = Header(...),
-    db: Session=Depends(session_generator)
+    service: UserService = Depends(get_user_service),
+    jwt_service: JwtService = Depends(get_jwt_service)
 ):
     try:
-        token = authorization.replace("Bearer", "")
-        user_id = decode_token(token)
+        token = authorization.replace("Bearer ", "")
+        user_id = jwt_service.decode_token(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Токен истёк")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Невалидный токен")
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
+    try:
+        return service.get_by_id(user_id)
+    except UserNotFoundException:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-    return user

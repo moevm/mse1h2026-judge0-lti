@@ -24,7 +24,7 @@ services:
     networks:
       - app-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -111,7 +111,7 @@ services:
     volumes:
       - postgresdb-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -123,7 +123,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: backend-python-fastapi
+    container_name: mse1h2026-judge0-lti_backend-python-fastapi
     restart: unless-stopped
     <<: *default-logging
     env_file: 
@@ -152,7 +152,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend-nginx-react
+    container_name: mse1h2026-judge0-lti_frontend-nginx-react
     restart: unless-stopped
     <<: *default-logging
     env_file: 

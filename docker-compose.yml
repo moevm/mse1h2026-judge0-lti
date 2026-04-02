@@ -123,7 +123,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: mse1h2026-judge0-lti_backend-python-fastapi
+    container_name: backend-python-fastapi # mse1h2026-judge0-lti_backend-python-fastapi для этого надо поменять nginx.conf
     restart: unless-stopped
     <<: *default-logging
     env_file: 

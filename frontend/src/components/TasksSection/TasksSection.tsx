@@ -3,14 +3,16 @@ import styles from "./TasksSection.module.scss";
 import {useModuleTasks} from "../../hooks/queries/useModuleTasks";
 import ErrorState from "../../UI/ErrorState/ErrorState";
 import TasksLoading from "../../UI/TasksLoading/TasksLoading.tsx";
+import type {Task} from "../../api/modules.api.ts";
 
 interface Props {
     moduleId: number;
     activeTaskId: number | null;
     setActiveTaskId: (id: number) => void;
+    onTaskChange?: (task: Task | null) => void;
 }
 
-const TasksSection = ({moduleId, activeTaskId, setActiveTaskId}: Props) => {
+const TasksSection = ({moduleId, activeTaskId, setActiveTaskId, onTaskChange}: Props) => {
     const {data: tasks, isLoading, isError, refetch} = useModuleTasks(moduleId);
 
     useEffect(() => {
@@ -21,7 +23,13 @@ const TasksSection = ({moduleId, activeTaskId, setActiveTaskId}: Props) => {
 
     const activeTask =
         tasks?.find((task) => task.id === activeTaskId) ?? tasks?.[0];
-
+    useEffect(() => {
+        if (activeTask && onTaskChange) {
+            onTaskChange(activeTask);
+        } else if (!activeTask && onTaskChange) {
+            onTaskChange(null);
+        }
+    }, [activeTask, onTaskChange]);
     if (isLoading) {
         return <TasksLoading/>;
     }

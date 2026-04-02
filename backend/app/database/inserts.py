@@ -142,9 +142,27 @@ def insert_task_languages(db: Session) -> None:
 
 def insert_solutions(db: Session) -> None:
     solutions = [
-        Solution(user_id=3, task_id=1, language="Python (3.8.1)", is_solved=True),
-        Solution(user_id=3, task_id=2, language="Python (3.8.1)", is_solved=False),
-        Solution(user_id=4, task_id=1, language="JavaScript (Node.js 12.14.0)", is_solved=True),
+        Solution(
+            user_id=3,
+            task_id=1,
+            language="Python (3.8.1)",
+            current_code='print("Hello, World!")',
+            is_solved=True
+        ),
+        Solution(
+            user_id=3,
+            task_id=2,
+            language="Python (3.8.1)",
+            current_code='a, b = map(int, input().split())\nprint(a + b)',
+            is_solved=False
+        ),
+        Solution(
+            user_id=4,
+            task_id=1,
+            language="JavaScript (Node.js 12.14.0)",
+            current_code='console.log("Hello, World!");',
+            is_solved=True
+        ),
     ]
     db.add_all(solutions)
     db.flush()
@@ -153,27 +171,23 @@ def insert_solutions(db: Session) -> None:
 def insert_attempts(db: Session) -> None:
     attempts = [
         Attempt(
-            solution_user_id=3, solution_task_id=1,
-            language="Python (3.8.1)",
-            current_code='print("Hello, World!")',
+            solution_user_id=3,
+            solution_task_id=1,
             message="Все тесты пройдены",
         ),
         Attempt(
-            solution_user_id=3, solution_task_id=2,
-            language="Python (3.8.1)",
-            current_code="a, b = map(int, input().split())\nprint(a - b)",
+            solution_user_id=3,
+            solution_task_id=2,
             message="Тест 1 не пройден: ожидалось 5, получено -1",
         ),
         Attempt(
-            solution_user_id=4, solution_task_id=1,
-            language="JavaScript (Node.js 12.14.0)",
-            current_code='console.log("Hello, World!")',
+            solution_user_id=4,
+            solution_task_id=1,
             message="Все тесты пройдены",
         ),
     ]
     db.add_all(attempts)
     db.flush()
-
 
 def run_seed(db: Session) -> None:
     """

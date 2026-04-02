@@ -1,5 +1,4 @@
-
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import CodeEditor from '../../components/CodeEditor/CodeEditor';
 import styles from './IDEPage.module.scss';
 import TasksSection from '../../components/TasksSection/TasksSection.tsx';
@@ -8,27 +7,35 @@ import ConsoleSection, {
 } from '../../components/ConsoleSection/ConsoleSection.tsx';
 
 import Header from '../../components/Header/Header';
-import { useCheckSolution } from '../../hooks/queries/useCheckSolution.ts';
-import { useState } from 'react';
-import { useLanguages } from '../../hooks/queries/useLanguages.ts';
-import { mapServerLangToMonaco } from '../../utils/languageMap.ts';
+import {useCheckSolution} from '../../hooks/queries/useCheckSolution.ts';
+import {useState} from 'react';
+import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
+import type {Task} from '../../api/modules.api';
 
 const STORAGE_KEY = 'ide-task-codes';
 
 const IDEPage = () => {
     // Задачи
-    const { mutate: checkSolution } = useCheckSolution();
+    const {mutate: checkSolution} = useCheckSolution();
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+    const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
     // Консоль
     const [consoleOutputs, setConsoleOutputs] = useState<Record<number, ConsoleOutput | null>>({});
     const [consoleTab, setConsoleTab] = useState<'input' | 'output'>('output');
 
     // Языки
-    const { data: languages = [] } = useLanguages();
-    const [selectedLanguageId, setSelectedLanguageId] = useState<number | null>(
-        languages[0]?.id ?? null
-    );
+    const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+    const availableLanguages = currentTask?.languages || [];
+
+    const handleTaskChange = (task: Task | null) => {
+        setCurrentTask(task);
+        if (task?.languages && task.languages.length > 0) {
+            setSelectedLanguage(task.languages[0]);
+        } else {
+            setSelectedLanguage(null);
+        }
+    };
 
     // Код
     const [codes, setCodes] = useState<Record<number, string>>(() => {
@@ -37,22 +44,20 @@ const IDEPage = () => {
     });
     const currentCode = activeTaskId ? (codes[activeTaskId] ?? '') : '';
 
-
     const handleCodeChange = (value: string) => {
         if (!activeTaskId) return;
         setCodes((prev) => {
-            const newCodes = { ...prev, [activeTaskId]: value };
+            const newCodes = {...prev, [activeTaskId]: value};
             localStorage.setItem(STORAGE_KEY, JSON.stringify(newCodes));
             return newCodes;
         });
     };
 
     const handleCheck = () => {
-        if (!activeTaskId) return;
+        if (!activeTaskId || !currentTask) return;
         const submitted_at = new Date().toISOString();
 
-        const selectedLanguage = languages.find((l) => l.id === selectedLanguageId);
-        const langNameForServer = selectedLanguage?.language ?? 'Plain Text';
+        const langNameForServer = selectedLanguage ?? 'Plain Text';
 
         checkSolution(
             {
@@ -73,17 +78,15 @@ const IDEPage = () => {
         );
     };
 
-    const editorLanguage = mapServerLangToMonaco(
-        languages.find((l) => l.id === selectedLanguageId)?.language
-    );
+    const editorLanguage = mapServerLangToMonaco(selectedLanguage || undefined);
 
     return (
         <div>
             <Header
-                selectedLanguageId={selectedLanguageId ?? 0}
-                setSelectedLanguageId={setSelectedLanguageId}
+                selectedLanguage={selectedLanguage}
+                setSelectedLanguage={setSelectedLanguage}
                 onCheck={handleCheck}
-                languages={languages}
+                languages={availableLanguages}
             />
 
             <PanelGroup direction="horizontal">
@@ -95,7 +98,7 @@ const IDEPage = () => {
                     />
                 </Panel>
 
-                <PanelResizeHandle className={styles.gutterHorizontal} />
+                <PanelResizeHandle className={styles.gutterHorizontal}/>
 
                 <Panel defaultSize={30} minSize={10} maxSize={80}>
                     <PanelGroup direction="vertical">
@@ -105,11 +108,12 @@ const IDEPage = () => {
                                     moduleId={1}
                                     activeTaskId={activeTaskId}
                                     setActiveTaskId={setActiveTaskId}
+                                    onTaskChange={handleTaskChange}
                                 />
                             </div>
                         </Panel>
 
-                        <PanelResizeHandle className={styles.gutterVertical} />
+                        <PanelResizeHandle className={styles.gutterVertical}/>
 
                         <Panel defaultSize={40} minSize={20} maxSize={80}>
                             <div className={styles.rightBottom}>
@@ -130,4 +134,3 @@ const IDEPage = () => {
 };
 
 export default IDEPage;
-

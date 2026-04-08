@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from app.database.models import Task, Language
 from app.schemas.check import CheckRequest, CheckResponse
 from app.database.database import session_generator
+from app.config import get_settings
 
-JUDGE0_URL = os.getenv("JUDGE0_URL", "http://judge0_server:2358")
-MOCK_JUDGE0 = os.getenv("MOCK_JUDGE0", "false") == "true"
+settings = get_settings()
+JUDGE0_URL = settings.judge0_url
+MOCK_JUDGE0 = settings.mock_judge0 == "true"
 
 
 @dataclass
@@ -122,9 +124,7 @@ class CheckService:
                     comment=f'Тест "{test["title"]}" не прошёл. Ожидалось: "{expected}", получено: "{stdout}"',
                 )
 
-        return CheckResult(
-            success=True, passed=passed, total=total, comment=None
-        )
+        return CheckResult(success=True, passed=passed, total=total, comment=None)
 
 
 def get_check_service(db: Session = Depends(session_generator)) -> CheckService:

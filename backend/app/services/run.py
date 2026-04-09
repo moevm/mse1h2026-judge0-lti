@@ -8,6 +8,10 @@ from app.database.database import session_generator
 from app.services.judge import get_judge_service
 
 
+class LanguageNotFoundException(Exception):
+    pass
+
+
 class RunService:
     def __init__(self, db: Session, judge: JudgeService) -> None:
         self.db = db
@@ -17,6 +21,8 @@ class RunService:
         language = (
             self.db.query(Language).filter(Language.language == body.language).first()
         )
+        if not language:
+            raise LanguageNotFoundException("Language not found")
         return self.judge.submit(body.code, language.id, body.stdin, 5)
 
 

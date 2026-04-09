@@ -11,6 +11,6 @@ class RunRequest(BaseModel):
 
 
 class RunResponse(BaseModel):
-    stdout: str = None
-    stderr: str = None
-    compile_output: str = None
+    stdout: str | None = None
+    stderr: str | None = None
+    compile_output: str | None = None

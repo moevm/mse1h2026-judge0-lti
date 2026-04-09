@@ -1,6 +1,3 @@
-import os
-import base64
-import requests
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from dataclasses import dataclass
@@ -8,11 +5,7 @@ from dataclasses import dataclass
 from app.database.models import Task, Language
 from app.schemas.check import CheckRequest, CheckResponse
 from app.database.database import session_generator
-from app.config import get_settings
-
-settings = get_settings()
-JUDGE0_URL = settings.judge0_url
-MOCK_JUDGE0 = settings.mock_judge0 == "true"
+from app.services.judge import JudgeService, get_judge_service
 
 
 @dataclass
@@ -32,53 +25,10 @@ class InvalidLanguageException(Exception):
     pass
 
 
-class Judge0Exception(Exception):
-    pass
-
-
 class CheckService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, judge: JudgeService) -> None:
         self.db = db
-
-    def _submit_to_judge0(
-        self, source_code: str, language_id: int, stdin: str, timeout: int
-    ):
-        if MOCK_JUDGE0:
-            return {
-                "stdout": "mocked",
-                "stderr": None,
-                "status": {"id": 3, "description": "Accepted"},
-            }
-        # кодируем код и stdin в base64
-        encoded_code = base64.b64encode(source_code.encode("utf-8")).decode()
-        encoded_stdin = base64.b64encode(stdin.encode("utf-8")).decode()
-
-        response = requests.post(
-            f"{JUDGE0_URL}/submissions?wait=true",
-            json={
-                "source_code": encoded_code,
-                "language_id": language_id,
-                "stdin": encoded_stdin,
-                "cpu_time_limit": timeout,
-                "base64_encoded": True,  # говорим Judge0 что всё в base64
-            },
-        )
-
-        if response.status_code not in (200, 201):
-            raise Judge0Exception
-
-        result = response.json()
-        # декодируем ответ из base64
-        if result.get("stdout"):
-            result["stdout"] = base64.b64decode(result["stdout"]).decode("utf-8")
-        if result.get("stderr"):
-            result["stderr"] = base64.b64decode(result["stderr"]).decode("utf-8")
-        if result.get("compile_output"):
-            result["compile_output"] = base64.b64decode(
-                result["compile_output"]
-            ).decode("utf-8")
-
-        return result
+        self.judge = judge
 
     def check_solution(self, task_id: int, body: CheckRequest) -> CheckResult:
         task = self.db.query(Task).filter(Task.id == task_id).first()
@@ -95,11 +45,12 @@ class CheckService:
         tests = task.tests_pipeline
         total = len(tests)
         passed = 0
-
+        print("TEST", tests)
         for test in tests:
             stdin = test["input"].get("stdin", "")
             expected = test["output"]["stdout"].strip()
-            result = self._submit_to_judge0(body.code, language.id, stdin, task.timeout)
+            result = self.judge.submit(body.code, language.id, stdin, task.timeout)
+            print("RES", result)
 
             if result["status"]["id"] not in (3, 4):
                 return CheckResult(
@@ -127,5 +78,8 @@ class CheckService:
         return CheckResult(success=True, passed=passed, total=total, comment=None)
 
 
-def get_check_service(db: Session = Depends(session_generator)) -> CheckService:
-    return CheckService(db)
+def get_check_service(
+    db: Session = Depends(session_generator),
+    judge: JudgeService = Depends(get_judge_service),
+) -> CheckService:
+    return CheckService(db, judge)

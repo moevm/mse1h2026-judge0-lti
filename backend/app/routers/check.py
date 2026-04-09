@@ -6,8 +6,8 @@ from app.services.check import (
     get_check_service,
     TaskNotFoundException,
     InvalidLanguageException,
-    Judge0Exception,
 )
+from app.services.judge import Judge0Exception
 
 router = APIRouter(prefix="/check", tags=["check"])
 

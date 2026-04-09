@@ -45,12 +45,10 @@ class CheckService:
         tests = task.tests_pipeline
         total = len(tests)
         passed = 0
-        print("TEST", tests)
         for test in tests:
             stdin = test["input"].get("stdin", "")
             expected = test["output"]["stdout"].strip()
             result = self.judge.submit(body.code, language.id, stdin, task.timeout)
-            print("RES", result)
 
             if result["status"]["id"] not in (3, 4):
                 return CheckResult(

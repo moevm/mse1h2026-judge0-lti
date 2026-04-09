@@ -17,7 +17,7 @@ async def run_code(
         result = service.run_code(body)
     except LanguageNotFoundException as e:
         raise HTTPException(
-            status_code=400, detail="Недопустимый язык программирования для этой задачи"
+            status_code=400, detail="Недопустимый язык программирования"
         )
     except Judge0Exception:
         raise HTTPException(status_code=500, detail="Ошибка связи с Judge0")

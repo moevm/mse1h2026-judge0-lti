@@ -1,10 +1,9 @@
-import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from app.config import get_settings
 
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+settings = get_settings()
+DATABASE_URL = settings.database_url
 
 engine = create_engine(DATABASE_URL, echo=True)
 Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -28,6 +27,7 @@ def create_tables():
 
     except Exception as e:
         print(f"ERROR: {e}")
+
 
 def seed_database():
     from app.database.inserts import run_seed

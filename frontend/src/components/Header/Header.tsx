@@ -11,6 +11,7 @@ import IconButton from '../../UI/IconButton/IconButton.tsx';
 interface HeaderProps {
     selectedLanguage: string | null;
     setSelectedLanguage: (language: string) => void;
+    onRun: () => void;
     onCheck: () => void;
     languages: string[];
 }
@@ -18,6 +19,7 @@ interface HeaderProps {
 const Header = ({
                     selectedLanguage,
                     setSelectedLanguage,
+                    onRun,
                     onCheck,
                     languages,
                 }: HeaderProps) => {
@@ -47,7 +49,12 @@ const Header = ({
                 </div>
             </div>
             <div className={styles.actionPanel}>
-                <IconButton icon={runIcon} label="Запустить" type="run"/>
+                <IconButton 
+                    icon={runIcon}
+                    label="Запустить" 
+                    type="run"
+                    onClick={onRun}    
+                />
                 <IconButton
                     icon={submitIcon}
                     label="Проверить"

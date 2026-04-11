@@ -53,6 +53,25 @@ const IDEPage = () => {
         });
     };
 
+    // По нажатию "Запустить"
+    const handleRun = () => {
+        if (!activeTaskId) return;
+
+        const runOutput: ConsoleOutput = {
+            success: true,
+            comment: `Код выполнен. Язык ${selectedLanguage || 'не выбран'}`,
+            code: currentCode,
+            passed: `Запуск прошел успешно`
+        }
+
+        setConsoleOutputs((prev) => ({
+            ...prev,
+            [activeTaskId]: runOutput,
+        }));
+        setConsoleTab('output');
+    };
+
+    // По нажатию "Проверить"
     const handleCheck = () => {
         if (!activeTaskId || !currentTask) return;
         const submitted_at = new Date().toISOString();
@@ -85,6 +104,7 @@ const IDEPage = () => {
             <Header
                 selectedLanguage={selectedLanguage}
                 setSelectedLanguage={setSelectedLanguage}
+                onRun={handleRun}
                 onCheck={handleCheck}
                 languages={availableLanguages}
             />

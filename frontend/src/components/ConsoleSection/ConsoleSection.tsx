@@ -5,6 +5,7 @@ export interface ConsoleOutput {
     error?: string;
     comment?: string;
     passed?: string;
+    code: string;
 }
 
 interface ConsoleSectionProps {
@@ -67,10 +68,18 @@ const ConsoleSection = ({output, activeTab, onTabChange}: ConsoleSectionProps) =
                                         {output.passed}
                                     </div>
                                 )}
+
                                 {output.error && (
                                     <div className={styles.messageError}>
                                         <strong>Error:</strong>
                                         <pre>{output.error}</pre>
+                                    </div>
+                                )}
+
+                                {output.code && (
+                                    <div className={styles.messageInfo}>
+                                        <strong>Код:</strong>
+                                        <pre>{output.code}</pre>
                                     </div>
                                 )}
                             </div>

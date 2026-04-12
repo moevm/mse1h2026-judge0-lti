@@ -11,8 +11,8 @@ interface ConsoleSectionProps {
     activeTab: "input" | "output";
     onTabChange?: (tab: "input" | "output") => void;
     output: ConsoleOutput | null;
-    inputValue?: string;
-    onInputValueChange?: (value: string) => void;
+    inputValue?: string | null;
+    onInputValueChange?: (value: string | null) => void;
 }
 
 const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange}: ConsoleSectionProps) => {
@@ -47,7 +47,7 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                 {activeTab === "input" && (
                     <textarea 
                         className={styles.consoleInput}
-                        value={inputValue}
+                        value={inputValue || ""}
                         onChange={(e) => onInputValueChange?.(e.target.value)}
                         placeholder="Введите тестовые данные..."    
                     />

@@ -14,7 +14,6 @@ import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
 
 const STORAGE_KEY = 'ide-task-codes';
-const STDIN_STORAGE_KEY = 'ide-stdin';
 
 const IDEPage = () => {
     // Задачи
@@ -30,10 +29,7 @@ const IDEPage = () => {
     const [consoleTab, setConsoleTab] = useState<'input' | 'output'>('output');
 
     // stdin
-    const [stdinValue, setStdinValue] = useState<string>(() => {
-        const stored = localStorage.getItem(STDIN_STORAGE_KEY);
-        return stored || '';
-    })
+    const [stdinValue, setStdinValue] = useState<string | null>(null);
 
     // Языки
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -48,10 +44,9 @@ const IDEPage = () => {
         }
     };
 
-    const handleStdinChange = (value: string) => {
+    const handleStdinChange = (value: string | null) => {
         setStdinValue(value);
-        localStorage.setItem(STDIN_STORAGE_KEY, value);
-    }
+    };
 
     // Код
     const [codes, setCodes] = useState<Record<number, string>>(() => {
@@ -71,15 +66,17 @@ const IDEPage = () => {
 
     // По нажатию "Запустить"
     const handleRun = () => {
-        if (!activeTaskId) return;
+        if (!activeTaskId || !currentTask) return;
         const submitted_at = new Date().toISOString();
+
+        console.log(stdinValue ?? '');
 
         const langNameForServer = selectedLanguage ?? 'Plain Text';
 
         runSolution(
             {
                 code: currentCode,
-                stdin: stdinValue,
+                stdin: stdinValue ?? '',
                 language: langNameForServer,
                 submitted_at,
             },

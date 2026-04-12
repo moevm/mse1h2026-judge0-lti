@@ -8,11 +8,13 @@ import ConsoleSection, {
 
 import Header from '../../components/Header/Header';
 import {useCheckSolution} from '../../hooks/queries/useCheckSolution.ts';
+import {useRunSolution} from '../../hooks/queries/useRunSolution.ts';
 import {useState} from 'react';
 import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
 
 const STORAGE_KEY = 'ide-task-codes';
+const STDIN_STORAGE_KEY = 'ide-stdin';
 
 const IDEPage = () => {
     // Задачи
@@ -20,9 +22,18 @@ const IDEPage = () => {
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
+    // Запуск решения 
+    const {mutate: runSolution} = useRunSolution();
+
     // Консоль
     const [consoleOutputs, setConsoleOutputs] = useState<Record<number, ConsoleOutput | null>>({});
     const [consoleTab, setConsoleTab] = useState<'input' | 'output'>('output');
+
+    // stdin
+    const [stdinValue, setStdinValue] = useState<string>(() => {
+        const stored = localStorage.getItem(STDIN_STORAGE_KEY);
+        return stored || '';
+    })
 
     // Языки
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -36,6 +47,11 @@ const IDEPage = () => {
             setSelectedLanguage(null);
         }
     };
+
+    const handleStdinChange = (value: string) => {
+        setStdinValue(value);
+        localStorage.setItem(STDIN_STORAGE_KEY, value);
+    }
 
     // Код
     const [codes, setCodes] = useState<Record<number, string>>(() => {
@@ -56,19 +72,27 @@ const IDEPage = () => {
     // По нажатию "Запустить"
     const handleRun = () => {
         if (!activeTaskId) return;
+        const submitted_at = new Date().toISOString();
 
-        const runOutput: ConsoleOutput = {
-            success: true,
-            comment: `Код выполнен. Язык ${selectedLanguage || 'не выбран'}`,
-            code: currentCode,
-            passed: `Запуск прошел успешно`
-        }
+        const langNameForServer = selectedLanguage ?? 'Plain Text';
 
-        setConsoleOutputs((prev) => ({
-            ...prev,
-            [activeTaskId]: runOutput,
-        }));
-        setConsoleTab('output');
+        runSolution(
+            {
+                code: currentCode,
+                stdin: stdinValue,
+                language: langNameForServer,
+                submitted_at,
+            },
+            {
+                onSuccess: (data) => {
+                    setConsoleOutputs((prev) => ({
+                        ...prev,
+                        [activeTaskId]: data,
+                    }));
+                    setConsoleTab('output');
+                },
+            }
+        )
     };
 
     // По нажатию "Проверить"
@@ -143,6 +167,8 @@ const IDEPage = () => {
                                     }
                                     activeTab={consoleTab}
                                     onTabChange={setConsoleTab}
+                                    inputValue={stdinValue}
+                                    onInputValueChange={handleStdinChange}
                                 />
                             </div>
                         </Panel>

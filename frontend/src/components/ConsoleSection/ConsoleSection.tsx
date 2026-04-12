@@ -5,16 +5,17 @@ export interface ConsoleOutput {
     error?: string;
     comment?: string;
     passed?: string;
-    code: string;
 }
 
 interface ConsoleSectionProps {
     activeTab: "input" | "output";
     onTabChange?: (tab: "input" | "output") => void;
     output: ConsoleOutput | null;
+    inputValue?: string;
+    onInputValueChange?: (value: string) => void;
 }
 
-const ConsoleSection = ({output, activeTab, onTabChange}: ConsoleSectionProps) => {
+const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange}: ConsoleSectionProps) => {
     return (
         <div className={styles.consoleSection}>
             <div className={styles.consoleHeader}>
@@ -44,7 +45,12 @@ const ConsoleSection = ({output, activeTab, onTabChange}: ConsoleSectionProps) =
 
             <div className={styles.consoleBody}>
                 {activeTab === "input" && (
-                    <textarea className={styles.consoleInput} disabled/>
+                    <textarea 
+                        className={styles.consoleInput}
+                        value={inputValue}
+                        onChange={(e) => onInputValueChange?.(e.target.value)}
+                        placeholder="Введите тестовые данные..."    
+                    />
                 )}
 
                 {activeTab === "output" && (
@@ -76,12 +82,6 @@ const ConsoleSection = ({output, activeTab, onTabChange}: ConsoleSectionProps) =
                                     </div>
                                 )}
 
-                                {output.code && (
-                                    <div className={styles.messageInfo}>
-                                        <strong>Код:</strong>
-                                        <pre>{output.code}</pre>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>

@@ -8,6 +8,7 @@ import ConsoleSection, {
 
 import Header from '../../components/Header/Header';
 import {useCheckSolution} from '../../hooks/queries/useCheckSolution.ts';
+import {useRunSolution} from '../../hooks/queries/useRunSolution.ts';
 import {useState} from 'react';
 import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
@@ -20,9 +21,15 @@ const IDEPage = () => {
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
+    // Запуск решения 
+    const {mutate: runSolution} = useRunSolution();
+
     // Консоль
     const [consoleOutputs, setConsoleOutputs] = useState<Record<number, ConsoleOutput | null>>({});
     const [consoleTab, setConsoleTab] = useState<'input' | 'output'>('output');
+
+    // stdin
+    const [stdinValue, setStdinValue] = useState<string | null>(null);
 
     // Языки
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -35,6 +42,10 @@ const IDEPage = () => {
         } else {
             setSelectedLanguage(null);
         }
+    };
+
+    const handleStdinChange = (value: string | null) => {
+        setStdinValue(value);
     };
 
     // Код
@@ -53,6 +64,35 @@ const IDEPage = () => {
         });
     };
 
+    // По нажатию "Запустить"
+    const handleRun = () => {
+        if (!activeTaskId || !currentTask) return;
+        const submitted_at = new Date().toISOString();
+
+        console.log(stdinValue ?? '');
+
+        const langNameForServer = selectedLanguage ?? 'Plain Text';
+
+        runSolution(
+            {
+                code: currentCode,
+                stdin: stdinValue ?? '',
+                language: langNameForServer,
+                submitted_at,
+            },
+            {
+                onSuccess: (data) => {
+                    setConsoleOutputs((prev) => ({
+                        ...prev,
+                        [activeTaskId]: data,
+                    }));
+                    setConsoleTab('output');
+                },
+            }
+        )
+    };
+
+    // По нажатию "Проверить"
     const handleCheck = () => {
         if (!activeTaskId || !currentTask) return;
         const submitted_at = new Date().toISOString();
@@ -85,6 +125,7 @@ const IDEPage = () => {
             <Header
                 selectedLanguage={selectedLanguage}
                 setSelectedLanguage={setSelectedLanguage}
+                onRun={handleRun}
                 onCheck={handleCheck}
                 languages={availableLanguages}
             />
@@ -123,6 +164,8 @@ const IDEPage = () => {
                                     }
                                     activeTab={consoleTab}
                                     onTabChange={setConsoleTab}
+                                    inputValue={stdinValue}
+                                    onInputValueChange={handleStdinChange}
                                 />
                             </div>
                         </Panel>

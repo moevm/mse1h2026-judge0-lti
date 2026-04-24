@@ -1,4 +1,16 @@
-from app.database.models import User, Module, Task, ModuleTaskOrder, Language, TaskLanguage, Solution, Attempt, UserTypeEnum
+from sqlalchemy import text
+
+from app.database.models import (
+    User,
+    Module,
+    Task,
+    ModuleTaskOrder,
+    Language,
+    TaskLanguage,
+    Solution,
+    Attempt,
+    UserTypeEnum,
+)
 from sqlalchemy.orm import Session
 
 
@@ -59,10 +71,27 @@ def insert_languages(db: Session) -> list[Language]:
 
 def insert_users(db: Session) -> list[User]:
     users = [
-        User(id=1, username="admin",        full_name="Администратор",      role=UserTypeEnum.admin),
-        User(id=2, username="teacher_ivan", full_name="Иван Петров",        role=UserTypeEnum.teacher),
-        User(id=3, username="student_anna", full_name="Анна Смирнова",      role=UserTypeEnum.student),
-        User(id=4, username="student_oleg", full_name="Олег Васильев",      role=UserTypeEnum.student),
+        User(
+            id=1, username="admin", full_name="Администратор", role=UserTypeEnum.admin
+        ),
+        User(
+            id=2,
+            username="teacher_ivan",
+            full_name="Иван Петров",
+            role=UserTypeEnum.teacher,
+        ),
+        User(
+            id=3,
+            username="student_anna",
+            full_name="Анна Смирнова",
+            role=UserTypeEnum.student,
+        ),
+        User(
+            id=4,
+            username="student_oleg",
+            full_name="Олег Васильев",
+            role=UserTypeEnum.student,
+        ),
     ]
     db.add_all(users)
     db.flush()
@@ -71,8 +100,16 @@ def insert_users(db: Session) -> list[User]:
 
 def insert_modules(db: Session) -> list[Module]:
     modules = [
-        Module(id=1, title="Введение в Python",     description="Базовые конструкции языка Python"),
-        Module(id=2, title="Алгоритмы и структуры", description="Сортировки, деревья, графы"),
+        Module(
+            id=1,
+            title="Введение в Python",
+            description="Базовые конструкции языка Python",
+        ),
+        Module(
+            id=2,
+            title="Алгоритмы и структуры",
+            description="Сортировки, деревья, графы",
+        ),
     ]
     db.add_all(modules)
     db.flush()
@@ -87,7 +124,11 @@ def insert_tasks(db: Session) -> list[Task]:
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
             tests_pipeline=[
-                {"title": "Базовый тест", "input": {}, "output": {"stdout": "Hello, World!\n"}}
+                {
+                    "title": "Базовый тест",
+                    "input": {},
+                    "output": {"stdout": "Hello, World!\n"},
+                }
             ],
         ),
         Task(
@@ -96,8 +137,16 @@ def insert_tasks(db: Session) -> list[Task]:
             description="Дано два числа. Выведите их сумму.",
             timeout=5,
             tests_pipeline=[
-                {"title": "Тест 1", "input": {"stdin": "2 3"}, "output": {"stdout": "5\n"}},
-                {"title": "Тест 2", "input": {"stdin": "0 0"}, "output": {"stdout": "0\n"}},
+                {
+                    "title": "Тест 1",
+                    "input": {"stdin": "2 3"},
+                    "output": {"stdout": "5\n"},
+                },
+                {
+                    "title": "Тест 2",
+                    "input": {"stdin": "0 0"},
+                    "output": {"stdout": "0\n"},
+                },
             ],
         ),
         Task(
@@ -106,7 +155,11 @@ def insert_tasks(db: Session) -> list[Task]:
             description="Реализуйте сортировку пузырьком.",
             timeout=10,
             tests_pipeline=[
-                {"title": "Тест 1", "input": {"stdin": "5 3 1 4 2"}, "output": {"stdout": "1 2 3 4 5\n"}},
+                {
+                    "title": "Тест 1",
+                    "input": {"stdin": "5 3 1 4 2"},
+                    "output": {"stdout": "1 2 3 4 5\n"},
+                },
             ],
         ),
     ]
@@ -144,21 +197,21 @@ def insert_solutions(db: Session) -> None:
             task_id=1,
             language="Python (3.8.1)",
             current_code='print("Hello, World!")',
-            is_solved=True
+            is_solved=True,
         ),
         Solution(
             user_id=3,
             task_id=2,
             language="Python (3.8.1)",
-            current_code='a, b = map(int, input().split())\nprint(a + b)',
-            is_solved=False
+            current_code="a, b = map(int, input().split())\nprint(a + b)",
+            is_solved=False,
         ),
         Solution(
             user_id=4,
             task_id=1,
             language="JavaScript (Node.js 12.14.0)",
             current_code='console.log("Hello, World!");',
-            is_solved=True
+            is_solved=True,
         ),
     ]
     db.add_all(solutions)
@@ -185,6 +238,31 @@ def insert_attempts(db: Session) -> None:
     ]
     db.add_all(attempts)
     db.flush()
+
+
+def fix_sequences(db: Session):
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('users', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM users))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('tasks', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM tasks))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('languages', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM languages))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('modules', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM modules))
+    """))
+
+    db.commit()
+
 
 def run_seed(db: Session) -> None:
     """
@@ -224,4 +302,5 @@ def run_seed(db: Session) -> None:
     # Фиксируем все изменения в базе одной транзакцией.
     # Если что-то выше упало — db.rollback() в seed_database откатит всё целиком
     db.commit()
+    fix_sequences(db)
     print("OK: Seed data inserted")

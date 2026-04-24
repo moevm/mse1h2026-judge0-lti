@@ -1,7 +1,8 @@
+import json
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
-from app.schemas.task import TaskResponse, TaskCreate, TaskTestCreate, TaskTestResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from app.schemas.task import TaskResponse, TaskCreate
 from app.services.task import (
     get_task_service,
     TaskNotFoundException,
@@ -10,6 +11,18 @@ from app.services.task import (
 from app.services.task import TaskService
 from app.mappers.task import TaskMapper
 from app.schemas.task import TaskPatch
+from app.services.task_test import (
+    TaskTestService,
+    get_task_test_service,
+    TaskTestNotFoundException,
+)
+
+from app.schemas.task_test import (
+    TaskTestFileSchema,
+    TaskTestCreate,
+    TaskTestResponse,
+    TaskTestPatch,
+)
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -68,11 +81,15 @@ async def delete_task(task_id: int, service: TaskService = Depends(get_task_serv
 
 
 @router.get(
-    "/{task_id}/tests", response_model=List[TaskTestResponse], summary="Получить тесты задачи"
+    "/{task_id}/tests",
+    response_model=List[TaskTestResponse],
+    summary="Получить тесты задачи",
 )
-async def get_task_test(task_id: int, service: TaskService = Depends(get_task_service)):
+async def get_task_test(
+    task_id: int, service: TaskTestService = Depends(get_task_test_service)
+):
     try:
-        tests = service.get_task_tests(task_id)
+        tests = service.get_tests(task_id)
     except TaskNotFoundException:
         raise HTTPException(status_code=404, detail="Задача не найдена")
     return tests
@@ -80,14 +97,77 @@ async def get_task_test(task_id: int, service: TaskService = Depends(get_task_se
 
 @router.post(
     "/{task_id}/tests",
-    response_model=List[TaskTestResponse],
+    response_model=TaskTestResponse,
     summary="Создать новый тест для задачи",
 )
 async def create_task_test(
-    task_id: int, body: TaskTestCreate, service: TaskService = Depends(get_task_service)
-) -> List[TaskTestResponse]:
+    task_id: int,
+    body: TaskTestCreate,
+    service: TaskTestService = Depends(get_task_test_service),
+) -> TaskTestResponse:
     try:
-        task = service.create_task_test(task_id, body)
+        test = service.create_test(task_id, body)
     except TaskNotFoundException:
         raise HTTPException(status_code=404, detail="Задача не найдена")
-    return TaskMapper.to_task_tests_list_response(task)
+    return test
+
+@router.delete(
+    "/{task_id}/tests/{test_id}",
+    status_code=204,
+    summary="Удалить тест",
+)
+async def delete_task_test(
+    task_id: int,
+    test_id: int,
+    service: TaskTestService = Depends(get_task_test_service),
+):
+    try:
+        service.delete_test(task_id, test_id)
+    except TaskNotFoundException:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    except TaskTestNotFoundException:
+        raise HTTPException(status_code=404, detail="Тест не найден")
+
+
+@router.post(
+    "/{task_id}/tests/import",
+    response_model=List[TaskTestResponse],
+    summary="Загрузить тесты из JSON файла",
+)
+async def upload_task_tests(
+    task_id: int,
+    file: UploadFile = File(...),
+    service: TaskTestService = Depends(get_task_test_service),
+):
+    try:
+        content = await file.read()
+        data = json.loads(content)
+        parsed = TaskTestFileSchema.model_validate(data)
+        tests = service.create_tests_bulk(task_id, parsed)
+        return tests
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Некорректный JSON файл")
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch(
+    "/{task_id}/tests/{test_id}",
+    response_model=TaskTestResponse,
+    summary="Изменить тест",
+)
+async def patch_task_test(
+    task_id: int,
+    test_id: int,
+    body: TaskTestPatch,
+    service: TaskTestService = Depends(get_task_test_service),
+):
+    try:
+        test = service.update_test(task_id, test_id, body)
+    except TaskNotFoundException:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    except TaskTestNotFoundException:
+        raise HTTPException(status_code=404, detail="Тест не найден")
+    return test

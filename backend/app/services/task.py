@@ -33,8 +33,21 @@ class TaskService:
         data = body.model_dump()
         lang_names = data.pop("languages")
         languages = self._resolve_languages(lang_names)
-        task = Task(**data)
+        task = Task(
+            title=body.title,
+            description=body.description,
+            timeout=body.timeout,
+        )
         task.languages = languages
+        if body.tests:
+            task.tests = [
+                TaskTest(
+                    title=test.title,
+                    stdin=test.stdin,
+                    stdout=test.stdout,
+                )
+                for test in body.tests
+            ]
         self.repo.add(task)
         return self.repo.save(task)
 
@@ -46,6 +59,16 @@ class TaskService:
         if "languages" in update_data:
             lang_names = update_data.pop("languages")
             task.languages = self._resolve_languages(lang_names)
+        if "tests" in update_data:
+            tests_data = update_data.pop("tests")
+            task.tests = [
+                TaskTest(
+                    title=t["title"],
+                    stdin=t.get("stdin", ""),
+                    stdout=t["stdout"],
+                )
+                for t in tests_data
+            ]
         for key, value in update_data.items():
             setattr(task, key, value)
         return self.repo.save(task)
@@ -63,25 +86,6 @@ class TaskService:
         if not task:
             raise TaskNotFoundException
         self.repo.delete(task)
-
-    def get_task_tests(self, task_id: int) -> List[dict]:
-        task = self.repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
-        return task.tests
-
-    def create_task_test(self, task_id: int, body: TaskTestCreate):
-        task = self.repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
-        test = TaskTest(
-            title=body.title,
-            stdin=body.stdin,
-            stdout=body.stdout,
-        )
-        task.tests.append(test)
-        return self.repo.save(task)
-
 
 def get_task_service(
     repo: TaskRepository = Depends(get_task_repository),

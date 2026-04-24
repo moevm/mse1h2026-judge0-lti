@@ -2,19 +2,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, Field
 from datetime import datetime
 from typing import Optional, List
 
-
-class TaskTestCreate(BaseModel):
-    title: str
-    stdin: str = ""
-    stdout: str
-    model_config = ConfigDict(extra="forbid")
-
-class TaskTestResponse(BaseModel):
-    id: int
-    title: str
-    stdin: str
-    stdout: str
-    model_config = ConfigDict(from_attributes=True)
+from app.schemas.task_test import TaskTestResponse, TaskTestCreate
 
 class TaskResponse(BaseModel):
     id: int
@@ -24,7 +12,7 @@ class TaskResponse(BaseModel):
     languages: List[str]
     created_at: datetime
     updated_at: Optional[datetime] = None
-    tests: list[TaskTestResponse]
+    tests: List[TaskTestResponse]
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("languages", mode="before")
@@ -38,6 +26,7 @@ class TaskPatch(BaseModel):
     description: str | None = None
     timeout: int | None = Field(None, ge=0)
     languages: List[str] | None = None
+    tests: List[TaskTestCreate] | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -47,4 +36,5 @@ class TaskCreate(BaseModel):
     description: str
     timeout: int = Field(ge=0)
     languages: List[str]
+    tests: List[TaskTestCreate] | None = None
     model_config = ConfigDict(extra="forbid")

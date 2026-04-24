@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.database.models import Task, Language
 from app.database.database import session_generator
-from app.schemas.task import TaskPatch
 
 
 class TaskRepository:

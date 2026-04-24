@@ -10,10 +10,13 @@ Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def session_generator():
+    db = Session()
     try:
-        db = Session()
         yield db
-
+        db.commit()
+    except:
+        db.rollback()
+        raise
     finally:
         db.close()
 

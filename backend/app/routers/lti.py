@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
-from app.services.lti import LtiServer, get_lti_service
+from app.services.lti import LtiService, get_lti_service
 from app.services.jwt import JwtService, get_jwt_service
 
 router = APIRouter(prefix="/lti", tags=["lti"])
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/lti", tags=["lti"])
 @router.post("/launch", summary="LTI Launch Endpoint")
 async def lti_launch(
     request: Request,
-    service: LtiServer = Depends(get_lti_service),
+    service: LtiService = Depends(get_lti_service),
     jwt_service: JwtService = Depends(get_jwt_service),
 ):
     form_data = await request.form()

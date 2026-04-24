@@ -1,7 +1,6 @@
 from fastapi.params import Depends
-from app.repositories.task import TaskRepository,get_task_repository
-from app.mappers.task import TaskMapper
-from app.schemas.task import TaskResponse
+from app.repositories.task import TaskRepository, get_task_repository
+from app.database.models import Task
 
 
 class TaskNotFoundException(Exception):
@@ -12,12 +11,14 @@ class TaskService:
     def __init__(self, repo: TaskRepository) -> None:
         self.repo = repo
 
-    def get_task_by_id(self, task_id: int) -> TaskResponse:
+    def get_task_by_id(self, task_id: int) -> Task:
         task = self.repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException
-        return TaskMapper.to_task_response(task)
+        return task
 
 
-def get_task_service(repo: TaskRepository = Depends(get_task_repository)) -> TaskService:
+def get_task_service(
+    repo: TaskRepository = Depends(get_task_repository),
+) -> TaskService:
     return TaskService(repo)

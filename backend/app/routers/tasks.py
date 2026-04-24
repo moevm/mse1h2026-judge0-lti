@@ -2,7 +2,7 @@ import json
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from app.schemas.task import TaskResponse, TaskCreate
+from app.schemas.task import TaskResponse, TaskCreate, TaskFilter
 from app.services.task import (
     get_task_service,
     TaskNotFoundException,
@@ -30,8 +30,10 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 @router.get(
     "/", response_model=List[TaskResponse], summary="Получить список всех задач"
 )
-def get_tasks(service: TaskService = Depends(get_task_service)) -> List[TaskResponse]:
-    tasks = service.get_all_tasks()
+def get_tasks(
+    filters: TaskFilter = Depends(), service: TaskService = Depends(get_task_service)
+) -> List[TaskResponse]:
+    tasks = service.get_filtered_tasks(filters)
     return TaskMapper.to_task_list_response(tasks)
 
 
@@ -110,6 +112,7 @@ async def create_task_test(
     except TaskNotFoundException:
         raise HTTPException(status_code=404, detail="Задача не найдена")
     return test
+
 
 @router.delete(
     "/{task_id}/tests/{test_id}",

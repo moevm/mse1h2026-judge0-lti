@@ -1,3 +1,4 @@
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, field_validator, Field
 from datetime import datetime
 from typing import Optional, List
@@ -37,4 +38,15 @@ class TaskCreate(BaseModel):
     timeout: int = Field(ge=0)
     languages: List[str]
     tests: List[TaskTestCreate] | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class TaskFilter(BaseModel):
+    search: str | None = None
+    timeout_from: int | None = None
+    timeout_to: int | None = None
+    created_from: datetime | None = None
+    created_to: datetime | None = None
+    updated_from: datetime | None = None
+    updated_to: datetime | None = None
     model_config = ConfigDict(extra="forbid")

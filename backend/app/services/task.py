@@ -2,7 +2,7 @@ from typing import List
 from fastapi.params import Depends
 from app.repositories.task import TaskRepository, get_task_repository
 from app.database.models import Task, TaskTest
-from app.schemas.task import TaskPatch, TaskCreate, TaskTestCreate
+from app.schemas.task import TaskPatch, TaskCreate, TaskTestCreate, TaskFilter
 from app.repositories.language import LanguageRepository, get_language_repository
 
 
@@ -80,6 +80,9 @@ class TaskService:
         if found != requested:
             raise InvalidLanguageException
         return languages
+
+    def get_filtered_tasks(self, filters: TaskFilter):
+        return self.repo.get_filtered(filters)
 
     def delete_task(self, task_id: int) -> None:
         task = self.repo.get_by_id(task_id)

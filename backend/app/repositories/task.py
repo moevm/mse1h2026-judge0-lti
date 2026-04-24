@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.database.models import Task, Language
 from app.database.database import session_generator
 from app.schemas.task import TaskFilter
+from sqlalchemy import asc, desc
 
 
 class TaskRepository:
@@ -63,6 +64,12 @@ class TaskRepository:
         if filters.updated_to:
             query = query.where(Task.updated_at <= filters.updated_to)
 
+        if filters.sort_by:
+            column = getattr(Task, filters.sort_by)
+            if filters.sort_order == "asc":
+                query = query.order_by(asc(column))
+            else:
+                query = query.order_by(desc(column))
         return self.db.scalars(query).all()
 
     def save(self, task: Task):

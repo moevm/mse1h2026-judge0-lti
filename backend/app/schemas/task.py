@@ -1,7 +1,7 @@
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, field_validator, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from app.schemas.task_test import TaskTestResponse, TaskTestCreate
 
@@ -49,4 +49,12 @@ class TaskFilter(BaseModel):
     created_to: datetime | None = None
     updated_from: datetime | None = None
     updated_to: datetime | None = None
+    sort_by: Optional[Literal[
+        "created_at",
+        "updated_at",
+        "timeout",
+        "title"
+    ]] = "created_at"
+
+    sort_order: Literal["asc", "desc"] = "desc"
     model_config = ConfigDict(extra="forbid")

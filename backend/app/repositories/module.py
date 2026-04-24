@@ -16,7 +16,7 @@ class ModuleRepository:
         query = select(Module).options(
             selectinload(Module.task_links).selectinload(ModuleTaskOrder.task)
         )
-        return list(self.db.execute(query).scalars().all())
+        return self.db.scalars(query).all()
 
     def get_by_id(self, module_id: int) -> Module | None:
         query = (
@@ -24,7 +24,7 @@ class ModuleRepository:
             .options(selectinload(Module.task_links).selectinload(ModuleTaskOrder.task))
             .where(Module.id == module_id)
         )
-        return self.db.execute(query).scalars().first()
+        return self.db.scalars(query).first()
 
     def get_tasks(self, module_id: int) -> List[Task]:
         query = (
@@ -33,7 +33,7 @@ class ModuleRepository:
             .where(ModuleTaskOrder.module_id == module_id)
             .order_by(ModuleTaskOrder.order)
         )
-        return list(self.db.execute(query).scalars().all())
+        return self.db.scalars(query).all()
 
 
 def get_module_repository(db: Session = Depends(session_generator)):

@@ -1,11 +1,9 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
 from dataclasses import dataclass
-
-from app.database.models import Task, Language
-from app.schemas.check import CheckRequest, CheckResponse
-from app.database.database import session_generator
+from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
+from app.repositories.task import TaskRepository, get_task_repository
+from app.repositories.language import LanguageRepository, get_language_repository
 
 
 @dataclass
@@ -26,18 +24,22 @@ class InvalidLanguageException(Exception):
 
 
 class CheckService:
-    def __init__(self, db: Session, judge: JudgeService) -> None:
-        self.db = db
+    def __init__(
+        self,
+        task_repo: TaskRepository,
+        lang_repo: LanguageRepository,
+        judge: JudgeService,
+    ) -> None:
+        self.task_repo = task_repo
+        self.lang_repo = lang_repo
         self.judge = judge
 
     def check_solution(self, task_id: int, body: CheckRequest) -> CheckResult:
-        task = self.db.query(Task).filter(Task.id == task_id).first()
+        task = self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException
 
-        language = (
-            self.db.query(Language).filter(Language.language == body.language).first()
-        )
+        language = self.lang_repo.get_language_by_name(body.language)
         language_names = [lang.language for lang in task.languages]
         if not language or language.language not in language_names:
             raise InvalidLanguageException
@@ -77,7 +79,8 @@ class CheckService:
 
 
 def get_check_service(
-    db: Session = Depends(session_generator),
+    task_repo: TaskRepository = Depends(get_task_repository),
+    lang_repo: LanguageRepository = Depends(get_language_repository),
     judge: JudgeService = Depends(get_judge_service),
 ) -> CheckService:
-    return CheckService(db, judge)
+    return CheckService(task_repo, lang_repo, judge)

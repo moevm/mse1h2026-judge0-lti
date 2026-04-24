@@ -13,8 +13,8 @@ router = APIRouter(prefix="/languages", tags=["languages"])
     response_model=List[LanguageResponse],
     summary="Получить список всех языков",
 )
-def get_modules(
+def get_languages(
     service: LanguageService = Depends(get_language_service),
 ) -> List[LanguageResponse]:
-    modules = service.get_all_languages()
-    return modules
+    languages = service.get_all_languages()
+    return languages

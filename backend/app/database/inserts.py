@@ -83,7 +83,6 @@ def insert_tasks(db: Session) -> list[Task]:
     tasks = [
         Task(
             id=1,
-            module_id=1,
             title="Hello World",
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
@@ -93,7 +92,6 @@ def insert_tasks(db: Session) -> list[Task]:
         ),
         Task(
             id=2,
-            module_id=1,
             title="Сумма двух чисел",
             description="Дано два числа. Выведите их сумму.",
             timeout=5,
@@ -104,7 +102,6 @@ def insert_tasks(db: Session) -> list[Task]:
         ),
         Task(
             id=3,
-            module_id=2,
             title="Сортировка пузырьком",
             description="Реализуйте сортировку пузырьком.",
             timeout=10,

@@ -27,13 +27,13 @@ def get_modules(
 
 @router.get(
     "/{module_id}",
-    response_model=ModuleWithTaskIdResponse,
+    response_model=ModuleResponse,
     summary="Получить конкретный модуль по ID",
 )
 def get_module(
     module_id: int,
     service: ModuleService = Depends(get_module_service),
-) -> ModuleWithTaskIdResponse:
+) -> ModuleResponse:
     try:
         return service.get_module_by_id(module_id)
     except ModuleNotFoundException:

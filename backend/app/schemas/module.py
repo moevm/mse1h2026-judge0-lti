@@ -19,11 +19,6 @@ class ModuleBase(BaseModel):
 class ModuleWithTaskIdResponse(ModuleBase):
     tasks: List[int]
 
-    @field_validator("tasks", mode="before")
-    @classmethod
-    def extract_task_ids(cls, tasks):
-        return [t.id for t in tasks]
-
 
 class ModuleResponse(ModuleBase):
     tasks: List[TaskResponse]

@@ -1,8 +1,8 @@
 from typing import List
 from fastapi.params import Depends
 from app.repositories.task import TaskRepository, get_task_repository
-from app.database.models import Task
-from app.schemas.task import TaskPatch, TaskCreate, TaskTest
+from app.database.models import Task, TaskTest
+from app.schemas.task import TaskPatch, TaskCreate, TaskTestCreate
 from app.repositories.language import LanguageRepository, get_language_repository
 
 
@@ -68,15 +68,18 @@ class TaskService:
         task = self.repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException
-        return task.tests_pipeline
+        return task.tests
 
-    def create_task_test(self, task_id, body: TaskTest):
+    def create_task_test(self, task_id: int, body: TaskTestCreate):
         task = self.repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException
-        tests = task.tests_pipeline or []
-        tests.append(body.model_dump())
-        task.tests_pipeline = tests
+        test = TaskTest(
+            title=body.title,
+            stdin=body.stdin,
+            stdout=body.stdout,
+        )
+        task.tests.append(test)
         return self.repo.save(task)
 
 

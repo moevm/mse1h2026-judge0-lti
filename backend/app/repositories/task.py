@@ -19,7 +19,7 @@ class TaskRepository:
 
     def get_by_id(self, task_id: int) -> Task | None:
         query = (
-            select(Task).options(selectinload(Task.languages)).where(Task.id == task_id)
+            select(Task).options(selectinload(Task.languages), selectinload(Task.tests)).where(Task.id == task_id)
         )
         return self.db.scalars(query).first()
 

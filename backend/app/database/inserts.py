@@ -10,6 +10,7 @@ from app.database.models import (
     Solution,
     Attempt,
     UserTypeEnum,
+    TaskTest,
 )
 from sqlalchemy.orm import Session
 
@@ -123,48 +124,25 @@ def insert_tasks(db: Session) -> list[Task]:
             title="Hello World",
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
-            tests_pipeline=[
-                {
-                    "title": "Базовый тест",
-                    "input": {},
-                    "output": {"stdout": "Hello, World!\n"},
-                }
-            ],
         ),
         Task(
             id=2,
             title="Сумма двух чисел",
             description="Дано два числа. Выведите их сумму.",
             timeout=5,
-            tests_pipeline=[
-                {
-                    "title": "Тест 1",
-                    "input": {"stdin": "2 3"},
-                    "output": {"stdout": "5\n"},
-                },
-                {
-                    "title": "Тест 2",
-                    "input": {"stdin": "0 0"},
-                    "output": {"stdout": "0\n"},
-                },
-            ],
         ),
         Task(
             id=3,
             title="Сортировка пузырьком",
             description="Реализуйте сортировку пузырьком.",
             timeout=10,
-            tests_pipeline=[
-                {
-                    "title": "Тест 1",
-                    "input": {"stdin": "5 3 1 4 2"},
-                    "output": {"stdout": "1 2 3 4 5\n"},
-                },
-            ],
         ),
     ]
+
     db.add_all(tasks)
+
     db.flush()
+
     return tasks
 
 
@@ -187,6 +165,38 @@ def insert_task_languages(db: Session) -> None:
         TaskLanguage(task_id=3, language_id=62),  # java
     ]
     db.add_all(links)
+    db.flush()
+
+
+def insert_task_tests(db: Session):
+    tests = [
+        TaskTest(
+            task_id=1,
+            title="Базовый тест",
+            stdin="",
+            stdout="Hello, World!\n",
+        ),
+        TaskTest(
+            task_id=2,
+            title="Тест 1",
+            stdin="2 3",
+            stdout="5\n",
+        ),
+        TaskTest(
+            task_id=2,
+            title="Тест 2",
+            stdin="0 0",
+            stdout="0\n",
+        ),
+        TaskTest(
+            task_id=3,
+            title="Тест 1",
+            stdin="5 3 1 4 2",
+            stdout="1 2 3 4 5\n",
+        ),
+    ]
+
+    db.add_all(tests)
     db.flush()
 
 
@@ -286,6 +296,8 @@ def run_seed(db: Session) -> None:
 
     # Задачи — ссылаются на модули (module_id), поэтому после них
     insert_tasks(db)
+
+    insert_task_tests(db)
 
     # Порядок задач внутри модулей — ссылается и на модули, и на задачи
     insert_module_task_orders(db)

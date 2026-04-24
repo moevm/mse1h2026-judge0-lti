@@ -44,12 +44,12 @@ class CheckService:
         if not language or language.language not in language_names:
             raise InvalidLanguageException
 
-        tests = task.tests_pipeline
+        tests = task.tests
         total = len(tests)
         passed = 0
         for test in tests:
-            stdin = test["input"].get("stdin", "")
-            expected = test["output"]["stdout"].strip()
+            stdin = test.stdin or ""
+            expected = (test.stdout or "").strip()
             result = self.judge.submit(body.code, language.id, stdin, task.timeout)
 
             if result["status"]["id"] not in (3, 4):

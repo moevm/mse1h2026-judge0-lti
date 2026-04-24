@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from app.schemas.task import TaskResponse, TaskCreate, TaskTest
+from app.schemas.task import TaskResponse, TaskCreate, TaskTestCreate, TaskTestResponse
 from app.services.task import (
     get_task_service,
     TaskNotFoundException,
@@ -68,7 +68,7 @@ async def delete_task(task_id: int, service: TaskService = Depends(get_task_serv
 
 
 @router.get(
-    "/{task_id}/tests", response_model=List[TaskTest], summary="Получить тесты задачи"
+    "/{task_id}/tests", response_model=List[TaskTestResponse], summary="Получить тесты задачи"
 )
 async def get_task_test(task_id: int, service: TaskService = Depends(get_task_service)):
     try:
@@ -80,14 +80,14 @@ async def get_task_test(task_id: int, service: TaskService = Depends(get_task_se
 
 @router.post(
     "/{task_id}/tests",
-    response_model=TaskResponse,
+    response_model=List[TaskTestResponse],
     summary="Создать новый тест для задачи",
 )
 async def create_task_test(
-    task_id: int, body: TaskTest, service: TaskService = Depends(get_task_service)
-):
+    task_id: int, body: TaskTestCreate, service: TaskService = Depends(get_task_service)
+) -> List[TaskTestResponse]:
     try:
         task = service.create_task_test(task_id, body)
     except TaskNotFoundException:
         raise HTTPException(status_code=404, detail="Задача не найдена")
-    return task
+    return TaskMapper.to_task_tests_list_response(task)

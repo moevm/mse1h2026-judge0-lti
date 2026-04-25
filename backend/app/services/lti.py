@@ -5,8 +5,6 @@ from app.repositories.user import UserRepository, get_user_repository
 
 def map_role(roles: str) -> UserTypeEnum:
     if "Instructor" in roles:
-        return UserTypeEnum.admin
-    if "Teacher" in roles:
         return UserTypeEnum.teacher
     return UserTypeEnum.student
 

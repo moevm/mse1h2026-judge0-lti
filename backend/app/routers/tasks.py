@@ -23,6 +23,8 @@ from app.schemas.task_test import (
     TaskTestResponse,
     TaskTestPatch,
 )
+from app.core.dependencies import get_current_admin
+from app.schemas.auth import TokenUser
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -31,14 +33,20 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
     "/", response_model=List[TaskResponse], summary="Получить список всех задач"
 )
 def get_tasks(
-    filters: TaskFilter = Depends(), service: TaskService = Depends(get_task_service)
+    filters: TaskFilter = Depends(),
+    admin: TokenUser = Depends(get_current_admin),
+    service: TaskService = Depends(get_task_service),
 ) -> List[TaskResponse]:
     tasks = service.get_filtered_tasks(filters)
     return TaskMapper.to_task_list_response(tasks)
 
 
 @router.get("/{task_id}", response_model=TaskResponse, summary="Получить задачу по ID")
-async def get_task(task_id: int, service: TaskService = Depends(get_task_service)):
+async def get_task(
+    task_id: int,
+    admin: TokenUser = Depends(get_current_admin),
+    service: TaskService = Depends(get_task_service),
+):
     try:
         task = service.get_task_by_id(task_id)
     except TaskNotFoundException:
@@ -48,7 +56,10 @@ async def get_task(task_id: int, service: TaskService = Depends(get_task_service
 
 @router.patch("/{task_id}", response_model=TaskResponse, summary="Изменить задачу")
 async def patch_task(
-    task_id: int, body: TaskPatch, service: TaskService = Depends(get_task_service)
+    task_id: int,
+    body: TaskPatch,
+    admin: TokenUser = Depends(get_current_admin),
+    service: TaskService = Depends(get_task_service),
 ):
     try:
         task = service.update_task(task_id, body)
@@ -63,7 +74,9 @@ async def patch_task(
 
 @router.post("/", response_model=TaskResponse, summary="Создать задачу")
 async def create_task(
-    body: TaskCreate, service: TaskService = Depends(get_task_service)
+    body: TaskCreate,
+    service: TaskService = Depends(get_task_service),
+    admin: TokenUser = Depends(get_current_admin),
 ):
     try:
         task = service.create_task(body)
@@ -75,7 +88,11 @@ async def create_task(
 
 
 @router.delete("/{task_id}", status_code=204, summary="Удалить задачу")
-async def delete_task(task_id: int, service: TaskService = Depends(get_task_service)):
+async def delete_task(
+    task_id: int,
+    admin: TokenUser = Depends(get_current_admin),
+    service: TaskService = Depends(get_task_service),
+):
     try:
         service.delete_task(task_id)
     except TaskNotFoundException:
@@ -88,7 +105,9 @@ async def delete_task(task_id: int, service: TaskService = Depends(get_task_serv
     summary="Получить тесты задачи",
 )
 async def get_task_test(
-    task_id: int, service: TaskTestService = Depends(get_task_test_service)
+    task_id: int,
+    admin: TokenUser = Depends(get_current_admin),
+    service: TaskTestService = Depends(get_task_test_service),
 ):
     try:
         tests = service.get_tests(task_id)
@@ -105,6 +124,7 @@ async def get_task_test(
 async def create_task_test(
     task_id: int,
     body: TaskTestCreate,
+    admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ) -> TaskTestResponse:
     try:
@@ -122,6 +142,7 @@ async def create_task_test(
 async def delete_task_test(
     task_id: int,
     test_id: int,
+    admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
     try:
@@ -140,6 +161,7 @@ async def delete_task_test(
 async def upload_task_tests(
     task_id: int,
     file: UploadFile = File(...),
+    admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
     try:
@@ -165,6 +187,7 @@ async def patch_task_test(
     task_id: int,
     test_id: int,
     body: TaskTestPatch,
+    admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
     try:

@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
-from app.routers import lti, tasks, modules, check, languages, users, run
+from app.routers import lti, tasks, modules, check, languages, users, run, auth
 from app.database.database import create_tables, seed_database
 
 # создает таблицы в postgres
@@ -11,6 +11,7 @@ seed_database()
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+api_router.include_router(auth.router)
 api_router.include_router(lti.router)
 api_router.include_router(tasks.router)
 api_router.include_router(check.router)

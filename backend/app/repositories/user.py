@@ -1,4 +1,5 @@
 from fastapi import Depends
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.database.models import User
 from app.database.database import session_generator
@@ -10,6 +11,10 @@ class UserRepository:
 
     def get_by_id(self, user_id: int) -> User | None:
         return self.db.get(User, user_id)
+
+    def get_by_username(self, username: str) -> User | None:
+        query = select(User).where(User.username == username)
+        return self.db.scalars(query).first()
 
     def add(self, user: User):
         self.db.add(user)

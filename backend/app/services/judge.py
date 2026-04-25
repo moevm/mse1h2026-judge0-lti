@@ -2,7 +2,7 @@ import base64
 import requests
 from fastapi.params import Depends
 
-from app.config import Settings, get_settings
+from app.core.config import Settings, get_settings
 
 
 class Judge0Exception(Exception):

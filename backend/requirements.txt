@@ -37,3 +37,7 @@ httpx==0.28.1
 python-multipart==0.0.21
 
 PyJWT==2.3.0
+
+# passwords
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2

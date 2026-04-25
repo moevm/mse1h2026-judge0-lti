@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     mock_judge0: str = False
     judge0_url: str = "http://judge0_server:2358"
     jwt_secret_key: str
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+    admin_username: str = "admin"
+    admin_password: str = "adminpass"
 
     @property
     def database_url(self) -> str:

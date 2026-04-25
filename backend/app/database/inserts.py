@@ -14,6 +14,10 @@ from app.database.models import (
 )
 from sqlalchemy.orm import Session
 
+from app.core.security import hash_password
+from app.core.config import get_settings
+settings = get_settings()
+
 
 def insert_languages(db: Session) -> list[Language]:
     languages = [
@@ -72,27 +76,10 @@ def insert_languages(db: Session) -> list[Language]:
 
 def insert_users(db: Session) -> list[User]:
     users = [
-        User(
-            id=1, username="admin", full_name="Администратор", role=UserTypeEnum.admin
-        ),
-        User(
-            id=2,
-            username="teacher_ivan",
-            full_name="Иван Петров",
-            role=UserTypeEnum.teacher,
-        ),
-        User(
-            id=3,
-            username="student_anna",
-            full_name="Анна Смирнова",
-            role=UserTypeEnum.student,
-        ),
-        User(
-            id=4,
-            username="student_oleg",
-            full_name="Олег Васильев",
-            role=UserTypeEnum.student,
-        ),
+        User(id=1, username=settings.admin_username,        full_name="Администратор",      role=UserTypeEnum.admin, password_hash=hash_password(settings.admin_password)),
+        User(id=2, username="teacher_ivan", full_name="Иван Петров",        role=UserTypeEnum.teacher),
+        User(id=3, username="student_anna", full_name="Анна Смирнова",      role=UserTypeEnum.student),
+        User(id=4, username="student_oleg", full_name="Олег Васильев",      role=UserTypeEnum.student),
     ]
     db.add_all(users)
     db.flush()

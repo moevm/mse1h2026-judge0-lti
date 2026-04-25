@@ -38,20 +38,17 @@ async def login(
     )
 
 
-@router.post("/refresh", response_model=AuthResponse)
+@router.post("/refresh", response_model=AuthResponse, summary="Обновить access токен")
 async def refresh(
     request: Request,
     response: Response,
     service: AuthService = Depends(get_auth_service),
 ):
     refresh_token = request.cookies.get("refresh_token")
-    print("OLD:", refresh_token)
-
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
     try:
         access_token, new_refresh_token = service.refresh(refresh_token)
-        print("NEW:", new_refresh_token)
     except InvalidCredentialsException:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     response.set_cookie(
@@ -65,7 +62,7 @@ async def refresh(
     return AuthResponse(access_token=access_token)
 
 
-@router.post("/logout")
+@router.post("/logout", summary="Выход")
 async def logout(
     request: Request,
     response: Response,
@@ -77,7 +74,8 @@ async def logout(
     response.delete_cookie("refresh_token")
     return {"ok": True}
 
-@router.get("/session")
+# использовать этот эндпоинт на фронте для получения access токена после редиректа с lti
+@router.get("/session", summary="Получить access токен по refresh (после lti)")
 def session(request: Request, service: AuthService = Depends(get_auth_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:

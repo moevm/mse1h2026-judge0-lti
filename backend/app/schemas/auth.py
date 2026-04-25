@@ -7,3 +7,7 @@ class AuthRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+
+class TokenUser(BaseModel):
+    user_id: int
+    role: str

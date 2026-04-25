@@ -1,8 +1,8 @@
 from app.database.models import User, Module, Task, ModuleTaskOrder, Language, TaskLanguage, Solution, Attempt, UserTypeEnum
 from sqlalchemy.orm import Session
 
-from app.security import hash_password
-from app.config import get_settings
+from app.core.security import hash_password
+from app.core.config import get_settings
 settings = get_settings()
 
 

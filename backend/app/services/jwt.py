@@ -1,7 +1,7 @@
 from fastapi.params import Depends
 import jwt
 from datetime import datetime, timedelta, timezone
-from app.config import Settings, get_settings
+from app.core.config import Settings, get_settings
 
 ALGORITHM = "HS256"
 EXPIRE_HOURS = 24
@@ -41,9 +41,12 @@ class JwtService:
 
         return token, expire_at
 
-    def decode_token(self, token: str) -> int:
-        payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-        return payload["user_id"]
+    def decode_access_token(self, token: str) -> dict:
+        return jwt.decode(
+            token,
+            self.secret_key,
+            algorithms=[self.algorithm],
+        )
 
 
 def get_jwt_service(settings: Settings = Depends(get_settings)) -> JwtService:

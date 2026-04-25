@@ -15,7 +15,7 @@ def get_me(
 ):
     try:
         token = authorization.replace("Bearer ", "")
-        user_id = jwt_service.decode_token(token)
+        user_id = jwt_service.decode_access_token(token)["user_id"]
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Токен истёк")
     except jwt.InvalidTokenError:

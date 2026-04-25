@@ -22,7 +22,7 @@ async def lti_launch(
     # for key, value in form_data.items():
     #     print(f"{key}: {value}")
     user = service.upsert_user(user_id, username, full_name, roles)
-    token = jwt_service.create_token(user.id)
+    token = jwt_service.create_access_token(user.id, user.role.value)
     # print(f"TOKEN: {token}")
     # print(f"id: {user_id}, name: {username}, fullname: {full_name}, roles: {roles}")
     return RedirectResponse(url=f"http://localhost/?token={token}", status_code=303)

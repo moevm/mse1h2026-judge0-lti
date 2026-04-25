@@ -40,17 +40,13 @@ class Module(Base):
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    tasks           = relationship("Task", back_populates="module")
-    task_orders     = relationship(
-        "ModuleTaskOrder", back_populates="module", cascade="all, delete-orphan"
-    )
+    task_links      = relationship("ModuleTaskOrder", back_populates="module", cascade="all, delete-orphan")
 
 
 class Task(Base):
     __tablename__   = "tasks"
 
     id              = Column(BIGINT, primary_key=True, index=True)
-    module_id       = Column(BIGINT, ForeignKey("modules.id"), index=True, nullable=False)
     title           = Column(String(128), index=True)
     description     = Column(Text, nullable=False)
     timeout         = Column(Integer, nullable=False, index=True)   # секунды
@@ -59,15 +55,9 @@ class Task(Base):
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    module          = relationship("Module", back_populates="tasks")
     languages       = relationship("Language", secondary="tasks_languages", back_populates="tasks")
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")
-    order_info      = relationship(
-        "ModuleTaskOrder",
-        back_populates="task",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
+    module_links    = relationship("ModuleTaskOrder", back_populates="task", cascade="all, delete-orphan")
 
 
 class ModuleTaskOrder(Base):
@@ -83,8 +73,8 @@ class ModuleTaskOrder(Base):
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    task            = relationship("Task", back_populates="order_info")
-    module          = relationship("Module", back_populates="task_orders")
+    module = relationship("Module", back_populates="task_links")
+    task = relationship("Task", back_populates="module_links")
 
 
 class Language(Base):
@@ -116,7 +106,7 @@ class Solution(Base):
     language        = Column(String(64), nullable=False, index=True)
     current_code	= Column(Text, nullable=False)
     is_solved       = Column(Boolean, nullable=False, default=False, index=True)
-    
+
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 

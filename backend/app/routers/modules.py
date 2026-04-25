@@ -9,6 +9,7 @@ from app.services.module import (
     ModuleService,
     ModuleNotFoundException,
 )
+from app.mappers.module import ModuleMapper
 
 router = APIRouter(prefix="/modules", tags=["modules"])
 
@@ -22,22 +23,23 @@ def get_modules(
     service: ModuleService = Depends(get_module_service),
 ) -> List[ModuleWithTaskIdResponse]:
     modules = service.get_all_modules()
-    return modules
+    return [ModuleMapper.to_module_with_task_ids(m) for m in modules]
 
 
 @router.get(
     "/{module_id}",
-    response_model=ModuleWithTaskIdResponse,
+    response_model=ModuleResponse,
     summary="Получить конкретный модуль по ID",
 )
 def get_module(
     module_id: int,
     service: ModuleService = Depends(get_module_service),
-) -> ModuleWithTaskIdResponse:
+) -> ModuleResponse:
     try:
-        return service.get_module_by_id(module_id)
+        module = service.get_module_by_id(module_id)
     except ModuleNotFoundException:
         raise HTTPException(status_code=404, detail="Модуль не найден")
+    return ModuleMapper.to_module_with_tasks(module)
 
 
 @router.get(
@@ -53,4 +55,4 @@ def get_module_tasks(
         tasks = service.get_module_tasks(module_id)
     except ModuleNotFoundException:
         raise HTTPException(status_code=404, detail="Модуль не найден")
-    return tasks
+    return ModuleMapper.to_task_list(tasks)

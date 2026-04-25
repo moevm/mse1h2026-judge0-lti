@@ -1,7 +1,6 @@
-from sqlalchemy.orm import Session
 from fastapi import Depends
 from app.database.models import User
-from app.database.database import session_generator
+from app.repositories.user import UserRepository, get_user_repository
 
 
 class UserNotFoundException(Exception):
@@ -9,15 +8,17 @@ class UserNotFoundException(Exception):
 
 
 class UserService:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, repo: UserRepository):
+        self.repo = repo
 
     def get_by_id(self, user_id: int) -> User:
-        user = self.db.query(User).filter(User.id == user_id).first()
+        user = self.repo.get_by_id(user_id)
         if not user:
             raise UserNotFoundException
         return user
 
 
-def get_user_service(db: Session = Depends(session_generator)) -> UserService:
-    return UserService(db)
+def get_user_service(
+    repo: UserRepository = Depends(get_user_repository),
+) -> UserService:
+    return UserService(repo)

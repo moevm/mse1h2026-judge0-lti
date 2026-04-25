@@ -8,6 +8,7 @@ from app.services.check import (
     InvalidLanguageException,
 )
 from app.services.judge import Judge0Exception
+from app.mappers.check import CheckMapper
 
 router = APIRouter(prefix="/check", tags=["check"])
 
@@ -29,9 +30,4 @@ async def check_solution(
     except Judge0Exception:
         raise HTTPException(status_code=500, detail="Ошибка связи с Judge0")
 
-    return CheckResponse(
-        success=result.success,
-        error=result.error,
-        comment=result.comment,
-        passed=f"{result.passed}/{result.total} тестов пройдено",
-    )
+    return CheckMapper.to_response(result)

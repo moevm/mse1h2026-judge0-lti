@@ -13,6 +13,17 @@ class UserTypeEnum(enum.Enum):
     student = "student"
     teacher = "teacher"
 
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    id              = Column(BIGINT, primary_key=True, index=True)
+    user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash      = Column(String(512), nullable=False, unique=True)
+    expires_at      = Column(TIMESTAMP(timezone=True), nullable=False)
+    revoked         = Column(Boolean, nullable=False, default=False, index=True)
+    created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    user            = relationship("User", back_populates="refresh_tokens")
+
 
 class User(Base):
     __tablename__   = "users"
@@ -21,13 +32,13 @@ class User(Base):
     username        = Column(String(64), unique=True, nullable=False, index=True)
     full_name       = Column(String(128), nullable=False, index=True)
     role            = Column(ENUM(UserTypeEnum), nullable=False, index=True)
+    password_hash   = Column(String(255), nullable=True)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    solutions = relationship(
-        "Solution", back_populates="user", cascade="all, delete-orphan"
-    )
+    solutions       = relationship("Solution", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens  = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Module(Base):

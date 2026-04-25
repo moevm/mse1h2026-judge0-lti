@@ -12,13 +12,34 @@ class JwtService:
         self.secret_key = settings.jwt_secret_key
         self.algorithm = ALGORITHM
         self.expire_hours = EXPIRE_HOURS
+        self.access_expire_minutes = settings.access_token_expire_minutes
+        self.refresh_expire_days = settings.refresh_token_expire_days
 
-    def create_token(self, user_id: int) -> str:
+    def create_access_token(self, user_id: int, role: str) -> str:
         payload = {
             "user_id": user_id,
-            "exp": datetime.now(timezone.utc) + timedelta(hours=self.expire_hours),
+            "role": role,
+            "type": "access",
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=self.access_expire_minutes),
         }
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+
+    def create_refresh_token(self, user_id: int) -> tuple[str, datetime]:
+        expire_at = datetime.now(timezone.utc) + timedelta(
+            days=self.refresh_expire_days
+        )
+        payload = {
+            "user_id": user_id,
+            "type": "refresh",
+            "exp": expire_at,
+        }
+        token = jwt.encode(
+            payload,
+            self.secret_key,
+            algorithm=self.algorithm,
+        )
+
+        return token, expire_at
 
     def decode_token(self, token: str) -> int:
         payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])

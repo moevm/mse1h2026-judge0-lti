@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.params import Depends
 
 from app.schemas.auth import AuthResponse, AuthRequest
@@ -36,3 +36,43 @@ async def login(
     return AuthResponse(
         access_token=access_token,
     )
+
+
+@router.post("/refresh", response_model=AuthResponse)
+async def refresh(
+    request: Request,
+    response: Response,
+    service: AuthService = Depends(get_auth_service),
+):
+    refresh_token = request.cookies.get("refresh_token")
+    print("OLD:", refresh_token)
+
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    try:
+        access_token, new_refresh_token = service.refresh(refresh_token)
+        print("NEW:", new_refresh_token)
+    except InvalidCredentialsException:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
+    return AuthResponse(access_token=access_token)
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    response: Response,
+    service: AuthService = Depends(get_auth_service),
+):
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        service.logout(refresh_token)
+    response.delete_cookie("refresh_token")
+    return {"ok": True}

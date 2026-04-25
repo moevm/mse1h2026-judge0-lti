@@ -12,6 +12,7 @@ from app.repositories.refresh_token import (
     get_refresh_token_repository,
 )
 from app.security import verify_password
+from app.security import hash_token
 
 
 class InvalidCredentialsException(Exception):
@@ -31,10 +32,7 @@ class AuthService:
 
     def login(self, body: AuthRequest):
         user = self.user_repo.get_by_username(body.username)
-
-        if not user:
-            raise InvalidCredentialsException
-        if not verify_password(body.password, user.password_hash):
+        if not user or not verify_password(body.password, user.password_hash):
             raise InvalidCredentialsException
 
         access_token = self.jwt_service.create_access_token(
@@ -45,7 +43,7 @@ class AuthService:
         refresh_token, expires_at = self.jwt_service.create_refresh_token(
             user_id=user.id
         )
-        token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
+        token_hash = hash_token(refresh_token)
 
         db_token = RefreshToken(
             user_id=user.id,
@@ -53,9 +51,42 @@ class AuthService:
             expires_at=expires_at,
         )
         self.token_repo.add(db_token)
-        self.token_repo.flush()
 
         return access_token, refresh_token
+
+    def refresh(self, refresh_token: str):
+        token_hash = hash_token(refresh_token)
+        db_token = self.token_repo.get_by_hash(token_hash)
+        if (
+            not db_token
+            or db_token.revoked
+            or db_token.expires_at < datetime.now(timezone.utc)
+        ):
+            raise InvalidCredentialsException
+        user = self.user_repo.get_by_id(db_token.user_id)
+        new_access = self.jwt_service.create_access_token(
+            user_id=user.id,
+            role=user.role.value,
+        )
+        new_refresh, expires_at = self.jwt_service.create_refresh_token(
+            user_id=user.id,
+        )
+        db_token.revoked = True
+        self.token_repo.add(
+            RefreshToken(
+                user_id=user.id,
+                token_hash=hash_token(new_refresh),
+                expires_at=expires_at,
+            )
+        )
+        return new_access, new_refresh
+
+    def logout(self, refresh_token: str):
+        token_hash = hash_token(refresh_token)
+        db_token = self.token_repo.get_by_hash(token_hash)
+        if not db_token:
+            return
+        self.token_repo.revoke(db_token)
 
 
 def get_auth_service(

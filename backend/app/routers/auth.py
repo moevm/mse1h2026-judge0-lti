@@ -76,3 +76,15 @@ async def logout(
         service.logout(refresh_token)
     response.delete_cookie("refresh_token")
     return {"ok": True}
+
+@router.get("/session")
+def session(request: Request, service: AuthService = Depends(get_auth_service)):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    try:
+        user = service.get_user_from_refresh(refresh_token)
+    except InvalidCredentialsException:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    return {"access_token": service.issue_access_token(user)}

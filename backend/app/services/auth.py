@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.schemas.auth import AuthRequest
 from app.services.jwt import JwtService, get_jwt_service
 from app.repositories.user import UserRepository, get_user_repository
-from app.database.models import RefreshToken
+from app.database.models import RefreshToken, User
 from app.repositories.refresh_token import (
     RefreshTokenRepository,
     get_refresh_token_repository,
@@ -34,10 +34,7 @@ class AuthService:
         if not user or not verify_password(body.password, user.password_hash):
             raise InvalidCredentialsException
 
-        access_token = self.jwt_service.create_access_token(
-            user_id=user.id,
-            role=user.role.value,
-        )
+        access_token = self.issue_access_token(user)
 
         refresh_token, expires_at = self.jwt_service.create_refresh_token(
             user_id=user.id
@@ -63,10 +60,7 @@ class AuthService:
         ):
             raise InvalidCredentialsException
         user = self.user_repo.get_by_id(db_token.user_id)
-        new_access = self.jwt_service.create_access_token(
-            user_id=user.id,
-            role=user.role.value,
-        )
+        new_access = self.issue_access_token(user)
         new_refresh, expires_at = self.jwt_service.create_refresh_token(
             user_id=user.id,
         )
@@ -86,6 +80,33 @@ class AuthService:
         if not db_token:
             return
         self.token_repo.revoke(db_token)
+
+    def issue_lti_session(self, user):
+        self.token_repo.delete_all_by_user(user.id)
+        access = self.issue_access_token(user)
+        refresh, expires_at = self.jwt_service.create_refresh_token(user.id)
+        self.token_repo.add(
+            RefreshToken(
+                user_id=user.id,
+                token_hash=hash_token(refresh),
+                expires_at=expires_at,
+            )
+        )
+        return access, refresh
+
+    def issue_access_token(self, user: User):
+        access = self.jwt_service.create_access_token(
+            user_id=user.id,
+            role=user.role.value,
+        )
+        return access
+
+    def get_user_from_refresh(self, refresh_token: str) -> User:
+        token_hash = hash_token(refresh_token)
+        db_token = self.token_repo.get_by_hash(token_hash)
+        if not db_token or db_token.revoked:
+            raise InvalidCredentialsException
+        return self.user_repo.get_by_id(db_token.user_id)
 
 
 def get_auth_service(

@@ -1,4 +1,17 @@
-from app.database.models import User, Module, Task, ModuleTaskOrder, Language, TaskLanguage, Solution, Attempt, UserTypeEnum
+from sqlalchemy import text
+
+from app.database.models import (
+    User,
+    Module,
+    Task,
+    ModuleTaskOrder,
+    Language,
+    TaskLanguage,
+    Solution,
+    Attempt,
+    UserTypeEnum,
+    TaskTest,
+)
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
@@ -75,8 +88,16 @@ def insert_users(db: Session) -> list[User]:
 
 def insert_modules(db: Session) -> list[Module]:
     modules = [
-        Module(id=1, title="Введение в Python",     description="Базовые конструкции языка Python"),
-        Module(id=2, title="Алгоритмы и структуры", description="Сортировки, деревья, графы"),
+        Module(
+            id=1,
+            title="Введение в Python",
+            description="Базовые конструкции языка Python",
+        ),
+        Module(
+            id=2,
+            title="Алгоритмы и структуры",
+            description="Сортировки, деревья, графы",
+        ),
     ]
     db.add_all(modules)
     db.flush()
@@ -90,32 +111,25 @@ def insert_tasks(db: Session) -> list[Task]:
             title="Hello World",
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
-            tests_pipeline=[
-                {"title": "Базовый тест", "input": {}, "output": {"stdout": "Hello, World!\n"}}
-            ],
         ),
         Task(
             id=2,
             title="Сумма двух чисел",
             description="Дано два числа. Выведите их сумму.",
             timeout=5,
-            tests_pipeline=[
-                {"title": "Тест 1", "input": {"stdin": "2 3"}, "output": {"stdout": "5\n"}},
-                {"title": "Тест 2", "input": {"stdin": "0 0"}, "output": {"stdout": "0\n"}},
-            ],
         ),
         Task(
             id=3,
             title="Сортировка пузырьком",
             description="Реализуйте сортировку пузырьком.",
             timeout=10,
-            tests_pipeline=[
-                {"title": "Тест 1", "input": {"stdin": "5 3 1 4 2"}, "output": {"stdout": "1 2 3 4 5\n"}},
-            ],
         ),
     ]
+
     db.add_all(tasks)
+
     db.flush()
+
     return tasks
 
 
@@ -141,6 +155,38 @@ def insert_task_languages(db: Session) -> None:
     db.flush()
 
 
+def insert_task_tests(db: Session):
+    tests = [
+        TaskTest(
+            task_id=1,
+            title="Базовый тест",
+            stdin="",
+            stdout="Hello, World!\n",
+        ),
+        TaskTest(
+            task_id=2,
+            title="Тест 1",
+            stdin="2 3",
+            stdout="5\n",
+        ),
+        TaskTest(
+            task_id=2,
+            title="Тест 2",
+            stdin="0 0",
+            stdout="0\n",
+        ),
+        TaskTest(
+            task_id=3,
+            title="Тест 1",
+            stdin="5 3 1 4 2",
+            stdout="1 2 3 4 5\n",
+        ),
+    ]
+
+    db.add_all(tests)
+    db.flush()
+
+
 def insert_solutions(db: Session) -> None:
     solutions = [
         Solution(
@@ -148,21 +194,21 @@ def insert_solutions(db: Session) -> None:
             task_id=1,
             language="Python (3.8.1)",
             current_code='print("Hello, World!")',
-            is_solved=True
+            is_solved=True,
         ),
         Solution(
             user_id=3,
             task_id=2,
             language="Python (3.8.1)",
-            current_code='a, b = map(int, input().split())\nprint(a + b)',
-            is_solved=False
+            current_code="a, b = map(int, input().split())\nprint(a + b)",
+            is_solved=False,
         ),
         Solution(
             user_id=4,
             task_id=1,
             language="JavaScript (Node.js 12.14.0)",
             current_code='console.log("Hello, World!");',
-            is_solved=True
+            is_solved=True,
         ),
     ]
     db.add_all(solutions)
@@ -190,6 +236,31 @@ def insert_attempts(db: Session) -> None:
     db.add_all(attempts)
     db.flush()
 
+
+def fix_sequences(db: Session):
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('users', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM users))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('tasks', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM tasks))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('languages', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM languages))
+    """))
+
+    db.execute(text("""
+        SELECT setval(pg_get_serial_sequence('modules', 'id'),
+                      (SELECT COALESCE(MAX(id), 1) FROM modules))
+    """))
+
+    db.commit()
+
+
 def run_seed(db: Session) -> None:
     """
     Заполняет базу данных тестовыми данными.
@@ -213,6 +284,8 @@ def run_seed(db: Session) -> None:
     # Задачи — ссылаются на модули (module_id), поэтому после них
     insert_tasks(db)
 
+    insert_task_tests(db)
+
     # Порядок задач внутри модулей — ссылается и на модули, и на задачи
     insert_module_task_orders(db)
 
@@ -228,4 +301,5 @@ def run_seed(db: Session) -> None:
     # Фиксируем все изменения в базе одной транзакцией.
     # Если что-то выше упало — db.rollback() в seed_database откатит всё целиком
     db.commit()
+    fix_sequences(db)
     print("OK: Seed data inserted")

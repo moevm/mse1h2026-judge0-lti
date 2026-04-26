@@ -20,6 +20,10 @@ class LanguageRepository:
         query = select(Language).where(Language.language == language_name)
         return self.db.scalars(query).first()
 
+    def get_by_names(self, names: list[str]) -> list[Language]:
+        query = select(Language).where(Language.language.in_(names))
+        return self.db.scalars(query).all()
+
 
 def get_language_repository(
     db: Session = Depends(session_generator),

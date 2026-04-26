@@ -2,6 +2,7 @@
 
 import enum
 from sqlalchemy import *
+from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import JSON, BIGINT, TIMESTAMP, ENUM
 
@@ -61,7 +62,7 @@ class Task(Base):
     title           = Column(String(128), index=True)
     description     = Column(Text, nullable=False)
     timeout         = Column(Integer, nullable=False, index=True)   # секунды
-    tests_pipeline  = Column(JSON, nullable=False)                   # {{title: ..., input: {...}, output: {...}}, {...}, {...}}
+    tests           = relationship("TaskTest", back_populates="task", cascade="all, delete-orphan")
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
@@ -70,6 +71,17 @@ class Task(Base):
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")
     module_links    = relationship("ModuleTaskOrder", back_populates="task", cascade="all, delete-orphan")
 
+
+class TaskTest(Base):
+    __tablename__ = "task_tests"
+    id              = Column(BIGINT, primary_key=True, index=True)
+    task_id         = Column(BIGINT, ForeignKey("tasks.id"), nullable=False, index=True)
+    title           = Column(String(128), nullable=False)
+    stdin           = Column(Text, nullable=False, default="")
+    stdout          = Column(Text, nullable=False)
+    created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    task            = relationship("Task", back_populates="tests")
 
 class ModuleTaskOrder(Base):
     __tablename__   = "module_tasks_order"

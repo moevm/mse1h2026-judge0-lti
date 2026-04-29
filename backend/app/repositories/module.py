@@ -35,6 +35,19 @@ class ModuleRepository:
         )
         return self.db.scalars(query).all()
 
+    def create(self, module: Module) -> Module:
+        self.db.add(module)
+        self.db.flush()
+        return module
+
+    def delete(self, module: Module) -> None:
+        self.db.delete(module)
+
+    def save(self, module: Module):
+        self.db.flush()
+        self.db.refresh(module)
+        return module
+
 
 def get_module_repository(db: Session = Depends(session_generator)):
     return ModuleRepository(db)

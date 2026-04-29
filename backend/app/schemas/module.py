@@ -15,6 +15,14 @@ class ModuleBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class ModuleCreate(BaseModel):
+    title: str
+    description: str
+
+class ModulePatch(BaseModel):
+    title: str | None = None
+    description: str | None = None
+
 
 class ModuleWithTaskIdResponse(ModuleBase):
     tasks: List[int]

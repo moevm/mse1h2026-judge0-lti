@@ -258,7 +258,6 @@ def fix_sequences(db: Session):
                       (SELECT COALESCE(MAX(id), 1) FROM modules))
     """))
 
-    db.commit()
 
 
 def run_seed(db: Session) -> None:
@@ -297,9 +296,10 @@ def run_seed(db: Session) -> None:
 
     # Попытки — ссылаются на решения, поэтому самые последние
     insert_attempts(db)
+    fix_sequences(db)
 
     # Фиксируем все изменения в базе одной транзакцией.
     # Если что-то выше упало — db.rollback() в seed_database откатит всё целиком
     db.commit()
-    fix_sequences(db)
+
     print("OK: Seed data inserted")

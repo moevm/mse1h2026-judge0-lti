@@ -11,6 +11,11 @@
   font-weight: bold;
   transition: all 0.2s ease;
 
+  &:active {
+    transform: scale(0.95);
+    transition: transform 0.05s ease;
+  }
+
   &.run {
     background-color: $success-color;
     color: $text-color;

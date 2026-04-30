@@ -52,7 +52,7 @@ class Module(Base):
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
-    task_links      = relationship("ModuleTaskOrder", back_populates="module", cascade="all, delete-orphan")
+    task_links      = relationship("ModuleTaskOrder", back_populates="module",order_by="ModuleTaskOrder.order", cascade="all, delete-orphan")
 
 
 class Task(Base):
@@ -85,8 +85,14 @@ class TaskTest(Base):
 
 class ModuleTaskOrder(Base):
     __tablename__   = "module_tasks_order"
-    __table_args__  = (
-        UniqueConstraint("module_id", "order", name="unique_module_order"),
+    __table_args__ = (
+        UniqueConstraint(
+            "module_id",
+            "order",
+            name="unique_module_order",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
     )
 
     module_id       = Column(BIGINT, ForeignKey("modules.id"), primary_key=True)

@@ -2,7 +2,7 @@ from typing import List
 from fastapi import Depends
 from app.database.models import Module, Task, ModuleTaskOrder
 from app.repositories.module import ModuleRepository, get_module_repository
-from app.schemas.module import ModulePatch, ModuleCreate, ModuleAddTasks, ModuleTasksReorder
+from app.schemas.module import ModulePatch, ModuleCreate, ModuleAddTasks, ModuleTasksReorder, ModuleFilter
 
 
 class ModuleNotFoundException(Exception):
@@ -25,8 +25,8 @@ class ModuleService:
     def __init__(self, repo: ModuleRepository):
         self.repo = repo
 
-    def get_all_modules(self) -> List[Module]:
-        return self.repo.get_all()
+    def get_all_modules(self, filters: ModuleFilter) -> List[Module]:
+        return self.repo.get_all(filters)
 
     def get_module_by_id(self, module_id: int) -> Module:
         return self._get_module_or_raise(module_id)

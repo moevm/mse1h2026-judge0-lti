@@ -1,21 +1,46 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy import select, delete, func, update, case
+from sqlalchemy import select, delete, func, update, case, and_, asc, desc, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.database.database import session_generator
 from app.database.models import Module, ModuleTaskOrder, Task
+from app.schemas.module import ModuleFilter
 
 
 class ModuleRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_all(self) -> List[Module]:
+    def get_all(self, filters: ModuleFilter) -> List[Module]:
         query = select(Module).options(
             selectinload(Module.task_links).selectinload(ModuleTaskOrder.task)
         )
+        conditions = []
+        if filters.search:
+            conditions.append(
+                or_(
+                    Module.title.ilike(f"%{filters.search}%"),
+                    Module.description.ilike(f"%{filters.search}%"),
+                )
+            )
+        if filters.created_from:
+            conditions.append(Module.created_at >= filters.created_from)
+        if filters.created_to:
+            conditions.append(Module.created_at <= filters.created_to)
+        if filters.updated_from:
+            conditions.append(Module.updated_at >= filters.updated_from)
+        if filters.updated_to:
+            conditions.append(Module.updated_at <= filters.updated_to)
+        if conditions:
+            query = query.where(and_(*conditions))
+        if filters.sort_by:
+            column = getattr(Module, filters.sort_by)
+            if filters.sort_order == "asc":
+                query = query.order_by(asc(column))
+            else:
+                query = query.order_by(desc(column))
         return self.db.scalars(query).all()
 
     def get_by_id(self, module_id: int) -> Module | None:
@@ -42,9 +67,8 @@ class ModuleRepository:
         return set(self.db.scalars(query).all())
 
     def get_max_order(self, module_id: int) -> int:
-        query = (
-            select(func.max(ModuleTaskOrder.order))
-            .where(ModuleTaskOrder.module_id == module_id)
+        query = select(func.max(ModuleTaskOrder.order)).where(
+            ModuleTaskOrder.module_id == module_id
         )
         max_order = self.db.scalar(query)
         return max_order or 0

@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
-from app.schemas.module import ModuleWithTaskIdResponse, ModuleResponse, ModulePatch, ModuleAddTasks, ModuleTasksReorder
+from app.schemas.module import ModuleWithTaskIdResponse, ModuleResponse, ModulePatch, ModuleAddTasks, ModuleTasksReorder, \
+    ModuleFilter
 from app.schemas.task import TaskResponse
 from app.services.module import (
     get_module_service,
@@ -26,9 +27,10 @@ router = APIRouter(prefix="/modules", tags=["modules"])
     summary="Получить список модулей",
 )
 def get_modules(
+    filters: ModuleFilter = Depends(),
     service: ModuleService = Depends(get_module_service),
 ) -> List[ModuleWithTaskIdResponse]:
-    modules = service.get_all_modules()
+    modules = service.get_all_modules(filters)
     return [ModuleMapper.to_module_with_task_ids(m) for m in modules]
 
 

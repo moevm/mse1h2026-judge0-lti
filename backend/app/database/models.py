@@ -22,7 +22,7 @@ class RefreshToken(Base):
     expires_at      = Column(TIMESTAMP(timezone=True), nullable=False)
     revoked         = Column(Boolean, nullable=False, default=False, index=True)
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
     user            = relationship("User", back_populates="refresh_tokens")
 
 
@@ -36,7 +36,7 @@ class User(Base):
     password_hash   = Column(String(255), nullable=True)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     solutions       = relationship("Solution", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens  = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
@@ -50,7 +50,7 @@ class Module(Base):
     description     = Column(Text, nullable=False)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     task_links      = relationship("ModuleTaskOrder", back_populates="module",order_by="ModuleTaskOrder.order", cascade="all, delete-orphan")
 
@@ -65,7 +65,7 @@ class Task(Base):
     tests           = relationship("TaskTest", back_populates="task", cascade="all, delete-orphan")
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     languages       = relationship("Language", secondary="tasks_languages", back_populates="tasks")
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")
@@ -80,7 +80,7 @@ class TaskTest(Base):
     stdin           = Column(Text, nullable=False, default="")
     stdout          = Column(Text, nullable=False)
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
     task            = relationship("Task", back_populates="tests")
 
 class ModuleTaskOrder(Base):
@@ -100,7 +100,7 @@ class ModuleTaskOrder(Base):
     order           = Column(Integer, nullable=False, index=True)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     module = relationship("Module", back_populates="task_links")
     task = relationship("Task", back_populates="module_links")
@@ -137,7 +137,7 @@ class Solution(Base):
     is_solved       = Column(Boolean, nullable=False, default=False, index=True)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at      = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     user            = relationship("User", back_populates="solutions")
     task            = relationship("Task", back_populates="solutions")

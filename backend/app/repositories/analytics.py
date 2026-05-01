@@ -32,7 +32,7 @@ class AnalyticsRepository:
         elif filters.sort_by == "created_at":
             col = Module.created_at
         else:
-            col = Module.created_at  
+            col = Module.created_at
 
         if filters.sort_order == "desc":
             query = query.order_by(desc(col))
@@ -44,17 +44,50 @@ class AnalyticsRepository:
     def get_user_tasks_in_module(
         self, user_id: int, module_id: int, filters: UserTasksFilter
     ) -> list[tuple]:
+        # Подзапрос для количества попыток
+        attempt_count_subq = (
+            select(
+                Attempt.solution_task_id,
+                func.count().label("attempt_count")
+            )
+            .where(Attempt.solution_user_id == user_id)
+            .group_by(Attempt.solution_task_id)
+            .subquery()
+        )
+
+        # Подзапрос для последней попытки
+        last_attempt_subq = (
+            select(
+                Attempt.solution_task_id,
+                func.max(Attempt.created_at).label("last_attempt")
+            )
+            .where(Attempt.solution_user_id == user_id)
+            .group_by(Attempt.solution_task_id)
+            .subquery()
+        )
+
+        # Основной запрос
         query = (
-            select(Task, Solution)
-            .options(selectinload(Task.tests))
+            select(
+                Task,
+                Solution,
+                func.coalesce(attempt_count_subq.c.attempt_count, 0).label("attempt_count"),
+                last_attempt_subq.c.last_attempt.label("last_attempt_at"),
+                func.count(TaskTest.id).label("test_count")
+            )
             .join(ModuleTaskOrder, ModuleTaskOrder.task_id == Task.id)
             .join(Solution, and_(
                 Solution.task_id == Task.id,
                 Solution.user_id == user_id
             ))
+            .outerjoin(TaskTest, TaskTest.task_id == Task.id)
+            .outerjoin(attempt_count_subq, attempt_count_subq.c.solution_task_id == Task.id)
+            .outerjoin(last_attempt_subq, last_attempt_subq.c.solution_task_id == Task.id)
             .where(ModuleTaskOrder.module_id == module_id)
+            .group_by(Task.id, Solution.is_solved, attempt_count_subq.c.attempt_count, last_attempt_subq.c.last_attempt)
         )
 
+        # Фильтры
         if filters.search:
             query = query.where(Task.title.ilike(f"%{filters.search}%"))
 
@@ -62,6 +95,35 @@ class AnalyticsRepository:
             query = query.where(Solution.is_solved == True)
         elif filters.status == "failed":
             query = query.where(Solution.is_solved == False)
+
+        if filters.attempt_count_min is not None:
+            query = query.where(func.coalesce(attempt_count_subq.c.attempt_count, 0) >= filters.attempt_count_min)
+
+        if filters.last_attempt_from:
+            query = query.where(last_attempt_subq.c.last_attempt >= filters.last_attempt_from)
+
+        if filters.last_attempt_to:
+            query = query.where(last_attempt_subq.c.last_attempt <= filters.last_attempt_to)
+
+        if filters.test_count_min is not None:
+            query = query.where(func.count(TaskTest.id) >= filters.test_count_min)
+
+        # Сортировка
+        if filters.sort_by == "title":
+            col = Task.title
+        elif filters.sort_by == "attempt_count":
+            col = attempt_count_subq.c.attempt_count
+        elif filters.sort_by == "last_attempt_at":
+            col = last_attempt_subq.c.last_attempt
+        elif filters.sort_by == "test_count":
+            col = func.count(TaskTest.id)
+        else:
+            col = Task.title
+
+        if filters.sort_order == "desc":
+            query = query.order_by(desc(col))
+        else:
+            query = query.order_by(asc(col))
 
         return self.db.execute(query).all()
 

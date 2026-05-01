@@ -1,0 +1,438 @@
+.page {
+  position: relative;
+  min-height: 560px;
+  color: #1d1b20;
+}
+
+.backLink {
+  position: absolute;
+  left: 4px;
+  top: -2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px 0 8px;
+  border-radius: 20px;
+  color: #1d1b20;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  background: #f3edf7;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 216px 1fr;
+  gap: 24px;
+  padding-top: 50px;
+}
+
+.artwork {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.72), transparent 26%),
+    linear-gradient(135deg, var(--art-bg), color-mix(in srgb, var(--art-bg) 72%, #ffffff));
+}
+
+.large {
+  width: 216px;
+  height: 216px;
+  border-radius: 24px;
+}
+
+.triangle {
+  position: absolute;
+  left: var(--art-x-a);
+  top: var(--art-y-a);
+  aspect-ratio: 1;
+  width: var(--art-size-a);
+  background: color-mix(in srgb, var(--art-primary) 34%, #ffffff);
+  border-radius: var(--art-radius-a);
+  opacity: var(--art-opacity-a);
+  transform: rotate(var(--art-rotate-a)) skewX(-8deg) scale(var(--art-scale-a));
+}
+
+.starburst {
+  position: absolute;
+  left: var(--art-x-b);
+  top: var(--art-y-b);
+  aspect-ratio: 1;
+  width: var(--art-size-b);
+  background: color-mix(in srgb, var(--art-secondary) 62%, #ffffff);
+  opacity: var(--art-opacity-b);
+  transform: rotate(var(--art-rotate-b)) scale(var(--art-scale-b));
+  clip-path: polygon(50% 0%, 62% 19%, 84% 12%, 81% 36%, 100% 50%, 81% 64%, 84% 88%, 62% 81%, 50% 100%, 38% 81%, 16% 88%, 19% 64%, 0 50%, 19% 36%, 16% 12%, 38% 19%);
+}
+
+.square {
+  position: absolute;
+  left: var(--art-x-c);
+  top: var(--art-y-c);
+  aspect-ratio: 1;
+  width: var(--art-size-c);
+  border-radius: var(--art-radius-b);
+  background: color-mix(in srgb, var(--art-muted) 78%, #ffffff);
+  transform: rotate(var(--art-rotate-b)) scale(var(--art-scale-c));
+}
+
+.orbit {
+  position: absolute;
+  right: var(--art-orbit-x);
+  bottom: var(--art-orbit-y);
+  aspect-ratio: 1;
+  width: var(--art-orbit-size);
+  border: 16px solid color-mix(in srgb, var(--art-primary) 18%, transparent);
+  border-radius: 50%;
+}
+
+.bar {
+  position: absolute;
+  left: calc(var(--art-x-c) - 26px);
+  top: calc(var(--art-y-a) + 50px);
+  width: calc(var(--art-size-a) + 20%);
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--art-secondary) 42%, transparent);
+  transform: rotate(calc(var(--art-rotate-a) * -1));
+}
+
+.artwork[style*="variant-1"] .triangle,
+.artwork[style*="variant-3"] .bar {
+  border-radius: 50%;
+}
+
+.artwork[style*="variant-2"] .starburst {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.artwork[style*="variant-3"] .square {
+  clip-path: polygon(50% 0, 95% 32%, 78% 100%, 22% 100%, 5% 32%);
+}
+
+.large .triangle {
+  width: 72px;
+  height: 72px;
+}
+
+.large .starburst {
+  width: 64px;
+  height: 64px;
+}
+
+.large .square {
+  width: 62px;
+  height: 62px;
+  border-radius: 13px;
+}
+
+.heroText {
+  padding-top: 1px;
+  max-width: 510px;
+}
+
+.moduleHeader {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.heroText h1 {
+  margin: 0 0 2px;
+  color: #1d1b20;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 400;
+}
+
+.moduleTitleInput,
+.moduleDescriptionInput {
+  display: block;
+  width: 100%;
+}
+
+.moduleDescriptionInput {
+  margin-top: 0;
+}
+
+.moduleTitleInput input,
+.moduleDescriptionInput textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  border-radius: 12px;
+  background: #f3edf7;
+  color: #1d1b20;
+  font-family: 'Inter', sans-serif;
+}
+
+.moduleTitleInput input {
+  height: 40px;
+  padding: 0 14px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.moduleDescriptionInput textarea {
+  resize: vertical;
+  min-height: 92px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.moduleMenu {
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -4px;
+}
+
+.moduleMenu md-icon-button {
+  --md-icon-button-icon-color: #49454f;
+}
+
+.moduleMenuItem {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  z-index: 5;
+  min-width: 168px;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #fffbfe;
+  box-shadow: 0 4px 14px rgba(29, 27, 32, 0.16);
+  color: #1d1b20;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.moduleMenuItem:hover {
+  background: #f3edf7;
+}
+
+.heroText p {
+  margin: 0 0 16px;
+  color: #1d1b20;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.heroText md-filled-button,
+.heroText md-filled-tonal-button {
+  height: 40px;
+  min-width: max-content;
+  padding-inline: 24px;
+  white-space: nowrap;
+  --md-filled-button-container-color: #6750a4;
+  --md-filled-button-label-text-color: #ffffff;
+  --md-filled-button-label-text-font: 'Inter';
+  --md-filled-button-container-shape: 20px;
+  --md-filled-tonal-button-container-color: #f3edf7;
+  --md-filled-tonal-button-label-text-color: #6750a4;
+  --md-filled-tonal-button-label-text-font: 'Inter';
+  --md-filled-tonal-button-container-shape: 20px;
+}
+
+.listTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 63px;
+}
+
+.listTitle h2 {
+  margin: 0;
+  color: #1d1b20;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 400;
+}
+
+.listTitle span {
+  color: #49454f;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.taskRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px 120px minmax(0, 1fr) 64px;
+  gap: 12px;
+  align-items: center;
+  min-height: 120px;
+  border-radius: 14px;
+  touch-action: none;
+  will-change: transform;
+}
+
+.dragging {
+  background: #fffbfe;
+  box-shadow: 0 8px 22px rgba(29, 27, 32, 0.14);
+}
+
+.dragHandleButton {
+  width: 32px;
+  height: 100%;
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px 6px 6px 14px;
+  background: transparent;
+  color: #633b48;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragHandleButton:hover {
+  background: #f3edf7;
+}
+
+.dragHandleButton:active {
+  cursor: grabbing;
+  background: #eaddff;
+}
+
+.dragHandleButton:focus-visible {
+  outline: 2px solid #6750a4;
+  outline-offset: 2px;
+}
+
+.dragHandle {
+  color: currentColor;
+  font-size: 24px;
+}
+
+.taskText {
+  align-self: stretch;
+  padding-top: 0;
+}
+
+.taskText h3 {
+  margin: 0 0 4px;
+  color: #1d1b20;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.taskText p {
+  margin: 0;
+  color: #49454f;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.taskText small {
+  position: absolute;
+  bottom: 4px;
+  color: #49454f;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.editLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: #1d1b20;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.editLink md-icon {
+  color: #1d1b20;
+  font-size: 24px;
+}
+
+.taskActions {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 8px 0 3px;
+}
+
+.unlinkButton {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: #49454f;
+  cursor: pointer;
+}
+
+.unlinkButton:hover {
+  background: #f3edf7;
+  color: #6750a4;
+}
+
+.unlinkButton:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.linkIcon,
+.unlinkIcon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.unlinkIcon {
+  display: none;
+}
+
+.unlinkButton:hover .linkIcon {
+  display: none;
+}
+
+.unlinkButton:hover .unlinkIcon {
+  display: grid;
+}
+
+.state {
+  margin-top: 18px;
+  color: #49454f;
+  font-size: 16px;
+}

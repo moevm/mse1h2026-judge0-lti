@@ -1,0 +1,145 @@
+.page {
+  position: relative;
+  min-height: 560px;
+}
+
+.profileIcon {
+  display: block;
+  margin-bottom: 34px;
+  color: #1d1b20;
+  font-size: 22px;
+}
+
+.page md-filled-button {
+  height: 40px;
+  min-width: max-content;
+  padding-inline: 18px;
+  white-space: nowrap;
+  --md-filled-button-container-color: #6750a4;
+  --md-filled-button-label-text-color: #ffffff;
+  --md-filled-button-label-text-font: 'Inter';
+  --md-filled-button-icon-color: #ffffff;
+  --md-filled-button-container-shape: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(221px, 221px));
+  gap: 22px 24px;
+  margin-top: 12px;
+}
+
+.card {
+  display: block;
+  color: #1d1b20;
+  text-decoration: none;
+}
+
+.artwork {
+  position: relative;
+  width: 221px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.72), transparent 26%),
+    linear-gradient(135deg, var(--art-bg), color-mix(in srgb, var(--art-bg) 72%, #ffffff));
+}
+
+.triangle {
+  position: absolute;
+  left: var(--art-x-a);
+  top: var(--art-y-a);
+  aspect-ratio: 1;
+  width: var(--art-size-a);
+  background: color-mix(in srgb, var(--art-primary) 34%, #ffffff);
+  border-radius: var(--art-radius-a);
+  opacity: var(--art-opacity-a);
+  transform: rotate(var(--art-rotate-a)) skewX(-8deg) scale(var(--art-scale-a));
+}
+
+.starburst {
+  position: absolute;
+  left: var(--art-x-b);
+  top: var(--art-y-b);
+  aspect-ratio: 1;
+  width: var(--art-size-b);
+  background: color-mix(in srgb, var(--art-secondary) 62%, #ffffff);
+  opacity: var(--art-opacity-b);
+  transform: rotate(var(--art-rotate-b)) scale(var(--art-scale-b));
+  clip-path: polygon(50% 0%, 62% 19%, 84% 12%, 81% 36%, 100% 50%, 81% 64%, 84% 88%, 62% 81%, 50% 100%, 38% 81%, 16% 88%, 19% 64%, 0 50%, 19% 36%, 16% 12%, 38% 19%);
+}
+
+.square {
+  position: absolute;
+  left: var(--art-x-c);
+  top: var(--art-y-c);
+  aspect-ratio: 1;
+  width: var(--art-size-c);
+  border-radius: var(--art-radius-b);
+  background: color-mix(in srgb, var(--art-muted) 78%, #ffffff);
+  transform: rotate(var(--art-rotate-b)) scale(var(--art-scale-c));
+}
+
+.orbit {
+  position: absolute;
+  right: var(--art-orbit-x);
+  bottom: var(--art-orbit-y);
+  aspect-ratio: 1;
+  width: var(--art-orbit-size);
+  border: 16px solid color-mix(in srgb, var(--art-primary) 18%, transparent);
+  border-radius: 50%;
+}
+
+.bar {
+  position: absolute;
+  left: calc(var(--art-x-c) - 44px);
+  top: calc(var(--art-y-a) + 58px);
+  width: calc(var(--art-size-a) + 20%);
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--art-secondary) 42%, transparent);
+  transform: rotate(calc(var(--art-rotate-a) * -1));
+}
+
+.artwork[style*="variant-1"] .triangle,
+.artwork[style*="variant-3"] .bar {
+  border-radius: 50%;
+}
+
+.artwork[style*="variant-2"] .starburst {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.artwork[style*="variant-3"] .square {
+  clip-path: polygon(50% 0, 95% 32%, 78% 100%, 22% 100%, 5% 32%);
+}
+
+.card h2 {
+  margin: 5px 0 0;
+  color: #1d1b20;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 800;
+}
+
+.card p {
+  margin: 0;
+  color: #49454f;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.description {
+  margin-top: 4px !important;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.state {
+  margin-top: 24px;
+  color: #49454f;
+  font-size: 16px;
+}

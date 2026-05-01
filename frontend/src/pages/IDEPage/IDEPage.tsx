@@ -17,12 +17,12 @@ const STORAGE_KEY = 'ide-task-codes';
 
 const IDEPage = () => {
     // Задачи
-    const {mutate: checkSolution} = useCheckSolution();
+    const {mutate: checkSolution, isPending: isChecking} = useCheckSolution();
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
     // Запуск решения 
-    const {mutate: runSolution} = useRunSolution();
+    const {mutate: runSolution, isPending: isRunning} = useRunSolution();
 
     // Консоль
     const [consoleOutputs, setConsoleOutputs] = useState<Record<number, ConsoleOutput | null>>({});
@@ -166,6 +166,7 @@ const IDEPage = () => {
                                     onTabChange={setConsoleTab}
                                     inputValue={stdinValue}
                                     onInputValueChange={handleStdinChange}
+                                    isLoading={isChecking || isRunning}
                                 />
                             </div>
                         </Panel>

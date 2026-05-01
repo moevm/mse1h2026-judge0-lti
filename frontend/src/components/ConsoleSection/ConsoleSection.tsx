@@ -1,4 +1,5 @@
 import styles from "./ConsoleSection.module.scss";
+import Spinner from '../../UI/Spinner/Spinner.tsx'
 
 export interface ConsoleOutput {
     success?: boolean;
@@ -13,9 +14,10 @@ interface ConsoleSectionProps {
     output: ConsoleOutput | null;
     inputValue?: string | null;
     onInputValueChange?: (value: string | null) => void;
+    isLoading?: boolean;
 }
 
-const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange}: ConsoleSectionProps) => {
+const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange, isLoading = false}: ConsoleSectionProps) => {
     return (
         <div className={styles.consoleSection}>
             <div className={styles.consoleHeader}>
@@ -55,7 +57,11 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
 
                 {activeTab === "output" && (
                     <div className={styles.consoleOutput}>
-                        {!output ? (
+                        {isLoading ? (
+                            <div className={styles.loaderContainer}>
+                                <Spinner showLabel={false} />
+                            </div>
+                        ) : !output ? (
                             <div className={styles.messageInfo}>Нет вывода</div>
                         ) : (
                             <div className={styles.outputContainer}>

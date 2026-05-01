@@ -5,7 +5,7 @@ import { moduleKeys } from '../../lib/query-keys'
 
 export const useModules = () => {
     return useQuery<Module[], AxiosError<{ detail?: string }>>({
-        queryKey: moduleKeys.all,
+        queryKey: moduleKeys.lists(),
         queryFn: modulesApi.getModules,
         staleTime: 5 * 60 * 1000,
         retry: false,

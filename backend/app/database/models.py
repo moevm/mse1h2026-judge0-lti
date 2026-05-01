@@ -132,7 +132,7 @@ class Solution(Base):
     user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
     task_id         = Column(BIGINT, ForeignKey("tasks.id"), nullable=False, index=True)
 
-    language        = Column(String(64), nullable=False, index=True)
+    # language        = Column(String(64), nullable=False, index=True)
     current_code	= Column(Text, nullable=False)
     is_solved       = Column(Boolean, nullable=False, default=False, index=True)
 
@@ -158,6 +158,10 @@ class Attempt(Base):
     solution_user_id    = Column(BIGINT, nullable=False)
     solution_task_id    = Column(BIGINT, nullable=False)
     message			    = Column(String(128), nullable=False)
+    language            = Column(String(64), nullable=True)
+    memory_mb           = Column(Integer, nullable=True)
+    time_ms             = Column(Integer, nullable=True)
+    is_solved           = Column(Boolean, nullable=False, default=False)
 
     created_at          = Column(TIMESTAMP(timezone=True), server_default=func.now())
 

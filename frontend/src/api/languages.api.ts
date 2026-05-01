@@ -7,7 +7,7 @@ export interface Language {
 
 export const languageApi = {
     getLanguages: async (): Promise<Language[]> => {
-        const response = await api.get<Language[]>("/languages");
+        const response = await api.get<Language[]>("/languages/");
         return response.data;
     },
 }

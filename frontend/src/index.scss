@@ -1,4 +1,5 @@
 @use "styles/variables" as *;
+@import 'material-symbols/outlined.css';
 
 @font-face {
   font-family: 'Inter';
@@ -22,6 +23,47 @@
 
 body{
   font-family: 'Inter', sans-serif;
-  background-color: $background-color;
+  margin: 0;
+  background-color: #fef7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+md-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 24px;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+md-filled-button md-icon[slot='icon'],
+md-filled-tonal-button md-icon[slot='icon'],
+md-text-button md-icon[slot='icon'] {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  transform: translateY(-1px);
 }
 

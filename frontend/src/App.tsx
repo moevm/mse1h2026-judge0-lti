@@ -21,7 +21,6 @@ function App() {
             <Route index element={<AdminModulesPage />} />
             <Route path="modules" element={<AdminModulesPage />} />
             <Route path="modules/:moduleId" element={<AdminModuleTasksPage />} />
-            <Route path="modules/:moduleId/tasks" element={<AdminModuleTasksPage />} />
             <Route path="tasks" element={<NotFoundPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

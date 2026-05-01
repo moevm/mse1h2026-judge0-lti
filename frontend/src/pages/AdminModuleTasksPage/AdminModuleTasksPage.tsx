@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
@@ -21,10 +21,6 @@ const Artwork = ({ seed, large = false }: { seed: string | number, large?: boole
         <span className={styles.orbit} />
         <span className={styles.bar} />
     </div>
-)
-
-const getTasksFromModuleResponse = (tasks: Array<number | Task>) => (
-    tasks.filter((task): task is Task => typeof task === 'object' && task !== null)
 )
 
 const SortableTaskRow = ({
@@ -115,6 +111,8 @@ const AdminModuleTasksPage = () => {
     const [isEditingModule, setIsEditingModule] = useState(isNewModule)
     const [moduleTitle, setModuleTitle] = useState('')
     const [moduleDescription, setModuleDescription] = useState('')
+    const [isReorderSyncing, setIsReorderSyncing] = useState(false)
+    const moduleMenuRef = useRef<HTMLDivElement | null>(null)
 
     const { data: module } = useQuery({
         queryKey: moduleKeys.detail(moduleId),
@@ -134,8 +132,33 @@ const AdminModuleTasksPage = () => {
     }, [isNewModule, module])
 
     useEffect(() => {
-        setOrderedTasks([...tasks].sort((a, b) => a.id - b.id))
-    }, [tasks])
+        if (isReorderSyncing) return
+        setOrderedTasks(tasks)
+    }, [isReorderSyncing, tasks])
+
+    useEffect(() => {
+        if (!moduleMenuOpen) return
+
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!moduleMenuRef.current?.contains(event.target as Node)) {
+                setModuleMenuOpen(false)
+            }
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setModuleMenuOpen(false)
+            }
+        }
+
+        document.addEventListener('pointerdown', handlePointerDown)
+        document.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown)
+            document.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [moduleMenuOpen])
 
     const sortedTasks = useMemo(() => orderedTasks, [orderedTasks])
     const sortedTaskIds = useMemo(() => sortedTasks.map(task => task.id), [sortedTasks])
@@ -145,32 +168,93 @@ const AdminModuleTasksPage = () => {
 
     const addTasksMutation = useMutation({
         mutationFn: (selectedTasks: Task[]) => modulesApi.addModuleTasks(moduleId, selectedTasks.map(task => task.id)),
-        onSuccess: async moduleAfterUpdate => {
-            setOrderedTasks(getTasksFromModuleResponse(moduleAfterUpdate.tasks))
-            await queryClient.invalidateQueries({ queryKey: moduleKeys.tasks(moduleId) })
+        onMutate: async selectedTasks => {
+            await queryClient.cancelQueries({ queryKey: moduleKeys.tasks(moduleId) })
+
+            const previousTasks = queryClient.getQueryData<Task[]>(moduleKeys.tasks(moduleId))
+            const sourceTasks = orderedTasks.length ? orderedTasks : previousTasks ?? []
+            const existingIds = new Set(sourceTasks.map(task => task.id))
+            const nextTasks = [
+                ...sourceTasks,
+                ...selectedTasks.filter(task => !existingIds.has(task.id)),
+            ]
+
+            setOrderedTasks(nextTasks)
+            queryClient.setQueryData(moduleKeys.tasks(moduleId), nextTasks)
+
+            return { previousTasks }
+        },
+        onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: moduleKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: taskKeys.lists() })
             toast.success('Задачи добавлены в модуль')
             setIsModalOpen(false)
         },
+        onError: (_error, _selectedTasks, context) => {
+            if (context?.previousTasks) {
+                setOrderedTasks(context.previousTasks)
+                queryClient.setQueryData(moduleKeys.tasks(moduleId), context.previousTasks)
+            }
+            toast.error('Не удалось добавить задачи')
+        },
     })
 
     const reorderTasksMutation = useMutation({
         mutationFn: (taskIds: number[]) => modulesApi.reorderModuleTasks(moduleId, taskIds),
-        onSuccess: async moduleAfterReorder => {
-            setOrderedTasks(getTasksFromModuleResponse(moduleAfterReorder.tasks))
-            await queryClient.invalidateQueries({ queryKey: moduleKeys.tasks(moduleId) })
+        onMutate: async taskIds => {
+            setIsReorderSyncing(true)
+            await queryClient.cancelQueries({ queryKey: moduleKeys.tasks(moduleId) })
+
+            const previousTasks = queryClient.getQueryData<Task[]>(moduleKeys.tasks(moduleId))
+            const sourceTasks = orderedTasks.length ? orderedTasks : previousTasks ?? []
+            const nextTasks = taskIds
+                .map(taskId => sourceTasks.find(task => task.id === taskId))
+                .filter((task): task is Task => Boolean(task))
+
+            setOrderedTasks(nextTasks)
+            queryClient.setQueryData(moduleKeys.tasks(moduleId), nextTasks)
+
+            return { previousTasks }
+        },
+        onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: moduleKeys.lists() })
+        },
+        onError: (_error, _taskIds, context) => {
+            if (context?.previousTasks) {
+                setOrderedTasks(context.previousTasks)
+                queryClient.setQueryData(moduleKeys.tasks(moduleId), context.previousTasks)
+            }
+            toast.error('Не удалось сохранить порядок задач')
+        },
+        onSettled: () => {
+            setIsReorderSyncing(false)
         },
     })
 
     const removeTaskMutation = useMutation({
         mutationFn: (task: Task) => modulesApi.removeModuleTask(moduleId, task.id),
-        onSuccess: async moduleAfterUpdate => {
-            setOrderedTasks(getTasksFromModuleResponse(moduleAfterUpdate.tasks))
-            await queryClient.invalidateQueries({ queryKey: moduleKeys.tasks(moduleId) })
+        onMutate: async taskToRemove => {
+            await queryClient.cancelQueries({ queryKey: moduleKeys.tasks(moduleId) })
+
+            const previousTasks = queryClient.getQueryData<Task[]>(moduleKeys.tasks(moduleId))
+            const sourceTasks = orderedTasks.length ? orderedTasks : previousTasks ?? []
+            const nextTasks = sourceTasks.filter(task => task.id !== taskToRemove.id)
+
+            setOrderedTasks(nextTasks)
+            queryClient.setQueryData(moduleKeys.tasks(moduleId), nextTasks)
+
+            return { previousTasks }
+        },
+        onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: moduleKeys.lists() })
             toast.success('Задача удалена из модуля')
+        },
+        onError: (_error, _taskToRemove, context) => {
+            if (context?.previousTasks) {
+                setOrderedTasks(context.previousTasks)
+                queryClient.setQueryData(moduleKeys.tasks(moduleId), context.previousTasks)
+            }
+            toast.error('Не удалось удалить задачу из модуля')
         },
     })
 
@@ -233,16 +317,14 @@ const AdminModuleTasksPage = () => {
     const handleDragEnd = ({ active, over }: DragEndEvent) => {
         if (!over || active.id === over.id) return
 
-        setOrderedTasks(current => {
-            const oldIndex = current.findIndex(task => task.id === active.id)
-            const newIndex = current.findIndex(task => task.id === over.id)
+        const oldIndex = sortedTasks.findIndex(task => task.id === active.id)
+        const newIndex = sortedTasks.findIndex(task => task.id === over.id)
 
-            if (oldIndex === -1 || newIndex === -1) return current
+        if (oldIndex === -1 || newIndex === -1) return
 
-            const next = arrayMove(current, oldIndex, newIndex)
-            reorderTasksMutation.mutate(next.map(task => task.id))
-            return next
-        })
+        const next = arrayMove(sortedTasks, oldIndex, newIndex)
+        setOrderedTasks(next)
+        reorderTasksMutation.mutate(next.map(task => task.id))
     }
 
     return (
@@ -269,7 +351,7 @@ const AdminModuleTasksPage = () => {
                         )}
 
                         {!isNewModule && !isEditingModule ? (
-                            <div className={styles.moduleMenu}>
+                            <div className={styles.moduleMenu} ref={moduleMenuRef}>
                                 <md-icon-button
                                     type="button"
                                     onClick={() => setModuleMenuOpen(open => !open)}

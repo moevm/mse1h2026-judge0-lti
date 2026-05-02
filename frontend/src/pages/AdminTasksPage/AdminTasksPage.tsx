@@ -10,6 +10,7 @@ import styles from './AdminTasksPage.module.scss'
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import { toast } from "sonner"
 import { taskKeys } from "../../lib/query-keys"
+import Spinner from "../../UI/Spinner/Spinner.tsx";
 
 const filterGroups: FilterGroup[] = [
     {
@@ -170,8 +171,7 @@ const AdminTasksPage = () => {
 
             {isLoading && (
                 <div className={styles.state}>
-                    <md-icon>hourglass_empty</md-icon>
-                    <span>Загрузка задач...</span>
+                    <Spinner/>
                 </div>
             )}
 

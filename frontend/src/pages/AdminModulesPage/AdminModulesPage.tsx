@@ -8,6 +8,7 @@ import type { Module, ModuleFilters } from '../../api/modules.api'
 import type { FilterGroup } from "../../components/FilterDialog/FilterDialog"
 import type { FilterValues } from '../../components/AdminToolbar/AdminToolbar'
 import styles from './AdminModulesPage.module.scss'
+import Spinner from "../../UI/Spinner/Spinner.tsx";
 
 const filterGroups: FilterGroup[] = [
     {
@@ -150,8 +151,7 @@ const AdminModulesPage = () => {
 
             {isLoading && (
                 <div className={styles.state}>
-                    <md-icon>hourglass_empty</md-icon>
-                    <span>Загрузка модулей...</span>
+                    <Spinner/>
                 </div>
             )}
 

@@ -127,7 +127,7 @@ const AdminModulesPage = () => {
     }, [])
 
     return (
-        <div className={styles.page}>
+        <div className="page">
             <div className={styles.header}>
                 <md-icon className={styles.profileIcon}>account_circle</md-icon>
             </div>

@@ -1,0 +1,113 @@
+
+
+.profileIcon {
+  display: block;
+  margin-bottom: 34px;
+  color: #1d1b20;
+  font-size: 22px;
+}
+
+.tableWrapper {
+    margin-top: 24px;
+    overflow-x: auto;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+
+    th {
+        padding: 16px 12px;
+        background: #ece6f0;
+        color: #49454f;
+        font-weight: 600;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #1d1b20;
+    }
+
+    tr:hover {
+        background: #fafafa;
+    }
+}
+
+.id {
+    width: 60px;
+    font-family: monospace;
+}
+
+.title {
+    a {
+        color: #1d1b20;
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+            color: #6750a4;
+            text-decoration: underline;
+        }
+    }
+}
+
+.languages {
+    font-size: 12px;
+}
+
+.timeout,
+.tests {
+    width: 80px;
+    text-align: center;
+}
+
+.date {
+    width: 110px;
+    font-size: 12px;
+}
+
+.actions {
+    width: 50px;
+    text-align: center;
+}
+
+.deleteButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #999;
+
+    &:hover {
+        background: rgba(211, 47, 47, 0.1);
+
+        md-icon {
+            color: #d32f2f;
+        }
+    }
+
+    md-icon {
+        font-size: 18px;
+        transition: color 0.2s;
+    }
+}
+
+
+.state {
+  margin-top: 24px;
+  color: #49454f;
+  font-size: 16px;
+}

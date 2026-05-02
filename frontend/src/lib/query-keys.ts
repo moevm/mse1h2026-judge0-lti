@@ -1,6 +1,8 @@
+import type {ModuleFilters} from "../api/modules.api.ts";
+
 export const moduleKeys = {
     all: ['modules'] as const,
-    lists: () => [...moduleKeys.all, 'list'] as const,
+    lists: (filters?: ModuleFilters) => [...moduleKeys.all, 'list', filters] as const,
     detail: (id: number | string) => [...moduleKeys.all, 'detail', id] as const,
     tasks: (moduleId: number | string) => [...moduleKeys.all, 'tasks', moduleId] as const,
 }

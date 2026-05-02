@@ -1,41 +1,76 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import AdminToolbar, { type FilterGroup } from '../../components/AdminToolbar/AdminToolbar'
+import { useDebounce } from 'use-debounce'
+import AdminToolbar from '../../components/AdminToolbar/AdminToolbar'
 import { useModules } from '../../hooks/queries/useModules'
 import { getGeneratedArtworkStyle } from '../../lib/generatedArtwork'
+import type { Module, ModuleFilters } from '../../api/modules.api'
+import type { FilterGroup } from "../../components/FilterDialog/FilterDialog"
+import type { FilterValues } from '../../components/AdminToolbar/AdminToolbar'
 import styles from './AdminModulesPage.module.scss'
 
 const filterGroups: FilterGroup[] = [
     {
-        id: 'tasks',
-        title: 'Задачи',
-        options: [
-            { value: 'withTasks', label: 'С задачами' },
-            { value: 'empty', label: 'Без задач' },
+        id: 'dates',
+        title: 'Дата создания',
+        fields: [
+            {
+                id: 'created_from',
+                label: 'Создан от',
+                type: 'datetime-local',
+            },
+            {
+                id: 'created_to',
+                label: 'Создан до',
+                type: 'datetime-local',
+            },
         ],
     },
     {
-        id: 'updated',
-        title: 'Обновления',
-        options: [
-            { value: 'recent', label: 'Недавно обновленные' },
-            { value: 'old', label: 'Давно не обновлялись' },
+        id: 'updates',
+        title: 'Дата обновления',
+        fields: [
+            {
+                id: 'updated_from',
+                label: 'Обновлён от',
+                type: 'datetime-local',
+            },
+            {
+                id: 'updated_to',
+                label: 'Обновлён до',
+                type: 'datetime-local',
+            },
         ],
     },
     {
-        id: 'sort',
+        id: 'sorting',
         title: 'Сортировка',
-        options: [
-            { value: 'titleAsc', label: 'Название А-Я' },
-            { value: 'newest', label: 'Сначала новые' },
-            { value: 'tasksDesc', label: 'Больше задач' },
+        fields: [
+            {
+                id: 'sort_by',
+                label: 'Сортировать по',
+                type: 'select',
+                options: [
+                    { value: 'created_at', label: 'Дате создания' },
+                    { value: 'updated_at', label: 'Дате обновления' },
+                    { value: 'title', label: 'Названию' },
+                ],
+            },
+            {
+                id: 'sort_order',
+                label: 'Порядок',
+                type: 'select',
+                options: [
+                    { value: 'desc', label: 'По убыванию' },
+                    { value: 'asc', label: 'По возрастанию' },
+                ],
+            },
         ],
     },
 ]
 
 const formatDate = (value: string | null) => {
     if (!value) return null
-
     return new Intl.DateTimeFormat('ru-RU', {
         day: 'numeric',
         month: 'short',
@@ -43,118 +78,106 @@ const formatDate = (value: string | null) => {
     }).format(new Date(value))
 }
 
-const getModuleTaskCount = (tasks: unknown[]) => tasks.length
+const ModuleCard = ({ module }: { module: Module }) => {
+    const taskCount = module.tasks.length
+    const updatedAt = formatDate(module.updated_at ?? module.created_at)
+    const meta = [updatedAt && `обновлён ${updatedAt}`, `${taskCount} задач`]
+        .filter(Boolean)
+        .join(' · ')
 
-const ModuleArtwork = ({ seed }: { seed: string | number }) => (
-    <div className={styles.artwork} style={getGeneratedArtworkStyle(seed)} aria-hidden="true">
-        <span className={styles.triangle} />
-        <span className={styles.starburst} />
-        <span className={styles.square} />
-        <span className={styles.orbit} />
-        <span className={styles.bar} />
-    </div>
-)
+    return (
+        <Link className={styles.card} to={`/admin/modules/${module.id}`}>
+            <div className={styles.artwork} style={getGeneratedArtworkStyle(`${module.id}-${module.title}`)}>
+                <span className={styles.triangle} />
+                <span className={styles.starburst} />
+                <span className={styles.square} />
+                <span className={styles.orbit} />
+                <span className={styles.bar} />
+            </div>
+            <h2>{module.title}</h2>
+            {meta && <p className={styles.meta}>{meta}</p>}
+            {module.description && <p className={styles.description}>{module.description}</p>}
+        </Link>
+    )
+}
 
 const AdminModulesPage = () => {
     const navigate = useNavigate()
-    const { data: modules = [], isLoading, isError } = useModules()
     const [search, setSearch] = useState('')
-    const [selectedFilters, setSelectedFilters] = useState<Record<string, string | undefined>>({})
+    const [filters, setFilters] = useState<FilterValues>({
+        sort_by: 'created_at',
+        sort_order: 'desc',
+    })
+    const [debouncedSearch] = useDebounce(search, 500)
 
-    const updateFilter = (groupId: string, value: string | null) => {
-        setSelectedFilters(current => ({
-            ...current,
-            [groupId]: value ?? undefined,
-        }))
-    }
+    const queryFilters: ModuleFilters = useMemo(() => ({
+        search: debouncedSearch || undefined,
+        created_from: filters.created_from as string | undefined,
+        created_to: filters.created_to as string | undefined,
+        updated_from: filters.updated_from as string | undefined,
+        updated_to: filters.updated_to as string | undefined,
+        sort_by: filters.sort_by as 'created_at' | 'updated_at' | 'title' | undefined,
+        sort_order: filters.sort_order as 'asc' | 'desc' | undefined,
+    }), [debouncedSearch, filters])
 
-    const filteredModules = useMemo(() => {
-        const query = search.trim().toLowerCase()
-        const now = Date.now()
-        const week = 7 * 24 * 60 * 60 * 1000
-        const month = 30 * 24 * 60 * 60 * 1000
+    const { data: modules = [], isLoading, isError } = useModules(queryFilters)
 
-        const result = modules.filter(module => {
-            const taskCount = getModuleTaskCount(module.tasks)
-            const updatedTime = new Date(module.updated_at ?? module.created_at).getTime()
-            const matchesSearch = !query
-                || module.title.toLowerCase().includes(query)
-                || module.description.toLowerCase().includes(query)
-
-            const matchesTasks = !selectedFilters.tasks
-                || (selectedFilters.tasks === 'withTasks' && taskCount > 0)
-                || (selectedFilters.tasks === 'empty' && taskCount === 0)
-
-            const matchesUpdated = !selectedFilters.updated
-                || (selectedFilters.updated === 'recent' && now - updatedTime <= week)
-                || (selectedFilters.updated === 'old' && now - updatedTime > month)
-
-            return matchesSearch && matchesTasks && matchesUpdated
-        })
-
-        return result.sort((a, b) => {
-            if (selectedFilters.sort === 'titleAsc') {
-                return a.title.localeCompare(b.title, 'ru')
-            }
-
-            if (selectedFilters.sort === 'newest') {
-                return new Date(b.updated_at ?? b.created_at).getTime() - new Date(a.updated_at ?? a.created_at).getTime()
-            }
-
-            if (selectedFilters.sort === 'tasksDesc') {
-                return getModuleTaskCount(b.tasks) - getModuleTaskCount(a.tasks)
-            }
-
-            return 0
-        })
-    }, [modules, search, selectedFilters])
+    const handleFilterChange = useCallback((fieldId: string, value: string | number | undefined) => {
+        setFilters(prev => ({ ...prev, [fieldId]: value }))
+    }, [])
 
     return (
-        <section className={styles.page}>
-            <md-icon className={styles.profileIcon}>account_circle</md-icon>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <md-icon className={styles.profileIcon}>account_circle</md-icon>
+            </div>
 
             <AdminToolbar
                 search={search}
                 onSearchChange={setSearch}
                 filterGroups={filterGroups}
-                selectedFilters={selectedFilters}
-                onFilterChange={updateFilter}
-                placeholder="Поиск модулей"
-                action={(
+                filterValues={filters}
+                onFilterChange={handleFilterChange}
+                action={
                     <md-filled-button type="button" onClick={() => navigate('/admin/modules/new')}>
                         Добавить модуль
-                        <md-icon slot="icon">upload</md-icon>
+                        <md-icon slot="icon">add</md-icon>
                     </md-filled-button>
-                )}
+                }
+                placeholder="Название или описание..."
+                variant="page"
             />
 
-            {isLoading ? <div className={styles.state}>Загрузка модулей...</div> : null}
-            {isError ? <div className={styles.state}>Не удалось загрузить модули</div> : null}
+            {isLoading && (
+                <div className={styles.state}>
+                    <md-icon>hourglass_empty</md-icon>
+                    <span>Загрузка модулей...</span>
+                </div>
+            )}
 
-            <div className={styles.cards}>
-                {!isLoading && !isError && filteredModules.map(module => {
-                    const updatedAt = formatDate(module.updated_at ?? module.created_at)
-                    const taskCount = getModuleTaskCount(module.tasks)
-                    const meta = [
-                        `${taskCount} задач`,
-                        updatedAt ? `обновлен ${updatedAt}` : null,
-                    ].filter(Boolean).join(' · ')
+            {isError && (
+                <div className={styles.state}>
+                    <md-icon>error</md-icon>
+                    <span>Не удалось загрузить модули</span>
+                </div>
+            )}
 
-                    return (
-                        <Link className={styles.card} to={`/admin/modules/${module.id}`} key={module.id}>
-                            <ModuleArtwork seed={`${module.id}-${module.title}`} />
-                            <h2>{module.title}</h2>
-                            {meta ? <p>{meta}</p> : null}
-                            {module.description ? <p className={styles.description}>{module.description}</p> : null}
-                        </Link>
-                    )
-                })}
+            {!isLoading && !isError && (
+                <>
+                    <div className={styles.cards}>
+                        {modules.map(module => (
+                            <ModuleCard key={module.id} module={module} />
+                        ))}
+                    </div>
 
-                {!isLoading && !isError && filteredModules.length === 0 ? (
-                    <div className={styles.state}>Модули не найдены</div>
-                ) : null}
-            </div>
-        </section>
+                    {modules.length === 0 && (
+                        <div className={styles.state}>
+                            <span>Модули не найдены</span>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
     )
 }
 

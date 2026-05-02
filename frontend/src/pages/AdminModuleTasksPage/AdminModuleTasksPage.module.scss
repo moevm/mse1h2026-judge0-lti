@@ -436,3 +436,25 @@
   color: #49454f;
   font-size: 16px;
 }
+
+.moduleDates {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dateRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #79747e;
+    font-size: 12px;
+
+    md-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: #6750a4;
+    }
+}

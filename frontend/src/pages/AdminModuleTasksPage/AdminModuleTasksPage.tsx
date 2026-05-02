@@ -121,6 +121,19 @@ const AdminModuleTasksPage = () => {
         staleTime: 5 * 60 * 1000,
         retry: false,
     })
+    const formatModuleDate = (value: string | null) => {
+        if (!value) return null
+        return new Intl.DateTimeFormat('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(new Date(value))
+    }
+
+    const moduleCreatedAt = formatModuleDate(module?.created_at ?? null)
+    const moduleUpdatedAt = formatModuleDate(module?.updated_at ?? null)
 
     const { data: tasks = [], isLoading, isError } = useModuleTasks(Number.isFinite(moduleId) && !isNewModule ? moduleId : null)
     const { data: languages = [] } = useLanguages()
@@ -387,6 +400,20 @@ const AdminModuleTasksPage = () => {
                     ) : moduleDescription || module?.description ? (
                         <p>{moduleDescription || module?.description}</p>
                     ) : null}
+                                            {!isNewModule && (moduleCreatedAt || moduleUpdatedAt) && (
+                        <div className={styles.moduleDates}>
+                            {moduleCreatedAt && (
+                                <div className={styles.dateRow}>
+                                    <span>Создан: {moduleCreatedAt}</span>
+                                </div>
+                            )}
+                            {moduleUpdatedAt && moduleUpdatedAt !== moduleCreatedAt && (
+                                <div className={styles.dateRow}>
+                                    <span>Обновлён: {moduleUpdatedAt}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className={styles.heroActions}>
                         {isEditingModule ? (

@@ -215,20 +215,17 @@ def insert_solutions(db: Session) -> None:
 def insert_attempts(db: Session) -> None:
     attempts = [
         Attempt(
-            solution_user_id=3,
-            solution_task_id=1,
+            solution_id=1,
             language="Python (3.8.1)",
             message="Все тесты пройдены",
         ),
         Attempt(
-            solution_user_id=3,
-            solution_task_id=2,
+            solution_id=2,
             language="Python (3.8.1)",
             message="Тест 1 не пройден: ожидалось 5, получено -1",
         ),
         Attempt(
-            solution_user_id=4,
-            solution_task_id=1,
+            solution_id=3,
             language="Python (3.8.1)",
             message="Все тесты пройдены",
         ),
@@ -236,27 +233,17 @@ def insert_attempts(db: Session) -> None:
     db.add_all(attempts)
     db.flush()
 
+def fix_sequence(db: Session, table: str):
+    db.execute(text(f"""
+        SELECT setval(
+            pg_get_serial_sequence('{table}', 'id'),
+            (SELECT COALESCE(MAX(id), 1) FROM {table})
+        )
+    """))
 
 def fix_sequences(db: Session):
-    db.execute(text("""
-        SELECT setval(pg_get_serial_sequence('users', 'id'),
-                      (SELECT COALESCE(MAX(id), 1) FROM users))
-    """))
-
-    db.execute(text("""
-        SELECT setval(pg_get_serial_sequence('tasks', 'id'),
-                      (SELECT COALESCE(MAX(id), 1) FROM tasks))
-    """))
-
-    db.execute(text("""
-        SELECT setval(pg_get_serial_sequence('languages', 'id'),
-                      (SELECT COALESCE(MAX(id), 1) FROM languages))
-    """))
-
-    db.execute(text("""
-        SELECT setval(pg_get_serial_sequence('modules', 'id'),
-                      (SELECT COALESCE(MAX(id), 1) FROM modules))
-    """))
+    for table in ["users", "tasks", "languages", "modules", "solutions", "attempts"]:
+        fix_sequence(db, table)
 
 
 def run_seed(db: Session) -> None:

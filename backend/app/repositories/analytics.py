@@ -11,162 +11,171 @@ class AnalyticsRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_user_modules(self, user_id: int, filters: UserModulesFilter) -> list[Module]:
+    def get_user_modules(
+        self, user_id: int, filters: UserModulesFilter
+    ) -> list[Module]:
         query = (
             select(Module)
-            .options(selectinload(Module.task_links))
             .join(ModuleTaskOrder, ModuleTaskOrder.module_id == Module.id)
             .join(Task, Task.id == ModuleTaskOrder.task_id)
-            .join(Solution, and_(
-                Solution.task_id == Task.id,
-                Solution.user_id == user_id
-            ))
+            .join(Solution, Solution.task_id == Task.id)
+            .where(Solution.user_id == user_id)
             .distinct()
         )
 
         if filters.search:
             query = query.where(Module.title.ilike(f"%{filters.search}%"))
 
-        if filters.sort_by == "name":
-            col = Module.title
-        elif filters.sort_by == "created_at":
-            col = Module.created_at
-        else:
-            col = Module.created_at
+        col = {
+            "name": Module.title,
+            "created_at": Module.created_at,
+        }.get(filters.sort_by, Module.created_at)
 
-        if filters.sort_order == "desc":
-            query = query.order_by(desc(col))
-        else:
-            query = query.order_by(asc(col))
+        query = query.order_by(desc(col) if filters.sort_order == "desc" else asc(col))
 
         return self.db.scalars(query).all()
 
     def get_user_tasks_in_module(
         self, user_id: int, module_id: int, filters: UserTasksFilter
-    ) -> list[tuple]:
-        # Подзапрос для количества попыток
+    ):
         attempt_count_subq = (
             select(
-                Attempt.solution_task_id,
-                func.count().label("attempt_count")
+                Attempt.solution_id,
+                func.count().label("attempt_count"),
             )
-            .where(Attempt.solution_user_id == user_id)
-            .group_by(Attempt.solution_task_id)
+            .group_by(Attempt.solution_id)
             .subquery()
         )
 
-        # Подзапрос для последней попытки
         last_attempt_subq = (
             select(
-                Attempt.solution_task_id,
-                func.max(Attempt.created_at).label("last_attempt")
+                Attempt.solution_id,
+                func.max(Attempt.created_at).label("last_attempt"),
             )
-            .where(Attempt.solution_user_id == user_id)
-            .group_by(Attempt.solution_task_id)
+            .group_by(Attempt.solution_id)
             .subquery()
         )
 
-        # Основной запрос
         query = (
             select(
                 Task,
                 Solution,
-                func.coalesce(attempt_count_subq.c.attempt_count, 0).label("attempt_count"),
-                last_attempt_subq.c.last_attempt.label("last_attempt_at"),
-                func.count(TaskTest.id).label("test_count")
+                func.coalesce(attempt_count_subq.c.attempt_count, 0),
+                last_attempt_subq.c.last_attempt,
+                func.count(TaskTest.id).label("test_count"),
             )
             .join(ModuleTaskOrder, ModuleTaskOrder.task_id == Task.id)
-            .join(Solution, and_(
-                Solution.task_id == Task.id,
-                Solution.user_id == user_id
-            ))
+            .join(
+                Solution,
+                and_(
+                    Solution.task_id == Task.id,
+                    Solution.user_id == user_id,
+                ),
+            )
             .outerjoin(TaskTest, TaskTest.task_id == Task.id)
-            .outerjoin(attempt_count_subq, attempt_count_subq.c.solution_task_id == Task.id)
-            .outerjoin(last_attempt_subq, last_attempt_subq.c.solution_task_id == Task.id)
+            .outerjoin(
+                attempt_count_subq, attempt_count_subq.c.solution_id == Solution.id
+            )
+            .outerjoin(
+                last_attempt_subq, last_attempt_subq.c.solution_id == Solution.id
+            )
             .where(ModuleTaskOrder.module_id == module_id)
-            .group_by(Task.id, Solution.is_solved, attempt_count_subq.c.attempt_count, last_attempt_subq.c.last_attempt)
+            .group_by(
+                Task.id,
+                Solution.id,
+                attempt_count_subq.c.attempt_count,
+                last_attempt_subq.c.last_attempt,
+            )
         )
 
-        # Фильтры
         if filters.search:
             query = query.where(Task.title.ilike(f"%{filters.search}%"))
 
         if filters.status == "passed":
-            query = query.where(Solution.is_solved == True)
+            query = query.where(Solution.is_solved.is_(True))
         elif filters.status == "failed":
-            query = query.where(Solution.is_solved == False)
+            query = query.where(Solution.is_solved.is_(False))
 
         if filters.attempt_count_min is not None:
-            query = query.where(func.coalesce(attempt_count_subq.c.attempt_count, 0) >= filters.attempt_count_min)
+            query = query.having(
+                func.coalesce(attempt_count_subq.c.attempt_count, 0)
+                >= filters.attempt_count_min
+            )
 
         if filters.last_attempt_from:
-            query = query.where(last_attempt_subq.c.last_attempt >= filters.last_attempt_from)
+            query = query.where(
+                last_attempt_subq.c.last_attempt >= filters.last_attempt_from
+            )
 
         if filters.last_attempt_to:
-            query = query.where(last_attempt_subq.c.last_attempt <= filters.last_attempt_to)
+            query = query.where(
+                last_attempt_subq.c.last_attempt <= filters.last_attempt_to
+            )
 
         if filters.test_count_min is not None:
-            query = query.where(func.count(TaskTest.id) >= filters.test_count_min)
+            query = query.having(func.count(TaskTest.id) >= filters.test_count_min)
 
-        # Сортировка
-        if filters.sort_by == "title":
-            col = Task.title
-        elif filters.sort_by == "attempt_count":
-            col = attempt_count_subq.c.attempt_count
-        elif filters.sort_by == "last_attempt_at":
-            col = last_attempt_subq.c.last_attempt
-        elif filters.sort_by == "test_count":
-            col = func.count(TaskTest.id)
-        else:
-            col = Task.title
+        col = {
+            "title": Task.title,
+            "attempt_count": attempt_count_subq.c.attempt_count,
+            "last_attempt_at": last_attempt_subq.c.last_attempt,
+            "test_count": func.count(TaskTest.id),
+        }.get(filters.sort_by, Task.title)
 
-        if filters.sort_order == "desc":
-            query = query.order_by(desc(col))
-        else:
-            query = query.order_by(asc(col))
+        query = query.order_by(desc(col) if filters.sort_order == "desc" else asc(col))
 
         return self.db.execute(query).all()
 
     def get_attempt_counts(self, user_id: int, task_ids: list[int]) -> dict[int, int]:
         query = (
-            select(Attempt.solution_task_id, func.count().label("cnt"))
-            .where(and_(
-                Attempt.solution_user_id == user_id,
-                Attempt.solution_task_id.in_(task_ids)
-            ))
-            .group_by(Attempt.solution_task_id)
+            select(
+                Solution.task_id,
+                func.count(Attempt.id).label("cnt"),
+            )
+            .join(Attempt, Attempt.solution_id == Solution.id)
+            .where(
+                Solution.user_id == user_id,
+                Solution.task_id.in_(task_ids),
+            )
+            .group_by(Solution.task_id)
         )
-        return {row.solution_task_id: row.cnt for row in self.db.execute(query)}
+
+        return {row.task_id: row.cnt for row in self.db.execute(query)}
 
     def get_last_attempts(self, user_id: int, task_ids: list[int]) -> dict:
         query = (
-            select(Attempt.solution_task_id, func.max(Attempt.created_at).label("last"))
-            .where(and_(
-                Attempt.solution_user_id == user_id,
-                Attempt.solution_task_id.in_(task_ids)
-            ))
-            .group_by(Attempt.solution_task_id)
+            select(
+                Solution.task_id,
+                func.max(Attempt.created_at).label("last"),
+            )
+            .join(Attempt, Attempt.solution_id == Solution.id)
+            .where(
+                Solution.user_id == user_id,
+                Solution.task_id.in_(task_ids),
+            )
+            .group_by(Solution.task_id)
         )
-        return {row.solution_task_id: row.last for row in self.db.execute(query)}
+
+        return {row.task_id: row.last for row in self.db.execute(query)}
 
     def get_task_attempts(
         self, task_id: int, user_id: int, filters: AttemptsFilter
     ) -> list[Attempt]:
-        query = select(Attempt).where(
-            and_(
-                Attempt.solution_task_id == task_id,
-                Attempt.solution_user_id == user_id
+        query = (
+            select(Attempt)
+            .join(Solution, Solution.id == Attempt.solution_id)
+            .where(
+                Solution.task_id == task_id,
+                Solution.user_id == user_id,
             )
         )
-
         if filters.status == "passed":
-            query = query.where(Attempt.is_solved == True)
+            query = query.where(Attempt.is_solved.is_(True))
         elif filters.status == "failed":
-            query = query.where(Attempt.is_solved == False)
+            query = query.where(Attempt.is_solved.is_(False))
 
         if filters.language:
             query = query.where(Attempt.language.ilike(f"%{filters.language}%"))
-
         if filters.memory_min is not None:
             query = query.where(Attempt.memory_mb >= filters.memory_min)
         if filters.memory_max is not None:
@@ -180,9 +189,7 @@ class AnalyticsRepository:
         if filters.to_date:
             query = query.where(Attempt.created_at <= filters.to_date)
 
-        query = query.order_by(Attempt.created_at.desc())
-        return self.db.scalars(query).all()
-
+        return self.db.scalars(query.order_by(Attempt.created_at.desc())).all()
     def get_attempt_by_id(self, attempt_id: int) -> Attempt | None:
         return self.db.get(Attempt, attempt_id)
 

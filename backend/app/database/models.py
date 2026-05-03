@@ -127,7 +127,11 @@ class TaskLanguage(Base):
 
 class Solution(Base):
     __tablename__   = "solutions"
-    __table_args__  = (PrimaryKeyConstraint("user_id", "task_id", name="solution_pk"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "task_id", name="solution_user_task_uc"),
+    )
+
+    id              = Column(BIGINT, primary_key=True, index=True)
 
     user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
     task_id         = Column(BIGINT, ForeignKey("tasks.id"), nullable=False, index=True)
@@ -144,19 +148,11 @@ class Solution(Base):
     attempts        = relationship("Attempt", back_populates="solution", cascade="all, delete-orphan")
 
 
+
 class Attempt(Base):
     __tablename__ = "attempts"
-    __table_args__ = (
-        ForeignKeyConstraint(
-                ["solution_user_id", "solution_task_id"],
-                ["solutions.user_id", "solutions.task_id"],
-                name="attempt_solution_fk"
-            ),
-        )
-
     id                  = Column(BIGINT, primary_key=True, index=True)
-    solution_user_id    = Column(BIGINT, nullable=False)
-    solution_task_id    = Column(BIGINT, nullable=False)
+    solution_id         = Column(BIGINT, ForeignKey("solutions.id"), nullable=False,index=True)
     message			    = Column(String(128), nullable=False)
     language            = Column(String(64), nullable=True)
     memory_mb           = Column(Integer, nullable=True)

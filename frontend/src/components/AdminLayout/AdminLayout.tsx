@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '../../hooks/queries/useAuth';
 import styles from './AdminLayout.module.scss';
-
-interface JwtPayload {
-    role: string;
-    type: string;
-    exp: number;
-}
 
 const navItems = [
     { to: '/admin/students', label: 'Студенты', icon: 'groups' },
@@ -18,32 +12,22 @@ const navItems = [
 
 const AdminLayout = () => {
     const navigate = useNavigate();
-    const [isChecking, setIsChecking] = useState(true);
+    const { isAdmin, isLoading, isAuthenticated } = useAuth();
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            navigate('/admin', { replace: true });
-            return;
-        }
-
-        try {
-            const decoded = jwtDecode<JwtPayload>(token);
-            const isValid = decoded.type === 'access' && decoded.exp * 1000 > Date.now() && decoded.role === 'admin';
-            if (!isValid) {
-                localStorage.removeItem('access_token');
+        if (!isLoading) {
+            if (!isAuthenticated || !isAdmin) {
                 navigate('/admin', { replace: true });
             }
-        } catch {
-            localStorage.removeItem('access_token');
-            navigate('/admin', { replace: true });
-        } finally {
-            setIsChecking(false);
         }
-    }, [navigate]);
+    }, [isLoading, isAuthenticated, isAdmin, navigate]);
 
-    if (isChecking) {
+    if (isLoading) {
         return <div className={styles.loading}>Загрузка...</div>;
+    }
+
+    if (!isAuthenticated || !isAdmin) {
+        return null;
     }
 
     return (
@@ -54,7 +38,9 @@ const AdminLayout = () => {
                         <NavLink
                             key={item.to}
                             to={item.to}
-                            className={({ isActive }) => isActive ? `${styles.navItem} ${styles.active}` : styles.navItem}
+                            className={({ isActive }) => 
+                                isActive ? `${styles.navItem} ${styles.active}` : styles.navItem
+                            }
                         >
                             <span className={styles.navPill}>
                                 <md-icon>{item.icon}</md-icon>

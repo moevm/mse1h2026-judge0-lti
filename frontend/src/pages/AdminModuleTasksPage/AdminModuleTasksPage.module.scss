@@ -437,3 +437,25 @@
         color: #6750a4;
     }
 }
+
+.taskTitleLink {
+    text-decoration: none;
+    display: inline-block;
+
+    h3 {
+        transition: color 0.2s ease;
+        margin: 0 0 4px;
+        color: #1d1b20;
+        font-size: 22px;
+        line-height: 28px;
+        font-weight: 400;
+    }
+
+    &:hover h3 {
+        color: #6750a4;
+    }
+
+    &:active h3 {
+        color: #5a3e8e;
+    }
+}

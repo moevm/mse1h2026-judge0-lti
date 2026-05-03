@@ -25,12 +25,10 @@ const Artwork = ({ seed, large = false }: { seed: string | number, large?: boole
 
 const SortableTaskRow = ({
     task,
-    moduleId,
     onUnlink,
     isUnlinking,
 }: {
     task: Task
-    moduleId: number
     onUnlink: (task: Task) => void
     isUnlinking: boolean
 }) => {
@@ -69,9 +67,13 @@ const SortableTaskRow = ({
             >
                 <md-icon className={styles.dragHandle}>drag_handle</md-icon>
             </button>
-            <Artwork seed={`${task.id}-${task.title}`} />
+            <Link to={`/admin/tasks/${task.id}`}>
+                <Artwork seed={`${task.id}-${task.title}`} />
+            </Link>
             <div className={styles.taskText}>
-                <h3>{task.title}</h3>
+                <Link to={`/admin/tasks/${task.id}`} className={styles.taskTitleLink}>
+                    <h3>{task.title}</h3>
+                </Link>
                 {task.description ? <p>{task.description}</p> : null}
                 {meta ? <small>{meta}</small> : null}
             </div>
@@ -90,7 +92,7 @@ const SortableTaskRow = ({
                         <md-icon>link_off</md-icon>
                     </span>
                 </button>
-                <Link className={styles.editLink} to={`/admin/modules/${moduleId}/tasks/${task.id}/edit`}>
+                <Link className={styles.editLink} to={`/admin/tasks/${task.id}`}>
                     <span>ред.</span>
                     <md-icon>play_arrow</md-icon>
                 </Link>
@@ -306,7 +308,7 @@ const AdminModuleTasksPage = () => {
 
     const openCreateTaskPage = () => {
         if (isNewModule) return
-        navigate(`/admin/modules/${moduleId}/tasks/new`)
+        navigate(`/admin/tasks/new`)
     }
 
     const saveModule = () => {
@@ -446,7 +448,6 @@ const AdminModuleTasksPage = () => {
                             {sortedTasks.map(task => (
                                 <SortableTaskRow
                                     task={task}
-                                    moduleId={moduleId}
                                     onUnlink={taskToRemove => removeTaskMutation.mutate(taskToRemove)}
                                     isUnlinking={removeTaskMutation.isPending}
                                     key={task.id}

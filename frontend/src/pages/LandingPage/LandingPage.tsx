@@ -4,27 +4,30 @@ import styles from './LandingPage.module.scss';
 import adminPanelIcon from '../../assets/icons/admin_panel_icon.svg'
 import runIcon from '../../assets/icons/run_icon.svg';
 import repeatIcon from '../../assets/icons/repeat_icon.svg';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/queries/useAuth';
+import { useModule } from '../../hooks/queries/useModule';
+
+// TODO: Для демонстрации
+const MODULE_ID: number = 1;
 
 const LandingPage = () => {
-    const username: string = "User";
-    const title: string = "Задачи на Python (Easy)";
-    const description: string = `
-        В рамках данного практического блока Вам предстоит выполнить контрольное задание, состоящее из трех задач по программированию на языке Python. Предложенные задачи относятся к легкому уровню сложности и направлены на проверку освоения базовых конструкций языка и алгоритмического мышления.
-        Обратите внимание на следующие организационные требования:
-        На решение всех трех задач отводится 60 минут. Время исчисляется с момента начала тестирования.
-        Для каждой задачи предусмотрено не более трех попыток отправки кода на проверку.
-    `
+    const navigate = useNavigate();
+    const { user, isAdmin } = useAuth();
+    const { data: module } = useModule(MODULE_ID);
+
+    const displayUsername = user?.username || user?.id.toString() || "Гость";
 
     const handleStart = () => {
-        console.log('Начать тестирование');
+        navigate("/task");
     };
 
     const handleRetake = () => {
-        console.log('Перепройти тестирование');
+        navigate("/task");
     };
 
     const handleAdminPanel = () => {
-        console.log('Открыть админ панель');
+        navigate("/admin");
     };
 
     return (
@@ -32,23 +35,25 @@ const LandingPage = () => {
             
             <div className={styles.header}>
                 <div className={styles.username}>
-                    {`Username: ${username}`}
+                    {`Username: ${displayUsername}`}
                 </div>
-                <IconButton
-                    icon={adminPanelIcon}
-                    label="Админ-панель"
-                    type="adminPanelEntry"
-                    onClick={handleAdminPanel}
-                />
+                {isAdmin && (
+                    <IconButton
+                        icon={adminPanelIcon}
+                        label="Админ-панель"
+                        type="adminPanelEntry"
+                        onClick={handleAdminPanel}
+                    />
+                )}
             </div>
 
             <div className={styles.mainContainer}>
                 <div className={styles.textGroup}>
                     <div className={styles.titleText}>
-                        {`${title}`}
+                        {`${module?.title}`}
                     </div>
                     <div className={styles.descriptionText}>
-                        {`${description}`}
+                        {`${module?.description}`}
                     </div>
                 </div>
 

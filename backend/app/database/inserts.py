@@ -187,51 +187,107 @@ def insert_task_tests(db: Session):
     db.flush()
 
 
-def insert_solutions(db: Session) -> None:
+def insert_solutions(db: Session) -> list[Solution]:
     solutions = [
         Solution(
+            id=1,
             user_id=3,
             task_id=1,
-            current_code='print("Hello, World!")',
             is_solved=True,
         ),
         Solution(
+            id=2,
             user_id=3,
             task_id=2,
-            current_code="a, b = map(int, input().split())\nprint(a + b)",
             is_solved=False,
         ),
         Solution(
+            id=3,
             user_id=4,
             task_id=1,
-            current_code='console.log("Hello, World!");',
             is_solved=True,
+        ),
+        Solution(
+            id=4,
+            user_id=4,
+            task_id=2,
+            is_solved=False,
         ),
     ]
     db.add_all(solutions)
     db.flush()
+    return solutions
 
 
-def insert_attempts(db: Session) -> None:
-    attempts = [
-        Attempt(
-            solution_id=1,
-            language="Python (3.8.1)",
-            message="Все тесты пройдены",
-        ),
-        Attempt(
-            solution_id=2,
-            language="Python (3.8.1)",
-            message="Тест 1 не пройден: ожидалось 5, получено -1",
-        ),
-        Attempt(
-            solution_id=3,
-            language="Python (3.8.1)",
-            message="Все тесты пройдены",
-        ),
-    ]
+def insert_attempts(db: Session, solutions: list[Solution]) -> None:
+    attempt1 = Attempt(
+        solution_id=solutions[0].id,
+        source_code='print("Hello, World!")',
+        language="python",
+        status="Accepted",
+        exit_code=0,
+        stdout="Hello, World!\n",
+        memory_kb=5000,
+        time_ms=50,
+        is_solved=True,
+        message="Все тесты пройдены успешно",
+    )
+
+    attempt2 = Attempt(
+        solution_id=solutions[1].id,
+        source_code="a, b = map(int, input().split())\nprint(a - b)",
+        language="python",
+        status="Wrong Answer",
+        exit_code=0,
+        stdout="-1\n",
+        memory_kb=5000,
+        time_ms=45,
+        is_solved=False,
+        message="Тест 1 не пройден. Ожидалось: 5, получено: -1",
+    )
+
+    attempt3 = Attempt(
+        solution_id=solutions[1].id,
+        source_code="a, b = map(int, input().split())\nprint(a * b)",
+        language="python",
+        status="Wrong Answer",
+        exit_code=0,
+        stdout="6\n",
+        memory_kb=5000,
+        time_ms=40,
+        is_solved=False,
+        message="Тест 1 не пройден. Ожидалось: 5, получено: 6",
+    )
+
+    attempt4 = Attempt(
+        solution_id=solutions[2].id,
+        source_code='console.log("Hello, World!");',
+        language="javascript",
+        status="Accepted",
+        exit_code=0,
+        stdout="Hello, World!\n",
+        memory_kb=6000,
+        time_ms=60,
+        is_solved=True,
+        message="Все тесты пройдены успешно",
+    )
+
+    attempt5 = Attempt(
+        solution_id=solutions[3].id,
+        source_code="a, b = map(int, input().split()\nprint(a + b)",
+        language="python",
+        status="Compilation Error",
+        exit_code=1,
+        stderr="SyntaxError: unexpected EOF while parsing",
+        compile_output="SyntaxError: unexpected EOF while parsing",
+        is_solved=False,
+        message="Ошибка компиляции: синтаксическая ошибка",
+    )
+
+    attempts = [attempt1, attempt2, attempt3, attempt4, attempt5]
     db.add_all(attempts)
     db.flush()
+
 
 def fix_sequence(db: Session, table: str):
     db.execute(text(f"""
@@ -278,10 +334,10 @@ def run_seed(db: Session) -> None:
     insert_task_languages(db)
 
     # Решения студентов — ссылаются на пользователей и задачи
-    insert_solutions(db)
+    solutions = insert_solutions(db)
 
     # Попытки — ссылаются на решения, поэтому самые последние
-    insert_attempts(db)
+    insert_attempts(db, solutions)
     fix_sequences(db)
 
     # Фиксируем все изменения в базе одной транзакцией.

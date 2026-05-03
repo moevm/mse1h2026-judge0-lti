@@ -67,3 +67,42 @@ md-text-button md-icon[slot='icon'] {
   transform: translateY(-1px);
 }
 
+.page {
+    position: relative;
+    min-height: 560px;
+}
+
+.page md-filled-button {
+  height: 40px;
+  min-width: max-content;
+  padding-inline: 18px;
+  white-space: nowrap;
+  --md-filled-button-container-color: #6750a4;
+  --md-filled-button-label-text-color: #ffffff;
+  --md-filled-button-label-text-font: 'Inter';
+  --md-filled-button-icon-color: #ffffff;
+  --md-filled-button-container-shape: 20px;
+}
+
+
+.backLink {
+  left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px 0 8px;
+  border-radius: 20px;
+  color: #1d1b20;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 400;
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+
+.backLink:hover {
+  background: #f3edf7;
+}
+
+

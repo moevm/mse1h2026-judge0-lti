@@ -9,6 +9,8 @@ import ForbiddenPage from './pages/ForbiddenPage/ForbiddenPage.tsx'
 import AdminLayout from './components/AdminLayout/AdminLayout.tsx'
 import AdminModulesPage from './pages/AdminModulesPage/AdminModulesPage.tsx'
 import AdminModuleTasksPage from './pages/AdminModuleTasksPage/AdminModuleTasksPage.tsx'
+import AdminTasksPage from "./pages/AdminTasksPage/AdminTasksPage.tsx";
+import AdminTaskEditPage from "./pages/AdminTaskEditPage/AdminTaskEditPage.tsx";
 
 function App() {
   return (
@@ -21,7 +23,9 @@ function App() {
             <Route index element={<AdminModulesPage />} />
             <Route path="modules" element={<AdminModulesPage />} />
             <Route path="modules/:moduleId" element={<AdminModuleTasksPage />} />
-            <Route path="tasks" element={<NotFoundPage />} />
+            <Route path="tasks" element={<AdminTasksPage />} />
+            <Route path="tasks/:taskId" element={<AdminTaskEditPage />} />
+            <Route path="tasks/new" element={<AdminTaskEditPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

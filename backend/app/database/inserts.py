@@ -192,21 +192,18 @@ def insert_solutions(db: Session) -> None:
         Solution(
             user_id=3,
             task_id=1,
-            language="Python (3.8.1)",
             current_code='print("Hello, World!")',
             is_solved=True,
         ),
         Solution(
             user_id=3,
             task_id=2,
-            language="Python (3.8.1)",
             current_code="a, b = map(int, input().split())\nprint(a + b)",
             is_solved=False,
         ),
         Solution(
             user_id=4,
             task_id=1,
-            language="JavaScript (Node.js 12.14.0)",
             current_code='console.log("Hello, World!");',
             is_solved=True,
         ),
@@ -220,16 +217,19 @@ def insert_attempts(db: Session) -> None:
         Attempt(
             solution_user_id=3,
             solution_task_id=1,
+            language="Python (3.8.1)",
             message="Все тесты пройдены",
         ),
         Attempt(
             solution_user_id=3,
             solution_task_id=2,
+            language="Python (3.8.1)",
             message="Тест 1 не пройден: ожидалось 5, получено -1",
         ),
         Attempt(
             solution_user_id=4,
             solution_task_id=1,
+            language="Python (3.8.1)",
             message="Все тесты пройдены",
         ),
     ]
@@ -257,7 +257,6 @@ def fix_sequences(db: Session):
         SELECT setval(pg_get_serial_sequence('modules', 'id'),
                       (SELECT COALESCE(MAX(id), 1) FROM modules))
     """))
-
 
 
 def run_seed(db: Session) -> None:

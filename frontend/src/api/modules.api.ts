@@ -1,6 +1,5 @@
 import api from '../lib/api'
 
-// ─── Типы (соответствуют схемам бэкенда) ────────────────────────────────────
 
 export interface Module {
     id: number
@@ -9,13 +8,6 @@ export interface Module {
     tasks: number[] | Task[]
     created_at: string
     updated_at: string | null
-}
-
-export interface TaskTest {
-    id?: number
-    title: string
-    stdin: string
-    stdout: string
 }
 
 export interface Task {
@@ -27,6 +19,13 @@ export interface Task {
     created_at: string
     updated_at: string | null
     tests: TaskTest[]
+}
+
+export interface TaskTest {
+    id?: number
+    title: string
+    stdin: string
+    stdout: string
 }
 
 export interface TaskPayload {
@@ -42,19 +41,35 @@ export interface ModulePayload {
     description: string
 }
 
+export interface ModuleFilters {
+    search?: string
+    created_from?: string
+    created_to?: string
+    updated_from?: string
+    updated_to?: string
+    sort_by?: 'created_at' | 'updated_at' | 'title'
+    sort_order?: 'asc' | 'desc'
+}
+
 export interface TaskFilters {
     search?: string
     timeout_from?: number
     timeout_to?: number
+    created_from?: string
+    created_to?: string
+    updated_from?: string
+    updated_to?: string
     sort_by?: 'created_at' | 'updated_at' | 'timeout' | 'title'
     sort_order?: 'asc' | 'desc'
 }
 
-// ─── API методы ─────────────────────────────────────────────────────────────
 
 export const modulesApi = {
-    getModules: async (): Promise<Module[]> => {
-        const { data } = await api.get<Module[]>('/modules/', { silent: true })
+    getModules: async (filters?: ModuleFilters): Promise<Module[]> => {
+        const { data } = await api.get<Module[]>('/modules/', {
+            params: filters,
+            silent: true
+        })
         return data
     },
 
@@ -100,7 +115,7 @@ export const modulesApi = {
 }
 
 export const tasksApi = {
-    getTasks: async (filters: TaskFilters = {}): Promise<Task[]> => {
+    getTasks: async (filters?: TaskFilters): Promise<Task[]> => {
         const { data } = await api.get<Task[]>('/tasks/', { params: filters, silent: true })
         return data
     },

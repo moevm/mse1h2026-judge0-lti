@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import AdminToolbar, { type FilterGroup } from '../AdminToolbar/AdminToolbar'
+import { useDebounce } from 'use-debounce'
+import AdminToolbar from '../AdminToolbar/AdminToolbar'
+import type { FilterGroup } from '../FilterDialog/FilterDialog'
 import type { Language } from '../../api/languages.api'
-import { tasksApi, type Task, type TaskFilters, type TaskPayload } from '../../api/modules.api'
-import { taskKeys } from '../../lib/query-keys'
+import { tasksApi, type Task, type TaskFilters } from '../../api/modules.api'
 import styles from './TaskModal.module.scss'
 
 interface TaskModalProps {
@@ -13,135 +14,212 @@ interface TaskModalProps {
     isOpen: boolean
     isSaving: boolean
     onClose: () => void
-    onSubmit?: (payload: TaskPayload) => void
     onAddExisting?: (tasks: Task[]) => void
     onCreateNew?: () => void
 }
 
-const baseFilterGroups: FilterGroup[] = [
+const getFilterGroups = (languages: Language[]): FilterGroup[] => [
+    {
+        id: 'language',
+        title: 'Язык',
+        fields: [
+            {
+                id: 'language',
+                label: 'Язык',
+                type: 'select',
+                options: [
+                    { value: '', label: 'Все языки' },
+                    ...languages.map(lang => ({
+                        value: lang.language,
+                        label: lang.language,
+                    })),
+                ],
+            },
+        ],
+    },
     {
         id: 'timeout',
-        title: 'Время',
-        options: [
-            { value: 'fast', label: 'До 2 секунд' },
-            { value: 'normal', label: '3-5 секунд' },
-            { value: 'long', label: 'Больше 5 секунд' },
+        title: 'Время выполнения',
+        fields: [
+            {
+                id: 'timeout_from',
+                label: 'Мин. время (сек)',
+                type: 'number',
+                min: 0,
+                placeholder: 'от',
+            },
+            {
+                id: 'timeout_to',
+                label: 'Макс. время (сек)',
+                type: 'number',
+                min: 0,
+                placeholder: 'до',
+            },
         ],
     },
     {
-        id: 'tests',
-        title: 'Тесты',
-        options: [
-            { value: 'withTests', label: 'С тестами' },
-            { value: 'withoutTests', label: 'Без тестов' },
+        id: 'dates',
+        title: 'Дата создания',
+        fields: [
+            {
+                id: 'created_from',
+                label: 'Создан от',
+                type: 'datetime-local',
+            },
+            {
+                id: 'created_to',
+                label: 'Создан до',
+                type: 'datetime-local',
+            },
         ],
     },
     {
-        id: 'sort',
+        id: 'updates',
+        title: 'Дата обновления',
+        fields: [
+            {
+                id: 'updated_from',
+                label: 'Обновлён от',
+                type: 'datetime-local',
+            },
+            {
+                id: 'updated_to',
+                label: 'Обновлён до',
+                type: 'datetime-local',
+            },
+        ],
+    },
+    {
+        id: 'sorting',
         title: 'Сортировка',
-        options: [
-            { value: 'titleAsc', label: 'Название А-Я' },
-            { value: 'newest', label: 'Сначала новые' },
-            { value: 'timeoutAsc', label: 'Быстрее сначала' },
+        fields: [
+            {
+                id: 'sort_by',
+                label: 'Сортировать по',
+                type: 'select',
+                options: [
+                    { value: 'created_at', label: 'Дате создания' },
+                    { value: 'updated_at', label: 'Дате обновления' },
+                    { value: 'timeout', label: 'Времени выполнения' },
+                    { value: 'title', label: 'Названию' },
+                ],
+            },
+            {
+                id: 'sort_order',
+                label: 'Порядок',
+                type: 'select',
+                options: [
+                    { value: 'desc', label: 'По убыванию' },
+                    { value: 'asc', label: 'По возрастанию' },
+                ],
+            },
         ],
     },
 ]
 
-const buildTaskFilters = (search: string, selectedFilters: Record<string, string | undefined>): TaskFilters => {
-    const filters: TaskFilters = {}
-    const query = search.trim()
-
-    if (query) filters.search = query
-
-    if (selectedFilters.timeout === 'fast') {
-        filters.timeout_to = 2
-    }
-
-    if (selectedFilters.timeout === 'normal') {
-        filters.timeout_from = 3
-        filters.timeout_to = 5
-    }
-
-    if (selectedFilters.timeout === 'long') {
-        filters.timeout_from = 6
-    }
-
-    if (selectedFilters.sort === 'titleAsc') {
-        filters.sort_by = 'title'
-        filters.sort_order = 'asc'
-    }
-
-    if (selectedFilters.sort === 'newest') {
-        filters.sort_by = 'created_at'
-        filters.sort_order = 'desc'
-    }
-
-    if (selectedFilters.sort === 'timeoutAsc') {
-        filters.sort_by = 'timeout'
-        filters.sort_order = 'asc'
-    }
-
-    return filters
-}
-
-const TaskModal = ({ moduleTitle, languages, excludedTaskIds = [], isOpen, isSaving, onClose, onAddExisting, onCreateNew }: TaskModalProps) => {
+const TaskModal = ({
+    moduleTitle,
+    languages,
+    excludedTaskIds = [],
+    isOpen,
+    isSaving,
+    onClose,
+    onAddExisting,
+    onCreateNew,
+}: TaskModalProps) => {
     const [search, setSearch] = useState('')
-    const [selectedFilters, setSelectedFilters] = useState<Record<string, string | undefined>>({})
-    const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(() => new Set())
+    const [filterValues, setFilterValues] = useState<Record<string, string | number | undefined>>({})
+    const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set())
+    const [debouncedSearch] = useDebounce(search, 500)
 
-    const apiFilters = useMemo(() => buildTaskFilters(search, selectedFilters), [search, selectedFilters])
-    const filterGroups = useMemo<FilterGroup[]>(() => [
-        {
-            id: 'language',
-            title: 'Язык',
-            options: languages.map(item => ({
-                value: item.language,
-                label: item.language,
-            })),
-        },
-        ...baseFilterGroups,
-    ], [languages])
+    const apiFilters = useMemo((): TaskFilters => {
+        const filters: TaskFilters = {}
+        const query = debouncedSearch.trim()
+        if (query) filters.search = query
+
+        const timeoutFrom = filterValues.timeout_from
+        if (timeoutFrom !== undefined && timeoutFrom !== '') {
+            filters.timeout_from = Number(timeoutFrom)
+        }
+
+        const timeoutTo = filterValues.timeout_to
+        if (timeoutTo !== undefined && timeoutTo !== '') {
+            filters.timeout_to = Number(timeoutTo)
+        }
+
+        const createdFrom = filterValues.created_from
+        if (createdFrom && typeof createdFrom === 'string') {
+            filters.created_from = createdFrom
+        }
+
+        const createdTo = filterValues.created_to
+        if (createdTo && typeof createdTo === 'string') {
+            filters.created_to = createdTo
+        }
+
+        const updatedFrom = filterValues.updated_from
+        if (updatedFrom && typeof updatedFrom === 'string') {
+            filters.updated_from = updatedFrom
+        }
+
+        const updatedTo = filterValues.updated_to
+        if (updatedTo && typeof updatedTo === 'string') {
+            filters.updated_to = updatedTo
+        }
+
+        const sortBy = filterValues.sort_by
+        if (sortBy && typeof sortBy === 'string') {
+            filters.sort_by = sortBy as TaskFilters['sort_by']
+        }
+
+        const sortOrder = filterValues.sort_order
+        if (sortOrder && typeof sortOrder === 'string') {
+            filters.sort_order = sortOrder as 'asc' | 'desc'
+        }
+
+        return filters
+    }, [debouncedSearch, filterValues])
+
+    const filterGroups = useMemo(() => getFilterGroups(languages), [languages])
 
     const {
         data: tasks = [],
         isLoading,
         isError,
     } = useQuery({
-        queryKey: taskKeys.list({ ...apiFilters }),
+        queryKey: ['tasks', 'list', JSON.stringify(apiFilters)],
         queryFn: () => tasksApi.getTasks(apiFilters),
         enabled: isOpen,
         retry: false,
     })
 
-    const visibleTasks = useMemo(() => tasks.filter(task => {
-        if (excludedTaskIds.includes(task.id)) return false
-        if (selectedFilters.language && !task.languages.includes(selectedFilters.language)) return false
-        if (selectedFilters.tests === 'withTests') return task.tests.length > 0
-        if (selectedFilters.tests === 'withoutTests') return task.tests.length === 0
-        return true
-    }), [excludedTaskIds, selectedFilters.language, selectedFilters.tests, tasks])
+    const visibleTasks = useMemo(() => {
+        let result = tasks
 
-    if (!isOpen) {
-        return null
-    }
+        const lang = filterValues.language as string
+        if (lang && lang !== '') {
+            result = result.filter(t => t.languages.includes(lang))
+        }
 
-    const updateFilter = (groupId: string, value: string | null) => {
-        setSelectedFilters(current => ({
-            ...current,
-            [groupId]: value ?? undefined,
-        }))
+        result = result.filter(t => !excludedTaskIds.includes(t.id))
+
+        return result
+    }, [tasks, filterValues, excludedTaskIds])
+
+    if (!isOpen) return null
+
+    const handleFilterChange = (fieldId: string, value: string | number | undefined) => {
+        setFilterValues(prev => ({ ...prev, [fieldId]: value }))
     }
 
     const toggleTask = (taskId: number) => {
-        setSelectedTaskIds(current => {
-            const next = new Set(current)
-
+        setSelectedTaskIds(prev => {
+            const next = new Set(prev)
             if (next.has(taskId)) {
                 next.delete(taskId)
             } else {
                 next.add(taskId)
             }
-
             return next
         })
     }
@@ -150,6 +228,7 @@ const TaskModal = ({ moduleTitle, languages, excludedTaskIds = [], isOpen, isSav
 
     const addExisting = () => {
         onAddExisting?.(selectedTasks)
+        setSelectedTaskIds(new Set())
     }
 
     return (
@@ -179,10 +258,11 @@ const TaskModal = ({ moduleTitle, languages, excludedTaskIds = [], isOpen, isSav
                         search={search}
                         onSearchChange={setSearch}
                         filterGroups={filterGroups}
-                        selectedFilters={selectedFilters}
-                        onFilterChange={updateFilter}
+                        filterValues={filterValues}
+                        onFilterChange={handleFilterChange}
                         placeholder="Поиск задач"
                         variant="compact"
+                        showFilters={true}
                     />
                 </div>
 

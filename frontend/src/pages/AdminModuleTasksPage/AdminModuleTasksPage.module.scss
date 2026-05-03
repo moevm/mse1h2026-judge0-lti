@@ -4,27 +4,6 @@
   color: #1d1b20;
 }
 
-.backLink {
-  position: absolute;
-  left: 4px;
-  top: -2px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px 0 8px;
-  border-radius: 20px;
-  color: #1d1b20;
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 400;
-  text-decoration: none;
-}
-
-.backLink:hover {
-  background: #f3edf7;
-}
-
 .hero {
   display: grid;
   grid-template-columns: 216px 1fr;
@@ -435,4 +414,48 @@
   margin-top: 18px;
   color: #49454f;
   font-size: 16px;
+}
+
+.moduleDates {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dateRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #79747e;
+    font-size: 12px;
+
+    md-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: #6750a4;
+    }
+}
+
+.taskTitleLink {
+    text-decoration: none;
+    display: inline-block;
+
+    h3 {
+        transition: color 0.2s ease;
+        margin: 0 0 4px;
+        color: #1d1b20;
+        font-size: 22px;
+        line-height: 28px;
+        font-weight: 400;
+    }
+
+    &:hover h3 {
+        color: #6750a4;
+    }
+
+    &:active h3 {
+        color: #5a3e8e;
+    }
 }

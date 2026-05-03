@@ -1,0 +1,85 @@
+@use "../../styles/variables" as *;
+
+.page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fef7ff;
+    padding: 20px;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 8px 28px rgba(29, 27, 32, 0.12);
+    padding: 32px 24px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #1d1b20;
+    margin: 0;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1d1b20;
+}
+
+.field input {
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid #cac4d0;
+    border-radius: 16px;
+    background: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.field input:focus {
+    outline: none;
+    border-color: #6750a4;
+    box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.2);
+}
+
+.field input:disabled {
+    background: #f3edf7;
+    opacity: 0.7;
+}
+
+.button {
+    margin-top: 8px;
+    --md-filled-button-container-color: #6750a4;
+    --md-filled-button-label-text-color: #ffffff;
+    --md-filled-button-container-shape: 20px;
+    height: 48px;
+}

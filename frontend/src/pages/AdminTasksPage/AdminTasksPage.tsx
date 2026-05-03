@@ -1,17 +1,18 @@
-import { useMemo, useState, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useDebounce } from 'use-debounce'
+import {useMemo, useState, useCallback} from 'react'
+import {Link, useNavigate} from 'react-router-dom'
+import {useDebounce} from 'use-debounce'
 import AdminToolbar from '../../components/AdminToolbar/AdminToolbar'
-import { useTasks } from '../../hooks/queries/useTasks'
-import { useLanguages } from '../../hooks/queries/useLanguages'
-import { tasksApi, type TaskFilters } from '../../api/modules.api'
-import type { FilterGroup } from "../../components/FilterDialog/FilterDialog"
-import type { FilterValues } from '../../components/AdminToolbar/AdminToolbar'
+import {useTasks} from '../../hooks/queries/useTasks'
+import {useLanguages} from '../../hooks/queries/useLanguages'
+import {tasksApi, type TaskFilters} from '../../api/modules.api'
+import type {FilterGroup} from "../../components/FilterDialog/FilterDialog"
+import type {FilterValues} from '../../components/AdminToolbar/AdminToolbar'
 import styles from './AdminTasksPage.module.scss'
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { taskKeys } from "../../lib/query-keys"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {toast} from "sonner"
+import {taskKeys} from "../../lib/query-keys"
 import Spinner from "../../UI/Spinner/Spinner.tsx"
+import ConfirmModal from "../../UI/ConfirmModal/ConfirmModal.tsx";
 
 const getFilterGroups = (languages: Array<{ language: string }>): FilterGroup[] => [
     {
@@ -23,7 +24,7 @@ const getFilterGroups = (languages: Array<{ language: string }>): FilterGroup[] 
                 label: 'Язык',
                 type: 'select',
                 options: [
-                    { value: '', label: 'Все языки' },
+                    {value: '', label: 'Все языки'},
                     ...languages.map(lang => ({
                         value: lang.language,
                         label: lang.language,
@@ -93,10 +94,10 @@ const getFilterGroups = (languages: Array<{ language: string }>): FilterGroup[] 
                 label: 'Сортировать по',
                 type: 'select',
                 options: [
-                    { value: 'created_at', label: 'Дате создания' },
-                    { value: 'updated_at', label: 'Дате обновления' },
-                    { value: 'timeout', label: 'Времени выполнения' },
-                    { value: 'title', label: 'Названию' },
+                    {value: 'created_at', label: 'Дате создания'},
+                    {value: 'updated_at', label: 'Дате обновления'},
+                    {value: 'timeout', label: 'Времени выполнения'},
+                    {value: 'title', label: 'Названию'},
                 ],
             },
             {
@@ -104,8 +105,8 @@ const getFilterGroups = (languages: Array<{ language: string }>): FilterGroup[] 
                 label: 'Порядок',
                 type: 'select',
                 options: [
-                    { value: 'desc', label: 'По убыванию' },
-                    { value: 'asc', label: 'По возрастанию' },
+                    {value: 'desc', label: 'По убыванию'},
+                    {value: 'asc', label: 'По возрастанию'},
                 ],
             },
         ],
@@ -131,7 +132,7 @@ const AdminTasksPage = () => {
     })
     const [debouncedSearch] = useDebounce(search, 500)
 
-    const { data: languages = [] } = useLanguages()
+    const {data: languages = []} = useLanguages()
     const filterGroups = useMemo(() => getFilterGroups(languages), [languages])
 
     const queryFilters: TaskFilters = useMemo(() => ({
@@ -146,7 +147,7 @@ const AdminTasksPage = () => {
         sort_order: filters.sort_order as 'asc' | 'desc' | undefined,
     }), [debouncedSearch, filters])
 
-    const { data: tasks = [], isLoading, isError } = useTasks(queryFilters)
+    const {data: tasks = [], isLoading, isError} = useTasks(queryFilters)
 
     const filteredTasks = useMemo(() => {
         const languageFilter = filters.language as string
@@ -155,65 +156,81 @@ const AdminTasksPage = () => {
     }, [tasks, filters.language])
 
     const handleFilterChange = useCallback((fieldId: string, value: string | number | undefined) => {
-        setFilters(prev => ({ ...prev, [fieldId]: value }))
+        setFilters(prev => ({...prev, [fieldId]: value}))
     }, [])
 
     const deleteTaskMutation = useMutation({
         mutationFn: (taskId: number) => tasksApi.deleteTask(taskId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: taskKeys.all })
+            queryClient.invalidateQueries({queryKey: taskKeys.all})
             toast.success('Задача удалена')
+            setDeleteModalOpen(false)
+            setTaskToDelete(null)
         },
         onError: () => {
             toast.error('Не удалось удалить задачу')
+            setDeleteModalOpen(false)
+            setTaskToDelete(null)
         },
     })
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [taskToDelete, setTaskToDelete] = useState<number | null>(null)
 
-    const handleDelete = (taskId: number) => {
-        if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-            deleteTaskMutation.mutate(taskId)
+    const handleDeleteClick = (taskId: number) => {
+        setTaskToDelete(taskId)
+        setDeleteModalOpen(true)
+    }
+
+    const handleConfirmDelete = () => {
+        if (taskToDelete) {
+            deleteTaskMutation.mutate(taskToDelete)
         }
     }
 
-    return (
-        <div className="page">
-            <div className={styles.header}>
-                <md-icon className={styles.profileIcon}>account_circle</md-icon>
-            </div>
+    const handleCancelDelete = () => {
+        setDeleteModalOpen(false)
+        setTaskToDelete(null)
+    }
 
-            <AdminToolbar
-                search={search}
-                onSearchChange={setSearch}
-                filterGroups={filterGroups}
-                filterValues={filters}
-                onFilterChange={handleFilterChange}
-                action={
-                    <md-filled-button type="button" onClick={() => navigate('/admin/tasks/new')}>
-                        Создать задачу
-                        <md-icon slot="icon">add</md-icon>
-                    </md-filled-button>
-                }
-                placeholder="Название или описание..."
-                variant="page"
-            />
-
-            {isLoading && (
-                <div className={styles.state}>
-                    <Spinner/>
+    return (<>
+            <div className="page">
+                <div className={styles.header}>
+                    <md-icon className={styles.profileIcon}>account_circle</md-icon>
                 </div>
-            )}
 
-            {isError && (
-                <div className={styles.state}>
-                    <md-icon>error</md-icon>
-                    <span>Не удалось загрузить задачи</span>
-                </div>
-            )}
+                <AdminToolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    filterGroups={filterGroups}
+                    filterValues={filters}
+                    onFilterChange={handleFilterChange}
+                    action={
+                        <md-filled-button type="button" onClick={() => navigate('/admin/tasks/new')}>
+                            Создать задачу
+                            <md-icon slot="icon">add</md-icon>
+                        </md-filled-button>
+                    }
+                    placeholder="Название или описание..."
+                    variant="page"
+                />
 
-            {!isLoading && !isError && (
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead>
+                {isLoading && (
+                    <div className={styles.state}>
+                        <Spinner/>
+                    </div>
+                )}
+
+                {isError && (
+                    <div className={styles.state}>
+                        <md-icon>error</md-icon>
+                        <span>Не удалось загрузить задачи</span>
+                    </div>
+                )}
+
+                {!isLoading && !isError && (
+                    <div className={styles.tableWrapper}>
+                        <table className={styles.table}>
+                            <thead>
                             <tr>
                                 <th>Название</th>
                                 <th>Языки</th>
@@ -223,8 +240,8 @@ const AdminTasksPage = () => {
                                 <th>Обновлена</th>
                                 <th></th>
                             </tr>
-                        </thead>
-                        <tbody>
+                            </thead>
+                            <tbody>
                             {filteredTasks.map(task => (
                                 <tr key={task.id} className={styles.tableRow}>
                                     <td className={styles.title}>
@@ -257,24 +274,36 @@ const AdminTasksPage = () => {
                                         <button
                                             type="button"
                                             className={styles.deleteButton}
-                                            onClick={() => handleDelete(task.id)}
+                                            onClick={() => handleDeleteClick(task.id)}
                                         >
                                             <md-icon>delete</md-icon>
                                         </button>
                                     </td>
                                 </tr>
                             ))}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
 
-                    {filteredTasks.length === 0 && (
-                        <div className={`${styles.state} ${styles.notFoundTasks}`}>
-                            <span>Задачи не найдены</span>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
+                        {filteredTasks.length === 0 && (
+                            <div className={`${styles.state} ${styles.notFoundTasks}`}>
+                                <span>Задачи не найдены</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                title="Удаление задачи"
+                message="Вы уверены, что хотите удалить эту задачу?"
+                confirmText="Удалить"
+                cancelText="Отмена"
+                confirmVariant="danger"
+                isLoading={deleteTaskMutation.isPending}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
+        </>
     )
 }
 

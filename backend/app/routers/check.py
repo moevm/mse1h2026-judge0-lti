@@ -20,7 +20,7 @@ async def check_solution(
     service: CheckService = Depends(get_check_service),
 ) -> CheckResponse:
     try:
-        result = service.check_solution(task_id, body)
+        result = await service.check_solution(task_id, body)
     except TaskNotFoundException:
         raise HTTPException(status_code=404, detail="Задача не найдена")
     except InvalidLanguageException:

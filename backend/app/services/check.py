@@ -34,7 +34,7 @@ class CheckService:
         self.lang_repo = lang_repo
         self.judge = judge
 
-    def check_solution(self, task_id: int, body: CheckRequest) -> CheckResult:
+    async def check_solution(self, task_id: int, body: CheckRequest) -> CheckResult:
         task = self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException
@@ -50,7 +50,7 @@ class CheckService:
         for test in tests:
             stdin = test.stdin or ""
             expected = (test.stdout or "").strip()
-            result = self.judge.submit(body.code, language.id, stdin, task.timeout)
+            result = await self.judge.submit(body.code, language.id, stdin, task.timeout)
 
             if result["status"]["id"] not in (3, 4):
                 return CheckResult(

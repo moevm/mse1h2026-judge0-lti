@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+
+import httpx
 import uvicorn
 from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
@@ -8,7 +11,15 @@ from app.database.database import create_tables, seed_database
 create_tables()
 seed_database()
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http_client = httpx.AsyncClient(
+        timeout=30.0
+    )
+    yield
+    await app.state.http_client.aclose()
+
+app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
 api_router.include_router(auth.router)

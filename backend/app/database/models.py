@@ -136,8 +136,6 @@ class Solution(Base):
     user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
     task_id         = Column(BIGINT, ForeignKey("tasks.id"), nullable=False, index=True)
 
-    # language        = Column(String(64), nullable=False, index=True)
-    current_code	= Column(Text, nullable=False)
     is_solved       = Column(Boolean, nullable=False, default=False, index=True)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
@@ -148,17 +146,21 @@ class Solution(Base):
     attempts        = relationship("Attempt", back_populates="solution", cascade="all, delete-orphan")
 
 
-
 class Attempt(Base):
     __tablename__ = "attempts"
     id                  = Column(BIGINT, primary_key=True, index=True)
     solution_id         = Column(BIGINT, ForeignKey("solutions.id"), nullable=False,index=True)
-    message			    = Column(String(128), nullable=False)
+    message             = Column(String(512), nullable=True)
+    status              = Column(String(64), nullable=True)
+    exit_code           = Column(Integer, nullable=True)
+    source_code         = Column(Text, nullable=False)
     language            = Column(String(64), nullable=True)
-    memory_mb           = Column(Integer, nullable=True)
+    stdout              = Column(Text, nullable=True)
+    stderr              = Column(Text, nullable=True)
+    compile_output      = Column(Text, nullable=True)
+    memory_kb           = Column(Integer, nullable=True)
     time_ms             = Column(Integer, nullable=True)
     is_solved           = Column(Boolean, nullable=False, default=False)
-
     created_at          = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     solution            = relationship("Solution", back_populates="attempts")

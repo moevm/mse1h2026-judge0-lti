@@ -38,9 +38,14 @@ class AnalyticsMapper:
         return AttemptResponse(
             id=attempt.id,
             message=attempt.message,
+            status=attempt.status,
+            exit_code=attempt.exit_code,
             language=attempt.language,
-            memory_mb=attempt.memory_mb,
+            memory_kb=attempt.memory_kb,
             time_ms=attempt.time_ms,
             is_solved=attempt.is_solved,
             created_at=attempt.created_at,
+            stdout=attempt.stdout,
+            stderr=attempt.stderr,
+            compile_output=attempt.compile_output,
         )

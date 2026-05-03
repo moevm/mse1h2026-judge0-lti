@@ -41,6 +41,17 @@ const ConfirmModal = ({
             document.body.style.overflow = 'unset'
         }
     }, [isOpen, onCancel, isLoading])
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isOpen])
 
     if (!isOpen) return null
 
@@ -49,6 +60,7 @@ const ConfirmModal = ({
             onCancel()
         }
     }
+
 
     const getConfirmButtonClass = () => {
         switch (confirmVariant) {

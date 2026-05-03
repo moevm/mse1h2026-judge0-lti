@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import {useEffect, useRef, useState} from 'react'
 import { toast } from 'sonner'
 import styles from './ImportTestsModal.module.scss'
 
@@ -37,6 +37,17 @@ const ImportTestsModal = ({ isOpen, onClose, onImport }: ImportTestsModalProps) 
             }
         ]
     }
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isOpen])
 
     const clearFileInput = () => {
         if (fileInputRef.current) {

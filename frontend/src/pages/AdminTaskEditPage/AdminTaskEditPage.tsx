@@ -69,9 +69,13 @@ const AdminTaskEditPage = () => {
             .map(lang => lang.language)
             .filter(lang => !languages.includes(lang))
         setAvailableLanguages(available)
-        if (available.length > 0 && !selectedLanguage) {
-            setSelectedLanguage(available[0])
-        }
+        if (available.length > 0) {
+                if (!selectedLanguage || !available.includes(selectedLanguage)) {
+                    setSelectedLanguage(available[0])
+                }
+            } else {
+                setSelectedLanguage('')
+            }
     }, [allLanguages, languages])
 
     const addLanguage = () => {

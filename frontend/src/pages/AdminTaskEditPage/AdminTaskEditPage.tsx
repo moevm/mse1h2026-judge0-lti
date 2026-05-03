@@ -4,7 +4,7 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
 import {toast} from 'sonner'
 import {tasksApi, type TaskPayload} from '../../api/modules.api'
 import {useLanguages} from '../../hooks/queries/useLanguages'
-import {taskKeys} from '../../lib/query-keys'
+import {moduleKeys, taskKeys} from '../../lib/query-keys'
 import Spinner from '../../UI/Spinner/Spinner'
 import styles from './AdminTaskEditPage.module.scss'
 import ImportTestsModal from "../../UI/ImportTestsModal/ImportTestsModal.tsx";
@@ -136,6 +136,7 @@ const AdminTaskEditPage = () => {
             queryClient.invalidateQueries({queryKey: taskKeys.all})
 
             queryClient.setQueryData(taskKeys.detail(savedTask.id), savedTask)
+            queryClient.invalidateQueries({ queryKey: moduleKeys.all })
 
             toast.success(isNewTask ? 'Задача создана' : 'Задача обновлена')
 

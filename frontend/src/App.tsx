@@ -12,12 +12,14 @@ import AdminTasksPage from "./pages/AdminTasksPage/AdminTasksPage.tsx"
 import AdminTaskEditPage from "./pages/AdminTaskEditPage/AdminTaskEditPage.tsx"
 import AdminLoginPage from './pages/AdminLoginPage/AdminLoginPage.tsx'
 import ProtectedAdminRoute from './components/ProtectedAdminRoute/ProtectedAdminRoute.tsx'
+import LandingPage from './pages/LandingPage/LandingPage.tsx'
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<IDEPage />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         

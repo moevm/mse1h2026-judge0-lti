@@ -3,7 +3,7 @@ import styles from "./IconButton.module.scss";
 interface IconButtonProps {
     icon: string;
     label: string;
-    type?: "run" | "submit";
+    type?: "run" | "submit" | "adminPanelEntry";
     onClick?: () => void;
     className?: string;
     disabled?: boolean;

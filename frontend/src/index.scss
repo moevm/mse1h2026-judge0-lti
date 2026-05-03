@@ -85,3 +85,24 @@ md-text-button md-icon[slot='icon'] {
 }
 
 
+.backLink {
+  left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px 0 8px;
+  border-radius: 20px;
+  color: #1d1b20;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 400;
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+
+.backLink:hover {
+  background: #f3edf7;
+}
+
+

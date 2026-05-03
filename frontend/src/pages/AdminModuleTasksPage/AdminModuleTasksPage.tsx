@@ -341,8 +341,8 @@ const AdminModuleTasksPage = () => {
     }
 
     return (
-        <section className={styles.page}>
-            <Link className={styles.backLink} to="/admin/modules">
+        <section className="page">
+            <Link className="backLink" to="/admin/modules">
                 <md-icon>arrow_back</md-icon>
                 <span>Вернуться</span>
             </Link>

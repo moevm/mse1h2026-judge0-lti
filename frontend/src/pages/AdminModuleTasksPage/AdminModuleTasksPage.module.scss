@@ -4,27 +4,6 @@
   color: #1d1b20;
 }
 
-.backLink {
-  position: absolute;
-  left: 4px;
-  top: -2px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px 0 8px;
-  border-radius: 20px;
-  color: #1d1b20;
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 400;
-  text-decoration: none;
-}
-
-.backLink:hover {
-  background: #f3edf7;
-}
-
 .hero {
   display: grid;
   grid-template-columns: 216px 1fr;

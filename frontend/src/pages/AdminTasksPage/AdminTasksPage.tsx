@@ -3,16 +3,35 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import AdminToolbar from '../../components/AdminToolbar/AdminToolbar'
 import { useTasks } from '../../hooks/queries/useTasks'
-import {tasksApi, type TaskFilters } from '../../api/modules.api'
+import { useLanguages } from '../../hooks/queries/useLanguages'
+import { tasksApi, type TaskFilters } from '../../api/modules.api'
 import type { FilterGroup } from "../../components/FilterDialog/FilterDialog"
 import type { FilterValues } from '../../components/AdminToolbar/AdminToolbar'
 import styles from './AdminTasksPage.module.scss'
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { taskKeys } from "../../lib/query-keys"
-import Spinner from "../../UI/Spinner/Spinner.tsx";
+import Spinner from "../../UI/Spinner/Spinner.tsx"
 
-const filterGroups: FilterGroup[] = [
+const getFilterGroups = (languages: Array<{ language: string }>): FilterGroup[] => [
+    {
+        id: 'language',
+        title: 'Язык',
+        fields: [
+            {
+                id: 'language',
+                label: 'Язык',
+                type: 'select',
+                options: [
+                    { value: '', label: 'Все языки' },
+                    ...languages.map(lang => ({
+                        value: lang.language,
+                        label: lang.language,
+                    })),
+                ],
+            },
+        ],
+    },
     {
         id: 'timeout',
         title: 'Время выполнения',
@@ -104,6 +123,40 @@ const formatDate = (value: string | null) => {
 
 const AdminTasksPage = () => {
     const queryClient = useQueryClient()
+    const navigate = useNavigate()
+    const [search, setSearch] = useState('')
+    const [filters, setFilters] = useState<FilterValues>({
+        sort_by: 'created_at',
+        sort_order: 'desc',
+    })
+    const [debouncedSearch] = useDebounce(search, 500)
+
+    const { data: languages = [] } = useLanguages()
+    const filterGroups = useMemo(() => getFilterGroups(languages), [languages])
+
+    const queryFilters: TaskFilters = useMemo(() => ({
+        search: debouncedSearch || undefined,
+        timeout_from: filters.timeout_from as number | undefined,
+        timeout_to: filters.timeout_to as number | undefined,
+        created_from: filters.created_from as string | undefined,
+        created_to: filters.created_to as string | undefined,
+        updated_from: filters.updated_from as string | undefined,
+        updated_to: filters.updated_to as string | undefined,
+        sort_by: filters.sort_by as 'created_at' | 'updated_at' | 'timeout' | 'title' | undefined,
+        sort_order: filters.sort_order as 'asc' | 'desc' | undefined,
+    }), [debouncedSearch, filters])
+
+    const { data: tasks = [], isLoading, isError } = useTasks(queryFilters)
+
+    const filteredTasks = useMemo(() => {
+        const languageFilter = filters.language as string
+        if (!languageFilter || languageFilter === '') return tasks
+        return tasks.filter(task => task.languages.includes(languageFilter))
+    }, [tasks, filters.language])
+
+    const handleFilterChange = useCallback((fieldId: string, value: string | number | undefined) => {
+        setFilters(prev => ({ ...prev, [fieldId]: value }))
+    }, [])
 
     const deleteTaskMutation = useMutation({
         mutationFn: (taskId: number) => tasksApi.deleteTask(taskId),
@@ -121,31 +174,6 @@ const AdminTasksPage = () => {
             deleteTaskMutation.mutate(taskId)
         }
     }
-    const navigate = useNavigate()
-    const [search, setSearch] = useState('')
-    const [filters, setFilters] = useState<FilterValues>({
-        sort_by: 'created_at',
-        sort_order: 'desc',
-    })
-    const [debouncedSearch] = useDebounce(search, 500)
-
-    const queryFilters: TaskFilters = useMemo(() => ({
-        search: debouncedSearch || undefined,
-        timeout_from: filters.timeout_from as number | undefined,
-        timeout_to: filters.timeout_to as number | undefined,
-        created_from: filters.created_from as string | undefined,
-        created_to: filters.created_to as string | undefined,
-        updated_from: filters.updated_from as string | undefined,
-        updated_to: filters.updated_to as string | undefined,
-        sort_by: filters.sort_by as 'created_at' | 'updated_at' | 'timeout' | 'title' | undefined,
-        sort_order: filters.sort_order as 'asc' | 'desc' | undefined,
-    }), [debouncedSearch, filters])
-
-    const { data: tasks = [], isLoading, isError } = useTasks(queryFilters)
-
-    const handleFilterChange = useCallback((fieldId: string, value: string | number | undefined) => {
-        setFilters(prev => ({ ...prev, [fieldId]: value }))
-    }, [])
 
     return (
         <div className="page">
@@ -187,7 +215,6 @@ const AdminTasksPage = () => {
                     <table className={styles.table}>
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Название</th>
                                 <th>Языки</th>
                                 <th>Таймаут</th>
@@ -198,16 +225,21 @@ const AdminTasksPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {tasks.map(task => (
+                            {filteredTasks.map(task => (
                                 <tr key={task.id} className={styles.tableRow}>
-                                    <td className={styles.id}>{task.id}</td>
                                     <td className={styles.title}>
                                         <Link to={`/admin/tasks/${task.id}`}>
                                             {task.title}
                                         </Link>
                                     </td>
                                     <td className={styles.languages}>
-                                        {task.languages.join(', ')}
+                                        <div className={styles.languageTags}>
+                                            {task.languages.map(lang => (
+                                                <span key={lang} className={styles.languageTag}>
+                                                    {lang}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </td>
                                     <td className={styles.timeout}>
                                         {task.timeout} сек
@@ -235,8 +267,8 @@ const AdminTasksPage = () => {
                         </tbody>
                     </table>
 
-                    {tasks.length === 0 && (
-                        <div className={styles.state}>
+                    {filteredTasks.length === 0 && (
+                        <div className={`${styles.state} ${styles.notFoundTasks}`}>
                             <span>Задачи не найдены</span>
                         </div>
                     )}

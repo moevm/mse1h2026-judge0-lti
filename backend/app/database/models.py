@@ -40,6 +40,7 @@ class User(Base):
 
     solutions       = relationship("Solution", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens  = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    deleted_at      = Column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class Module(Base):

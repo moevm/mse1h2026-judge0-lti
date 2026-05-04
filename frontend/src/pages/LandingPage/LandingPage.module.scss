@@ -1,0 +1,68 @@
+@use "../../styles/variables" as *;
+
+.landingPageContainer {
+  height: calc(100vh - 68px);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  min-height: 100px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: end;
+  padding: 36px 36px;
+  gap: 21px;
+}
+
+.mainContainer {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  padding: 24px;
+  gap: 24px;
+}
+
+.username {
+  align-self: center;
+  color: $primary-color;
+  font-size: 16px;
+  word-wrap: break-word;
+}
+
+.textGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  padding: 24px 280px;
+  gap: 24px;
+}
+
+.titleText {
+  align-self: center;
+  color: $primary-color;
+  font-size: 40px;
+  font-weight: 600;
+  word-wrap: break-word;
+}
+
+.descriptionText {
+  align-self: center;
+  color: $primary-color;
+  font-size: 16px;
+  word-wrap: break-word;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  gap: 150px;
+}

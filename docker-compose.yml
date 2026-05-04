@@ -117,6 +117,8 @@ services:
       retries: 5
     networks:
       - app-net
+    ports:
+      - "5435:5432"
 
   backend:
     image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.4
@@ -126,7 +128,7 @@ services:
     container_name: backend-python-fastapi # mse1h2026-judge0-lti_backend-python-fastapi для этого надо поменять nginx.conf
     restart: unless-stopped
     <<: *default-logging
-    env_file: 
+    env_file:
       - .env
     depends_on:
       postgresdb_data:
@@ -141,6 +143,8 @@ services:
       start_period: 10s
     networks:
       - app-net
+    ports:
+      - "8000:8000"
     # deploy:
     #   resources:
     #     limits:

@@ -1,37 +1,22 @@
 import { type FormEvent, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { jwtDecode } from 'jwt-decode';
-import { authApi } from '../../api/auth.api';
 import styles from './AdminLoginPage.module.scss';
+import {useAuth} from "../../hooks/queries/useAuth.ts";
 
-interface JwtPayload {
-    role: string;
-    type: string;
-    exp: number;
-}
 
 const AdminLoginPage = () => {
     const navigate = useNavigate();
+    const { login, isAdmin, isLoading: isAuthLoading } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const decoded = jwtDecode<JwtPayload>(token);
-                if (decoded.type === 'access' && decoded.exp * 1000 > Date.now() && decoded.role === 'admin') {
-                    navigate('/admin/modules', { replace: true });
-                } else {
-                    localStorage.removeItem('access_token');
-                }
-            } catch {
-                localStorage.removeItem('access_token');
-            }
+        if (!isAuthLoading && isAdmin) {
+            navigate('/admin/modules', { replace: true });
         }
-    }, [navigate]);
+    }, [navigate, isAdmin, isAuthLoading]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -42,8 +27,7 @@ const AdminLoginPage = () => {
 
         setIsLoading(true);
         try {
-            const { access_token } = await authApi.login({ username, password });
-            localStorage.setItem('access_token', access_token);
+            await login({ username, password });
             toast.success('Вход выполнен успешно');
             navigate('/admin/modules', { replace: true });
         } catch (error: any) {

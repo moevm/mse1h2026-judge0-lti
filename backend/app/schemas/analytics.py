@@ -36,6 +36,7 @@ class AttemptResponse(BaseModel):
     stdout: Optional[str] = None
     stderr: Optional[str] = None
     compile_output: Optional[str] = None
+    source_code: Optional[str] = None
 
 
 class UserModulesFilter(BaseModel):

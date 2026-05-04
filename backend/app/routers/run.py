@@ -14,7 +14,7 @@ async def run_code(
     service: RunService = Depends(get_run_service),
 ) -> RunResponse:
     try:
-        result = service.run_code(body)
+        result = await service.run_code(body)
     except LanguageNotFoundException as e:
         raise HTTPException(
             status_code=400, detail="Недопустимый язык программирования"

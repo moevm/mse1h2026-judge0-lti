@@ -40,6 +40,6 @@ def seed_database():
         run_seed(db)
     except Exception as e:
         db.rollback()
-        print(f"SKIP: Seed already exists or error: {e}")
+        print(f"ERROR: Seed failed or data exists: {e}")
     finally:
         db.close()

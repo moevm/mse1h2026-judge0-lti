@@ -14,11 +14,11 @@ class RunService:
         self.lang_repo = lang_repo
         self.judge = judge
 
-    def run_code(self, body: RunRequest):
+    async def run_code(self, body: RunRequest):
         language = self.lang_repo.get_language_by_name(body.language)
         if not language:
             raise LanguageNotFoundException("Language not found")
-        return self.judge.submit(body.code, language.id, body.stdin, 5)
+        return await self.judge.submit(body.code, language.id, body.stdin, 5)
 
 
 def get_run_service(

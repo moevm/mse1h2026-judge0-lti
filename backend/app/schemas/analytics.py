@@ -25,12 +25,17 @@ class UserTaskResponse(BaseModel):
 class AttemptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    message: str
+    message: Optional[str] = None
+    status: Optional[str] = None
+    exit_code: Optional[int] = None
     language: Optional[str] = None
-    memory_mb: Optional[int] = None
+    memory_kb: Optional[int] = None
     time_ms: Optional[int] = None
     is_solved: bool = False
     created_at: datetime
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    compile_output: Optional[str] = None
 
 
 class UserModulesFilter(BaseModel):

@@ -94,7 +94,7 @@ class CheckService:
                     "stderr": result.get("stderr"),
                     "compile_output": result.get("compile_output"),
                     "memory_kb": result.get("memory"),
-                    "time_ms": result.get("time"),
+                    "time_ms": int(float(result.get("time", 0)) * 1000) if result.get("time") is not None else None,
                     "is_solved": False,
                     "message": final_result.comment,
                 }
@@ -117,7 +117,7 @@ class CheckService:
                     "stderr": result.get("stderr"),
                     "compile_output": result.get("compile_output"),
                     "memory_kb": result.get("memory"),
-                    "time_ms": result.get("time"),
+                    "time_ms": int(float(result.get("time", 0)) * 1000) if result.get("time") is not None else None,
                     "is_solved": False,
                     "message": final_result.comment,
                 }

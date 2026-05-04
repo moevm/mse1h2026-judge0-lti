@@ -4,26 +4,28 @@ import styles from './LandingPage.module.scss';
 import adminPanelIcon from '../../assets/icons/admin_panel_icon.svg'
 import runIcon from '../../assets/icons/run_icon.svg';
 import repeatIcon from '../../assets/icons/repeat_icon.svg';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import { useAuth } from '../../hooks/queries/useAuth';
 import { useModule } from '../../hooks/queries/useModule';
 
-// TODO: Для демонстрации
-const MODULE_ID: number = 1;
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user, isAdmin } = useAuth();
-    const { data: module } = useModule(MODULE_ID);
-
+    const moduleId = searchParams.get('module_id');
+    const { data: module } = useModule(moduleId ? Number(moduleId) : null);
+    if (!moduleId) {
+        return <div>Ошибка: модуль не указан</div>;
+    }
     const displayUsername = user?.username || user?.id.toString() || "Гость";
 
     const handleStart = () => {
-        navigate("/task");
+        navigate(`/task?module_id=${moduleId}`);
     };
 
     const handleRetake = () => {
-        navigate("/task");
+        navigate(`/task?module_id=${moduleId}`);
     };
 
     const handleAdminPanel = () => {

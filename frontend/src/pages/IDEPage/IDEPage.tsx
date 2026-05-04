@@ -12,10 +12,14 @@ import {useRunSolution} from '../../hooks/queries/useRunSolution.ts';
 import {useState} from 'react';
 import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
+import {useSearchParams} from "react-router-dom";
 
 const STORAGE_KEY = 'ide-task-codes';
 
 const IDEPage = () => {
+    const [searchParams] = useSearchParams();
+    const moduleId = Number(searchParams.get('module_id'));
+
     // Задачи
     const {mutate: checkSolution, isPending: isChecking} = useCheckSolution();
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
@@ -146,7 +150,7 @@ const IDEPage = () => {
                         <Panel defaultSize={60} minSize={20} maxSize={80}>
                             <div className={styles.rightTop}>
                                 <TasksSection
-                                    moduleId={1}
+                                    moduleId={moduleId}
                                     activeTaskId={activeTaskId}
                                     setActiveTaskId={setActiveTaskId}
                                     onTaskChange={handleTaskChange}

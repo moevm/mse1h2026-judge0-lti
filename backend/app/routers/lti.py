@@ -16,6 +16,7 @@ async def lti_launch(
     form_data = await request.form()
 
     user_id = int(form_data.get("user_id"))
+    module_id = int(form_data.get("custom_module_id"))
     username = form_data.get("ext_user_username", str(user_id))
     full_name = form_data.get("lis_person_name_full", f"User {user_id}")
     roles = form_data.get("roles", "Student")
@@ -24,7 +25,9 @@ async def lti_launch(
     #     print(f"{key}: {value}")
     user = lti_service.upsert_user(user_id, username, full_name, roles)
     access_token, refresh_token = auth_service.issue_lti_session(user)
-    response = RedirectResponse(url="http://localhost/", status_code=303)
+    response = RedirectResponse(
+        url=f"http://localhost?module_id={module_id}", status_code=303
+    )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

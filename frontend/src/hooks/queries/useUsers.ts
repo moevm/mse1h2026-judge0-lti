@@ -30,18 +30,6 @@ export const useUserModules = (userId: number) =>
         enabled: !!userId,
     })
 
-export const useUpdateUser = () => {
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationFn: ({ userId, payload }: { userId: number; payload: UserUpdateRequest }) =>
-            usersApi.update(userId, payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: userKeys.all })
-        },
-    })
-}
-
-
 export const useUserModuleTasks = (userId: number, moduleId: number) =>
     useQuery({
         queryKey: userKeys.moduleTasks(userId, moduleId),
@@ -62,3 +50,24 @@ export const useAttempt = (attemptId: number) =>
         queryFn: () => usersApi.getAttempt(attemptId),
         enabled: !!attemptId,
     })
+
+export const useUpdateUser = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ userId, payload }: { userId: number; payload: UserUpdateRequest }) =>
+            usersApi.update(userId, payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: userKeys.all })
+        },
+    })
+}
+
+export const useDeleteUser = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (userId: number) => usersApi.delete(userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: userKeys.all })
+        },
+    })
+}

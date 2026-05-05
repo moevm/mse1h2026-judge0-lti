@@ -3,7 +3,7 @@ import pytest
 from typing import AsyncGenerator
 from datetime import datetime, timezone
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.services.jwt import JwtService
@@ -38,7 +38,6 @@ def mock_get_settings():
 
 
 import app.core.config
-
 app.core.config.get_settings = mock_get_settings
 
 from app.main import app as main_app
@@ -98,23 +97,6 @@ def db_session(engine):
 
     yield session
 
-    from app.database.models import Base
-
-    table_names = [
-        "refresh_tokens",
-        "module_tasks_order",
-        "task_tests",
-        "tasks_languages",
-        "tasks",
-        "modules",
-        "users",
-    ]
-
-    session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
-    for table_name in table_names:
-        session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
-    session.commit()
-
     transaction.rollback()
     connection.close()
     main_app.dependency_overrides.clear()
@@ -130,9 +112,13 @@ async def client(db_session) -> AsyncGenerator:
 @pytest.fixture
 def create_student_user(db_session):
     """Фабрика для создания студента в каждом тесте"""
+    from app.database.models import User, UserTypeEnum, RefreshToken
 
     def _create_student():
-        from app.database.models import User, UserTypeEnum, RefreshToken
+        db_session.query(RefreshToken).filter(
+            RefreshToken.user_id == db_session.query(User.id).filter(User.username == "student").scalar_subquery()
+        ).delete()
+        db_session.query(User).filter(User.username == "student").delete()
 
         user = User()
         user.username = "student"

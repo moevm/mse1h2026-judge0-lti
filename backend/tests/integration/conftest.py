@@ -71,6 +71,7 @@ def engine(postgres_container):
 @pytest.fixture(scope="function")
 def db_session(engine):
     connection = engine.connect()
+    transaction = connection.begin()
     session = sessionmaker(bind=connection)()
 
     def override_get_db():
@@ -105,7 +106,7 @@ def db_session(engine):
         session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
 
     session.commit()
-
+    transaction.rollback()
     connection.close()
     main_app.dependency_overrides.clear()
 

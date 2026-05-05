@@ -3,7 +3,7 @@ name: Integration Tests
 on: [push, pull_request]
 
 jobs:
-  test:
+  integration-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

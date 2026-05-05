@@ -36,12 +36,13 @@ export interface UserAttempt {
     time_ms: number | null
     is_solved: boolean
     created_at: string
-    source_code: string | null  // ← ДОБАВЛЕНО
+    source_code: string | null
 }
 
 export interface UsersFilter {
     search?: string
     include_deleted?: boolean
+    role?: 'admin' | 'teacher' | 'student'
 }
 
 export interface UserUpdateRequest {

@@ -13,7 +13,7 @@ class TestCheckFunctional:
         task = await create_task_via_api(
             title="Sum of two numbers",
             description="Calculate sum of two integers",
-            timeout=30,
+            timeout=10,
             languages=["Python (3.8.1)"],
         )
 
@@ -58,7 +58,7 @@ class TestCheckFunctional:
         task = await create_task_via_api(
             title="Sum of two numbers",
             description="Calculate sum of two integers",
-            timeout=30,
+            timeout=10,
             languages=["Python (3.8.1)"],
         )
 
@@ -99,7 +99,7 @@ class TestCheckFunctional:
         task = await create_task_via_api(
             title="Simple task",
             description="Print Hello",
-            timeout=30,
+            timeout=10,
             languages=["Python (3.8.1)"],
         )
 
@@ -149,7 +149,7 @@ class TestCheckFunctional:
         task = await create_task_via_api(
             title="Test task",
             description="Test",
-            timeout=30,
+            timeout=10,
             languages=["Python (3.8.1)"],
         )
 
@@ -162,7 +162,6 @@ class TestCheckFunctional:
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-        print(response.json())
         assert response.status_code == 400
         assert "недопустимый язык" in response.json()["detail"].lower()
 
@@ -181,7 +180,7 @@ class TestCheckWithMultipleLanguages:
         task = await create_task_via_api(
             title="Java Sum",
             description="Sum of two numbers in Java",
-            timeout=30,
+            timeout=10,
             languages=["Java (OpenJDK 13.0.1)"],
         )
 
@@ -224,7 +223,7 @@ public class Main {
         task = await create_task_via_api(
             title="JS Sum",
             description="Sum of two numbers in JavaScript",
-            timeout=30,
+            timeout=10,
             languages=["JavaScript (Node.js 12.14.0)"],
         )
 
@@ -272,7 +271,7 @@ class TestCheckFullFlow:
         task = await create_task_via_api(
             title="FizzBuzz",
             description="Classic FizzBuzz problem",
-            timeout=30,
+            timeout=10,
             languages=["python"],
         )
 

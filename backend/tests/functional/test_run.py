@@ -13,7 +13,7 @@ class TestRunFunctional:
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": 'print("Hello, World!")',
+                "code": 'print("Hello, World!")',
                 "language": "Python (3.8.1)",
                 "stdin": "",
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -31,13 +31,12 @@ class TestRunFunctional:
         """Запуск Python кода с вводом данных"""
         client = admin_auth
 
-        code = """name = input()
-print(f"Hello, {name}!")"""
+        code = """print(f"Hello, {input()}")"""
 
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": code,
+                "code": code,
                 "language": "Python (3.8.1)",
                 "stdin": "Alice",
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -56,7 +55,7 @@ print(f"Hello, {name}!")"""
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": "raise ValueError('Test error')",
+                "code": "raise ValueError('Test error')",
                 "language": "Python (3.8.1)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -82,7 +81,7 @@ print(f"Hello, {name}!")"""
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": java_code,
+                "code": java_code,
                 "language": "Java (OpenJDK 13.0.1)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -103,7 +102,7 @@ print(f"Hello, {name}!")"""
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": js_code,
+                "code": js_code,
                 "language": "JavaScript (Node.js 12.14.0)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -123,7 +122,7 @@ print(f"Hello, {name}!")"""
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": 'print("test")',
+                "code": 'print("test")',
                 "language": "invalid_language",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -145,7 +144,7 @@ class TestRunFullFlow:
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": 'print("Python")',
+                "code": 'print("Python")',
                 "language": "Python (3.8.1)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -157,7 +156,7 @@ class TestRunFullFlow:
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": 'console.log("JavaScript")',
+                "code": 'console.log("JavaScript")',
                 "language": "JavaScript (Node.js 12.14.0)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),
@@ -174,7 +173,7 @@ class TestRunFullFlow:
         response = await client.post(
             "/api/run/",
             json={
-                "source_code": java_code,
+                "code": java_code,
                 "language": "Java (OpenJDK 13.0.1)",
                 "stdin": "",
                  "submitted_at": datetime.now(timezone.utc).isoformat(),

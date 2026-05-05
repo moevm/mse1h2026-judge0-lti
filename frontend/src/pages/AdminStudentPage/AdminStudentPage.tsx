@@ -7,7 +7,7 @@ import type { FilterGroup } from '../../components/FilterDialog/FilterDialog'
 import styles from './AdminStudentPage.module.scss'
 import Spinner from '../../UI/Spinner/Spinner'
 
-// Локальный интерфейс фильтров (без импорта FilterValues)
+// Локальный интерфейс фильтров
 interface FilterValues {
     [key: string]: string | undefined
     sort_by?: string
@@ -104,14 +104,12 @@ const AdminStudentPage = () => {
     const getFilteredModules = () => {
         let result = [...modules]
 
-        // Поиск по названию
         if (debouncedSearch) {
             result = result.filter(module =>
                 module.title.toLowerCase().includes(debouncedSearch.toLowerCase())
             )
         }
 
-        // Фильтр по количеству задач
         if (filters.task_count_min && filters.task_count_min !== '') {
             const minValue = Number(filters.task_count_min)
             result = result.filter(module => module.task_count >= minValue)
@@ -121,7 +119,6 @@ const AdminStudentPage = () => {
             result = result.filter(module => module.task_count <= maxValue)
         }
 
-        // Фильтр по дате создания
         if (filters.created_from && filters.created_from !== '') {
             const fromDate = new Date(filters.created_from as string)
             result = result.filter(module => new Date(module.created_at) >= fromDate)
@@ -131,7 +128,6 @@ const AdminStudentPage = () => {
             result = result.filter(module => new Date(module.created_at) <= toDate)
         }
 
-        // Сортировка
         const sortBy = filters.sort_by as string || 'title'
         const sortOrder = filters.sort_order as string || 'asc'
 
@@ -171,12 +167,22 @@ const AdminStudentPage = () => {
         }))
     }
 
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1)
+        } else {
+            navigate('/admin/students')
+        }
+    }
+
     if (isLoading) return <div className={styles.state}><Spinner /></div>
     if (!user) return <div className={styles.state}><span>Пользователь не найден</span></div>
 
     return (
         <div className="page">
-            <md-icon className={styles.profileIcon}>account_circle</md-icon>
+            <button className="backLink" onClick={handleBack}>
+                <md-icon>arrow_back</md-icon>
+            </button>
 
             {/* Карточка пользователя */}
             <div className={styles.card}>
@@ -188,9 +194,6 @@ const AdminStudentPage = () => {
                         <div className={styles.name}>{user.full_name}</div>
                         <div className={styles.username}>@{user.username}</div>
                     </div>
-                    <button className={styles.menuBtn}>
-                        <md-icon>more_vert</md-icon>
-                    </button>
                 </div>
                 <div className={styles.cardBody}>
                     <div className={styles.infoLabel}>Основная информация</div>

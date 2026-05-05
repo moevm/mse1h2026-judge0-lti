@@ -1,5 +1,5 @@
 import pytest
-
+from datetime import datetime, timezone
 
 @pytest.mark.functional
 class TestRunFunctional:
@@ -16,6 +16,7 @@ class TestRunFunctional:
                 "source_code": 'print("Hello, World!")',
                 "language": "Python (3.8.1)",
                 "stdin": "",
+                "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -39,6 +40,7 @@ print(f"Hello, {name}!")"""
                 "source_code": code,
                 "language": "Python (3.8.1)",
                 "stdin": "Alice",
+                "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -57,6 +59,7 @@ print(f"Hello, {name}!")"""
                 "source_code": "raise ValueError('Test error')",
                 "language": "Python (3.8.1)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -82,6 +85,7 @@ print(f"Hello, {name}!")"""
                 "source_code": java_code,
                 "language": "Java (OpenJDK 13.0.1)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -102,6 +106,7 @@ print(f"Hello, {name}!")"""
                 "source_code": js_code,
                 "language": "JavaScript (Node.js 12.14.0)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -121,6 +126,7 @@ print(f"Hello, {name}!")"""
                 "source_code": 'print("test")',
                 "language": "invalid_language",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -142,6 +148,7 @@ class TestRunFullFlow:
                 "source_code": 'print("Python")',
                 "language": "Python (3.8.1)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         assert response.status_code == 200
@@ -153,6 +160,7 @@ class TestRunFullFlow:
                 "source_code": 'console.log("JavaScript")',
                 "language": "JavaScript (Node.js 12.14.0)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         assert response.status_code == 200
@@ -169,6 +177,7 @@ class TestRunFullFlow:
                 "source_code": java_code,
                 "language": "Java (OpenJDK 13.0.1)",
                 "stdin": "",
+                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         assert response.status_code == 200

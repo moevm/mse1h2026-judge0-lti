@@ -25,11 +25,8 @@ async def admin_auth(client):
     client.headers["Authorization"] = f"Bearer {access_token}"
     return client
 
-
 @pytest.fixture
 async def create_task_via_api(admin_auth):
-    """Создание задачи через API"""
-
     async def _create_task(title: str, description: str, timeout: int, languages: list):
         response = await admin_auth.post(
             "/api/tasks/",
@@ -40,9 +37,10 @@ async def create_task_via_api(admin_auth):
                 "languages": languages,
             },
         )
-        assert response.status_code == 200
+        print(f"Create task response: {response.status_code}")
+        print(f"Create task body: {response.text}")
+        assert response.status_code == 200, f"Failed to create task: {response.text}"
         return response.json()
-
     return _create_task
 
 

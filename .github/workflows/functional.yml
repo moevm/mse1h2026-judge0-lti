@@ -25,9 +25,7 @@ jobs:
 
       - name: Show logs on failure (backend + tests only)
         if: failure()
-        run: |
-          docker compose -f docker-compose.test.yml logs backend
-          docker compose -f docker-compose.test.yml logs tests
+        run: docker compose -f docker-compose.test.yml logs tests
 
       - name: Cleanup
         if: always()

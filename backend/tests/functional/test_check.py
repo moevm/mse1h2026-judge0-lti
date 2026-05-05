@@ -110,7 +110,6 @@ class TestCheckFunctional:
         assert response.status_code == 200
 
         code_with_error = """print("Hello"""
-        print(response.json())
         response = await client.post(
             f"/api/check/{task['id']}",
             json={
@@ -272,7 +271,7 @@ class TestCheckFullFlow:
             title="FizzBuzz",
             description="Classic FizzBuzz problem",
             timeout=10,
-            languages=["python"],
+            languages=["Python (3.8.1)"],
         )
 
         test_cases = [

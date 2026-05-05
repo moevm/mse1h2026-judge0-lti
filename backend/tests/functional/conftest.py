@@ -98,6 +98,22 @@ def db_session(engine):
 
     yield session
 
+    from app.database.models import Base
+
+    table_names = [
+        "refresh_tokens",
+        "module_tasks_order",
+        "task_tests",
+        "tasks_languages",
+        "tasks",
+        "modules",
+        "users",
+    ]
+
+    session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+    for table_name in table_names:
+        session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
+    session.commit()
 
     transaction.rollback()
     connection.close()
@@ -112,40 +128,45 @@ async def client(db_session) -> AsyncGenerator:
 
 
 @pytest.fixture
-def student_user(db_session):
-    from app.database.models import User, UserTypeEnum, RefreshToken
+def create_student_user(db_session):
+    """Фабрика для создания студента в каждом тесте"""
 
-    user = User()
-    user.username = "student"
-    user.password_hash = hash_password("studentpass")
-    user.full_name = "Test Student"
-    user.role = UserTypeEnum.student
-    user.created_at = datetime.now(timezone.utc)
-    user.updated_at = datetime.now(timezone.utc)
+    def _create_student():
+        from app.database.models import User, UserTypeEnum, RefreshToken
 
-    db_session.add(user)
-    db_session.flush()
+        user = User()
+        user.username = "student"
+        user.password_hash = hash_password("studentpass")
+        user.full_name = "Test Student"
+        user.role = UserTypeEnum.student
+        user.created_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(timezone.utc)
 
-    jwt_service = JwtService(mock_get_settings())
-    refresh_token, expires_at = jwt_service.create_refresh_token(user_id=user.id)
+        db_session.add(user)
+        db_session.flush()
 
-    refresh_token_obj = RefreshToken(
-        user_id=user.id,
-        token_hash=hash_token(refresh_token),
-        expires_at=expires_at,
-        revoked=False,
-    )
-    db_session.add(refresh_token_obj)
-    db_session.commit()
-    db_session.refresh(user)
+        jwt_service = JwtService(mock_get_settings())
+        refresh_token, expires_at = jwt_service.create_refresh_token(user_id=user.id)
 
-    return user, refresh_token
+        refresh_token_obj = RefreshToken(
+            user_id=user.id,
+            token_hash=hash_token(refresh_token),
+            expires_at=expires_at,
+            revoked=False,
+        )
+        db_session.add(refresh_token_obj)
+        db_session.commit()
+        db_session.refresh(user)
+
+        return user, refresh_token
+
+    return _create_student
 
 
 @pytest.fixture
-async def student_auth(client, student_user):
-    """Авторизованный студент через refresh token в cookies"""
-    user, refresh_token = student_user
+async def student_auth(client, create_student_user):
+    """Авторизованный студент"""
+    user, refresh_token = create_student_user()
 
     refresh_response = await client.post(
         "/api/auth/refresh", cookies={"refresh_token": refresh_token}

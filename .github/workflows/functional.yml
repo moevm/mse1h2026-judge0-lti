@@ -7,110 +7,23 @@ on:
 
 jobs:
   functional-tests:
-    name: Run Functional Tests (PostgreSQL + Judge0)
     runs-on: ubuntu-latest
 
-    services:
-      postgresdb:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_pass
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U test_user -d test_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      judge0-postgres:
-        image: postgres:13
-        env:
-          POSTGRES_USER: judge0
-          POSTGRES_PASSWORD: judge0
-          POSTGRES_DB: judge0
-        options: >-
-          --health-cmd "pg_isready -U judge0"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      judge0-redis:
-        image: redis:7.2-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Start Judge0
+      - name: Run tests via docker-compose
         run: |
-          docker network create judge0-net || true
+          docker compose -f docker-compose.test.yml up \
+            --build \
+            --abort-on-container-exit \
+            --exit-code-from tests
 
-          # подключаем уже запущенные service-контейнеры к сети
-          docker network connect judge0-net $(docker ps -q --filter "ancestor=postgres:17-alpine")
-          docker network connect judge0-net $(docker ps -q --filter "ancestor=redis:7.2-alpine")
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs
 
-          docker run -d --name judge0-server \
-            --network judge0-net \
-            --privileged \
-            -p 2358:2358 \
-            -v ${{ github.workspace }}/judge0.conf:/judge0.conf:ro \
-            mrkushalsm/judge0:cgv2
-
-          docker run -d --name judge0-worker \
-            --network judge0-net \
-            --privileged \
-            -v ${{ github.workspace }}/judge0.conf:/judge0.conf:ro \
-            mrkushalsm/judge0:cgv2 \
-            ./scripts/workers
-
-          echo "Waiting for Judge0..."
-          for i in {1..60}; do
-            if curl -sf http://localhost:2358/about > /dev/null; then
-              echo "Judge0 ready!"
-              break
-            fi
-            echo "Waiting... ($i/60)"
-            sleep 5
-          done
-
-          curl -sf http://localhost:2358/about || (echo "Judge0 failed to start" && docker logs judge0-server && exit 1)
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run functional tests
-        working-directory: ./backend
-        env:
-          PYTHONPATH: .
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_pass
-          POSTGRES_DB: test_db
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          JWT_SECRET_KEY: test_secret_key_12345
-          MOCK_JUDGE0: false
-          JUDGE0_URL: http://localhost:2358
-        run: |
-          pytest tests/functional/ -v -m functional --tb=short
-
-      - name: Stop containers
+      - name: Cleanup
         if: always()
-        run: |
-          docker stop judge0-server judge0-worker || true
-          docker rm judge0-server judge0-worker || true
-          docker network rm judge0-net || true
+        run: docker compose -f docker-compose.test.yml down -v

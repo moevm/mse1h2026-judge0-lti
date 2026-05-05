@@ -1,5 +1,7 @@
 # tests/functional/conftest.py
 import os
+
+import httpx
 import pytest
 from typing import AsyncGenerator
 from datetime import datetime, timezone
@@ -46,6 +48,12 @@ from app.database.database import session_generator
 from app.database import models
 from app.core.security import hash_password, hash_token
 
+@pytest.fixture(scope="session", autouse=True)
+def setup_http_client():
+
+    from app.main import app
+    app.state.http_client = httpx.AsyncClient(timeout=30.0)
+    yield
 
 @pytest.fixture(scope="session")
 def engine():

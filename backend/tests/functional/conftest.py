@@ -8,24 +8,28 @@ from sqlalchemy.orm import sessionmaker
 
 from app.services.jwt import JwtService
 
-os.environ["MOCK_JUDGE0"] = "false"
+os.environ["MOCK_JUDGE0"] = os.getenv("MOCK_JUDGE0", "false")
 
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "test_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "test_pass")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "test_db")
+JUDGE0_URL = os.getenv("JUDGE0_URL", "http://localhost:2358")
 
-DB_URL = os.getenv(
-    "DATABASE_URL", "postgresql://test_user:test_pass@postgresdb:5432/test_db"
-)
+DB_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 from app.core.config import Settings
 
 def mock_get_settings():
     return Settings(
-        postgres_user="test_user",
-        postgres_password="test_pass",
-        postgres_db="test_db",
-        postgres_host="postgresdb",
-        postgres_port=5432,
-        mock_judge0="false",
-        judge0_url=os.getenv("JUDGE0_URL", "http://judge0_server:2358"),
-        jwt_secret_key="test_secret_key_12345",
+        postgres_user=POSTGRES_USER,
+        postgres_password=POSTGRES_PASSWORD,
+        postgres_db=POSTGRES_DB,
+        postgres_host=POSTGRES_HOST,
+        postgres_port=int(POSTGRES_PORT),
+        mock_judge0=os.getenv("MOCK_JUDGE0", "false"),
+        judge0_url=JUDGE0_URL,
+        jwt_secret_key=os.getenv("JWT_SECRET_KEY", "test_secret_key_12345"),
         access_token_expire_minutes=30,
         refresh_token_expire_days=7,
         admin_username="admin",

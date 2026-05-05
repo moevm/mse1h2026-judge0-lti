@@ -1,6 +1,9 @@
 name: Functional Tests
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 jobs:
   functional-tests:
     name: Run Functional Tests (PostgreSQL + Judge0)

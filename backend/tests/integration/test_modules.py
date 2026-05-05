@@ -1,6 +1,6 @@
 import pytest
 
-
+pytestmark = pytest.mark.integration
 class TestGetModules:
     """Тесты GET /api/modules/"""
 

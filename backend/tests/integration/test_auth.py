@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-
+pytestmark = pytest.mark.integration
 @pytest.mark.asyncio
 async def test_login_success(client, create_test_user):
     """Успешный вход"""

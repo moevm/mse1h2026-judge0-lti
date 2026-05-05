@@ -1,4 +1,3 @@
-# tests/functional/test_run.py
 import pytest
 
 

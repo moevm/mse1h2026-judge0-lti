@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 
-
+pytestmark = pytest.mark.integration
 class TestUserModules:
     """Тесты GET /users/{user_id}/modules"""
 

@@ -1,6 +1,4 @@
 import os
-from unittest.mock import patch, MagicMock
-
 import pytest
 from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
@@ -10,17 +8,25 @@ from testcontainers.postgres import PostgresContainer
 
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
 os.environ["MOCK_JUDGE0"] = "true"
+os.environ["POSTGRES_USER"] = "test_user"
+os.environ["POSTGRES_PASSWORD"] = "test_pass"
+os.environ["POSTGRES_DB"] = "test_db"
+os.environ["POSTGRES_HOST"] = "localhost"
+os.environ["POSTGRES_PORT"] = "5433"
+
+from app.core.config import Settings
+
 
 def mock_get_settings():
     return Settings(
-        postgres_user="test_user",
-        postgres_password="test_pass",
-        postgres_db="test_db",
-        postgres_host="localhost",
-        postgres_port=5433,
-        mock_judge0="true",
-        judge0_url="http://test_judge0:2358",
-        jwt_secret_key="test_secret_key_12345",
+        postgres_user=os.environ["POSTGRES_USER"],
+        postgres_password=os.environ["POSTGRES_PASSWORD"],
+        postgres_db=os.environ["POSTGRES_DB"],
+        postgres_host=os.environ["POSTGRES_HOST"],
+        postgres_port=int(os.environ["POSTGRES_PORT"]),
+        mock_judge0=os.environ["MOCK_JUDGE0"],
+        judge0_url=os.getenv("JUDGE0_URL", "http://test_judge0:2358"),
+        jwt_secret_key=os.environ["JWT_SECRET_KEY"],
         access_token_expire_minutes=30,
         refresh_token_expire_days=7,
         admin_username="admin",
@@ -28,8 +34,6 @@ def mock_get_settings():
     )
 
 import app.core.config
-from app.core.config import Settings
-
 app.core.config.get_settings = mock_get_settings
 
 from app.main import app as main_app

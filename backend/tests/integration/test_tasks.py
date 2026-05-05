@@ -1,7 +1,7 @@
 import pytest
 import json
 
-
+pytestmark = pytest.mark.integration
 class TestGetTasks:
     """Тесты GET /api/tasks/"""
     @pytest.mark.asyncio

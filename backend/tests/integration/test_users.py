@@ -1,5 +1,5 @@
 import pytest
-
+pytestmark = pytest.mark.integration
 class TestGetAllUsers:
     """Тесты GET /api/users/"""
 

@@ -10,16 +10,11 @@ from app.services.jwt import JwtService
 
 os.environ["MOCK_JUDGE0"] = "false"
 
-from app.main import app as main_app
-from app.database.database import session_generator
-from app.database import models
-from app.core.config import get_settings, Settings
-from app.core.security import hash_password, hash_token
 
 DB_URL = os.getenv(
     "DATABASE_URL", "postgresql://test_user:test_pass@postgresdb:5432/test_db"
 )
-
+from app.core.config import Settings
 
 def mock_get_settings():
     return Settings(
@@ -41,6 +36,13 @@ def mock_get_settings():
 import app.core.config
 
 app.core.config.get_settings = mock_get_settings
+
+from app.main import app as main_app
+from app.database.database import session_generator
+from app.database import models
+from app.core.security import hash_password, hash_token
+
+
 
 
 @pytest.fixture(scope="session")

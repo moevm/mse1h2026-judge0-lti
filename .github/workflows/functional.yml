@@ -1,8 +1,8 @@
 name: Functional Tests
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [main, feature/issue-99-create-tests]
   workflow_dispatch:
 jobs:
   functional-tests:

@@ -48,4 +48,5 @@ class AnalyticsMapper:
             stdout=attempt.stdout,
             stderr=attempt.stderr,
             compile_output=attempt.compile_output,
+            source_code=attempt.source_code,
         )

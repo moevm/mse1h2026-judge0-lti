@@ -29,15 +29,41 @@ class MockUserRepository(UserRepository):
         self.next_id += 1
 
     def get_all(self, filters=None):
-        return list(self.users.values())
+        users = list(self.users.values())
+        if filters:
+            if hasattr(filters, "include_deleted") and not filters.include_deleted:
+                users = [u for u in users if u.deleted_at is None]
+
+            if hasattr(filters, "search") and filters.search:
+                search = filters.search.lower()
+                users = [
+                    u
+                    for u in users
+                    if search in (u.full_name or "").lower()
+                    or search in (u.username or "").lower()
+                ]
+        return users
 
     def get_solved_count(self, user_id: int):
         return 0
 
+    def update(self, user_id: int, data: dict):
+        user = self.users.get(user_id)
+        if user:
+            for key, value in data.items():
+                setattr(user, key, value)
+        return user
+
+    def delete(self, user_id: int):
+        user = self.users.get(user_id)
+        if user:
+            from datetime import datetime, timezone
+
+            user.deleted_at = datetime.now(timezone.utc)
+        return user
     def clear(self):
         self.users.clear()
         self.next_id = 1
-
 
 class MockRefreshTokenRepository(RefreshTokenRepository):
     """Мок репозитория refresh токенов"""

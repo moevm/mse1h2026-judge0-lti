@@ -15,3 +15,24 @@ class MockJwtService(JwtService):
         self.refresh_counter += 1
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         return f"mock_refresh_{user_id}_{self.refresh_counter}", expires_at
+
+    def decode_access_token(self, token: str):
+        if token.startswith("Bearer "):
+            token = token.replace("Bearer ", "")
+
+        if token.startswith("mock_access_"):
+            parts = token.split("_")
+            if len(parts) >= 4:
+                return {"user_id": int(parts[2]), "role": parts[3], "type": "access"}
+
+        if token == "expired_token":
+            from jwt.exceptions import ExpiredSignatureError
+
+            raise ExpiredSignatureError("Token expired")
+
+        if token == "invalid_token":
+            from jwt.exceptions import InvalidTokenError
+
+            raise InvalidTokenError("Invalid token")
+
+        return {"user_id": 1, "role": "student", "type": "access"}

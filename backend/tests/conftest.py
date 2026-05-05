@@ -22,13 +22,6 @@ from app.core.config import get_settings, Settings
 
 TEST_DATABASE_URL = "postgresql://test_user:test_pass@localhost:5433/test_db"
 
-# @pytest.fixture(autouse=True, scope="session")
-# def mock_pwd_context():
-#     with patch('app.core.security.pwd_context') as mock_pwd:
-#         mock_pwd.verify = MagicMock(side_effect=lambda password, hashed: hashed == f"hashed_{password}")
-#         mock_pwd.hash = MagicMock(side_effect=lambda password: f"hashed_{password}")
-#         yield mock_pwd
-
 def mock_get_settings():
     return Settings(
         postgres_user="test_user",
@@ -71,20 +64,10 @@ def engine():
         "rust",
     ]
 
-    created_count = 0
     for lang_name in default_languages:
         lang = session.query(Language).filter(Language.language == lang_name).first()
         if not lang:
             session.add(Language(language=lang_name))
-            created_count += 1
-            print(f"Created language: {lang_name}")
-
-    session.commit()
-    print(f"Total languages created: {created_count}")
-
-    # Проверим сколько языков в БД
-    total_langs = session.query(Language).count()
-    print(f"Total languages in DB: {total_langs}")
 
     session.commit()
     session.close()
@@ -134,6 +117,48 @@ def db_session(engine):
     connection.close()
     main_app.dependency_overrides.clear()
 
+
+@pytest.fixture(autouse=True)
+def mock_judge_service():
+    from app.services.judge import get_judge_service
+    from unittest.mock import AsyncMock, MagicMock
+
+    mock_service = MagicMock()
+    mock_service.execute_code = AsyncMock(
+        return_value={
+            "stdout": "mocked output",
+            "stderr": None,
+            "compile_output": None,
+            "status": {"id": 3, "description": "Accepted"},
+        }
+    )
+
+    async def mock_get_judge_service():
+        return mock_service
+
+    from app.main import app
+
+    app.dependency_overrides[get_judge_service] = mock_get_judge_service
+
+    yield
+
+    app.dependency_overrides.pop(get_judge_service, None)
+
+
+@pytest.fixture
+async def auth_client(client, create_test_user):
+    """Создает авторизованного клиента с реальным пользователем"""
+    user = create_test_user(
+        username="analytics_user", password="testpass", role="admin"
+    )
+
+    login_response = await client.post(
+        "/api/auth/login", json={"username": "analytics_user", "password": "testpass"}
+    )
+    access_token = login_response.json()["access_token"]
+
+    client.headers["Authorization"] = f"Bearer {access_token}"
+    return client, user
 
 @pytest.fixture(autouse=True)
 def mock_admin_auth():

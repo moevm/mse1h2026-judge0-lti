@@ -6,21 +6,10 @@ from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
+from testcontainers.postgres import PostgresContainer
 
-os.environ["POSTGRES_USER"] = "test_user"
-os.environ["POSTGRES_PASSWORD"] = "test_pass"
-os.environ["POSTGRES_DB"] = "test_db"
-os.environ["POSTGRES_HOST"] = "localhost"
-os.environ["POSTGRES_PORT"] = "5433"
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
 os.environ["MOCK_JUDGE0"] = "true"
-
-from app.main import app as main_app
-from app.database.database import session_generator
-from app.database import models
-from app.core.config import get_settings, Settings
-
-TEST_DATABASE_URL = "postgresql://test_user:test_pass@localhost:5433/test_db"
 
 def mock_get_settings():
     return Settings(
@@ -38,33 +27,35 @@ def mock_get_settings():
         admin_password="adminpass",
     )
 
-
 import app.core.config
+from app.core.config import Settings
 
 app.core.config.get_settings = mock_get_settings
 
-@pytest.fixture(scope="session")
-def engine():
-    engine = create_engine(TEST_DATABASE_URL)
-    models.Base.metadata.create_all(bind=engine)
+from app.main import app as main_app
+from app.database.database import session_generator
+from app.database import models
 
-    from app.database.models import Language
-    from sqlalchemy.orm import sessionmaker
+
+
+
+@pytest.fixture(scope="session")
+def postgres_container():
+    with PostgresContainer("postgres:17-alpine") as postgres:
+        yield postgres
+
+@pytest.fixture(scope="session")
+def engine(postgres_container):
+    url = postgres_container.get_connection_url()
+    engine = create_engine(url)
+    models.Base.metadata.create_all(bind=engine)
 
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    default_languages = [
-        "python",
-        "javascript",
-        "java",
-        "cpp",
-        "c",
-        "go",
-        "rust",
-    ]
-
+    default_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
     for lang_name in default_languages:
+        from app.database.models import Language
         lang = session.query(Language).filter(Language.language == lang_name).first()
         if not lang:
             session.add(Language(language=lang_name))

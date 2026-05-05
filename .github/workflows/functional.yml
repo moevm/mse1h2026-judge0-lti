@@ -13,6 +13,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Prepare Judge0 config
+        run: cp judge0.conf.example judge0.conf
+
       - name: Run tests via docker-compose
         run: |
           docker compose -f docker-compose.test.yml up \

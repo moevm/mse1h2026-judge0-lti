@@ -1,57 +1,86 @@
 version: '3.8'
 
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: ${LOG_MAX_SIZE:-100M}
+      max-file: ${LOG_MAX_FILE:-3}
+      compress: "${LOG_COMPRESS:-true}"
+
+
 services:
   postgresdb:
     image: postgres:17-alpine
-    env_file:
-      - .env.test
+    container_name: mse1h2026-judge0-lti_postgresql-judge0
+    env_file: ./judge0.conf
+    volumes:
+      - postgres-data-judge0:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 5
-    networks:
-      - test-net
+      start_period: 10s
 
   redis:
     image: redis:7.2.4
-    command: ["redis-server", "--requirepass", "test_redis_pass"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "test_redis_pass", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    container_name: mse1h2026-judge0-lti_redis
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: ./judge0.conf
+    <<: *default-logging
+    restart: unless-stopped
     networks:
-      - test-net
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   judge0_server:
     image: mrkushalsm/judge0:cgv2
+
     env_file: ./judge0.conf
+    container_name: mse1h2026-judge0-lti_judge0-server
     volumes:
       - ./judge0.conf:/judge0.conf:ro
-    privileged: true
+    ports:
+      - "2358:2358" # В проде надо будет закрыть порт
+    privileged: true   # нехорошо            <---------
+    <<: *default-logging
+    restart: unless-stopped
     depends_on:
       redis:
         condition: service_healthy
       postgresdb:
         condition: service_healthy
+    networks:
+      - app-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2358/about"]
       interval: 10s
       timeout: 10s
       retries: 5
-      start_period: 15s
-    networks:
-      - test-net
-    ports:
-      - "2358:2358"
+      start_period: 10s
 
   judge0_worker:
     image: mrkushalsm/judge0:cgv2
+    container_name: mse1h2026-judge0-lti_judge0-worker
     command: ["./scripts/workers"]
     volumes:
       - ./judge0.conf:/judge0.conf:ro
-    privileged: true
+    privileged: true   # нехорошо            <---------
+    <<: *default-logging
     depends_on:
       redis:
         condition: service_healthy
@@ -59,18 +88,47 @@ services:
         condition: service_healthy
       judge0_server:
         condition: service_healthy
+    restart: unless-stopped
     networks:
-      - test-net
+      - app-net
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "bin/rails"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+
+  postgresdb_data:
+    image: postgres:17-alpine
+    container_name: mse1h2026-judge0-lti_postgresdb-data
+    restart: unless-stopped
+    <<: *default-logging
+    env_file:
+      - .env.test
+    volumes:
+      - postgresdb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
 
   backend:
+    image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.4
     build:
       context: ./backend
       dockerfile: Dockerfile
       target: prod
+    container_name: backend-python-fastapi
+    restart: unless-stopped
+    <<: *default-logging
     env_file:
       - .env.test
     depends_on:
-      postgresdb:
+      postgresdb_data:
         condition: service_healthy
       judge0_worker:
         condition: service_healthy
@@ -81,7 +139,12 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - test-net
+      - app-net
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 1024M
 
   tests:
     build:
@@ -91,12 +154,22 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    env_file:
+      - .env.test
     environment:
       API_URL: http://backend:8000
     command: ["pytest", "tests/functional/", "-v"]
     networks:
-      - test-net
+      - app-net
+
+
+volumes:
+  postgresdb-data:
+    driver: local
+  postgres-data-judge0:
+    driver: local
 
 networks:
-  test-net:
+  app-net:
     driver: bridge
+

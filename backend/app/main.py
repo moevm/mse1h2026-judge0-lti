@@ -7,10 +7,8 @@ from fastapi.responses import JSONResponse
 from app.routers import lti, tasks, modules, check, languages, users, run, auth, analytics
 from app.database.database import create_tables, seed_database
 
-# создает таблицы в postgres
-if __name__ == "__main__":
-    create_tables()
-    seed_database()
+create_tables()
+seed_database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

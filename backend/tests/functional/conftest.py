@@ -1,149 +1,26 @@
-# tests/functional/conftest.py
 import os
-
-import httpx
 import pytest
+import time
 from typing import AsyncGenerator
-from datetime import datetime, timezone
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from httpx import AsyncClient
 
-from app.services.jwt import JwtService
-
-os.environ["MOCK_JUDGE0"] = os.getenv("MOCK_JUDGE0", "false")
-
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-POSTGRES_USER = os.getenv("POSTGRES_USER", "test_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "test_pass")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "test_db")
-JUDGE0_URL = os.getenv("JUDGE0_URL", "http://localhost:2358")
-
-DB_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-from app.core.config import Settings
-
-def mock_get_settings():
-    return Settings(
-        postgres_user=POSTGRES_USER,
-        postgres_password=POSTGRES_PASSWORD,
-        postgres_db=POSTGRES_DB,
-        postgres_host=POSTGRES_HOST,
-        postgres_port=int(POSTGRES_PORT),
-        mock_judge0=os.getenv("MOCK_JUDGE0", "false"),
-        judge0_url=JUDGE0_URL,
-        jwt_secret_key=os.getenv("JWT_SECRET_KEY", "test_secret_key_12345"),
-        access_token_expire_minutes=30,
-        refresh_token_expire_days=7,
-        admin_username="admin",
-        admin_password="adminpass",
-    )
-
-
-import app.core.config
-app.core.config.get_settings = mock_get_settings
-
-from app.main import app as main_app
-from app.database.database import session_generator
-from app.database import models
-from app.core.security import hash_password, hash_token
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_http_client():
-
-    from app.main import app
-    app.state.http_client = httpx.AsyncClient(timeout=30.0)
-    yield
-
-@pytest.fixture(scope="session")
-def engine():
-    engine = create_engine(DB_URL)
-    models.Base.metadata.create_all(bind=engine)
-
-    from app.database.models import Language
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    default_languages = [
-        "Python (3.8.1)",
-        "JavaScript (Node.js 12.14.0)",
-        "Java (OpenJDK 13.0.1)",
-        "C (Clang 7.0.1)",
-        "C++ (Clang 7.0.1)",
-        "Go (1.13)",
-        "Rust (1.40)",
-    ]
-    for lang_name in default_languages:
-        lang = session.query(Language).filter(Language.language == lang_name).first()
-        if not lang:
-            session.add(Language(language=lang_name))
-
-    session.commit()
-    session.close()
-
-    yield engine
-    models.Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(scope="function")
-def db_session(engine):
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = sessionmaker(bind=connection)()
-
-    def override_get_db():
-        try:
-            yield session
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
-        finally:
-            pass
-
-    main_app.dependency_overrides[session_generator] = override_get_db
-
-    yield session
-    session.commit()
-    transaction.rollback()
-    connection.close()
-    main_app.dependency_overrides.clear()
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 
 @pytest.fixture
-async def client(db_session) -> AsyncGenerator:
-    transport = ASGITransport(app=main_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+async def client() -> AsyncGenerator:
+    async with AsyncClient(base_url=API_URL, timeout=30.0) as client:
         yield client
 
 
 @pytest.fixture
-def create_admin_user(db_session):
-    """Создаем админа в БД"""
-    from app.database.models import User, UserTypeEnum
-
-    admin = db_session.query(User).filter(User.username == "admin").first()
-    if not admin:
-        admin = User()
-        admin.username = "admin"
-        admin.password_hash = hash_password("adminpass")
-        admin.full_name = "Admin User"
-        admin.role = UserTypeEnum.admin
-        admin.created_at = datetime.now(timezone.utc)
-        admin.updated_at = datetime.now(timezone.utc)
-        db_session.add(admin)
-        db_session.commit()
-        db_session.refresh(admin)
-    return admin
-
-
-@pytest.fixture
-async def admin_auth(client, create_admin_user):
-    """Авторизованный админ"""
+async def admin_auth(client):
+    """Авторизованный админ (админ должен быть создан в БД бекенда)"""
+    time.sleep(0.5)
     login_response = await client.post(
         "/api/auth/login", json={"username": "admin", "password": "adminpass"}
     )
+    print(login_response.json())
     assert login_response.status_code == 200, "Admin user must exist in database"
     access_token = login_response.json()["access_token"]
     client.headers["Authorization"] = f"Bearer {access_token}"

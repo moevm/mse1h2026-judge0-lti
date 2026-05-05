@@ -117,8 +117,6 @@ services:
       retries: 5
     networks:
       - app-net
-    ports:
-      - "5435:5432"
 
   backend:
     image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.4
@@ -143,8 +141,6 @@ services:
       start_period: 10s
     networks:
       - app-net
-    ports:
-      - "8000:8000"
     # deploy:
     #   resources:
     #     limits:
@@ -159,7 +155,7 @@ services:
     container_name: mse1h2026-judge0-lti_frontend-nginx-react
     restart: unless-stopped
     <<: *default-logging
-    env_file: 
+    env_file:
       - .env
     ports:
       - "80:${FRONTEND_PORT}"

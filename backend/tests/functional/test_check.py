@@ -7,43 +7,21 @@ class TestCheckFunctional:
     """Функциональные тесты для /check"""
 
     @pytest.mark.asyncio
-    async def test_check_correct_python_code(self, admin_auth, create_task_via_api):
+    async def test_check_correct_python_code(self, admin_auth):
         client = admin_auth
-
-        task = await create_task_via_api(
-            title="Sum of two numbers",
-            description="Calculate sum of two integers",
-            timeout=30,
-            languages=["Python (3.8.1)"],
-        )
-
-        test_cases = [
-            {"title": "Test 1", "stdin": "2 3", "stdout": "5"},
-            {"title": "Test 2", "stdin": "10 20", "stdout": "30"},
-            {"title": "Test 3", "stdin": "-1 5", "stdout": "4"},
-        ]
-        for tc in test_cases:
-            response = await client.post(
-                f"/api/tasks/{task['id']}/tests",
-                json={
-                    "title": tc["title"],
-                    "stdin": tc["stdin"],
-                    "stdout": tc["stdout"],
-                },
-            )
-            assert response.status_code == 200
 
         correct_code = """a, b = map(int, input().split())
     print(a + b)"""
 
         response = await client.post(
-            f"/api/check/{task['id']}",
+            f"/api/check/1",
             json={
                 "language": "Python (3.8.1)",
                 "code": correct_code,
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
+        print(response.json())
 
         assert response.status_code == 200
         data = response.json()

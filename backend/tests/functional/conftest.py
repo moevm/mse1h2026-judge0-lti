@@ -20,7 +20,6 @@ async def admin_auth(client):
     login_response = await client.post(
         "/api/auth/login", json={"username": "admin", "password": "adminpass"}
     )
-    print(login_response.json())
     assert login_response.status_code == 200, "Admin user must exist in database"
     access_token = login_response.json()["access_token"]
     client.headers["Authorization"] = f"Bearer {access_token}"

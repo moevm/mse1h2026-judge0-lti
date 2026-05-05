@@ -1,4 +1,3 @@
-# tests/functional/conftest.py
 import pytest
 from typing import AsyncGenerator
 from fastapi import FastAPI, APIRouter

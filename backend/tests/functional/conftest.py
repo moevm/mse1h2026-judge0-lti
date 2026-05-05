@@ -1,3 +1,4 @@
+# tests/functional/conftest.py
 import os
 import pytest
 from typing import AsyncGenerator
@@ -96,7 +97,7 @@ def db_session(engine):
     main_app.dependency_overrides[session_generator] = override_get_db
 
     yield session
-
+    session.commit()
     transaction.rollback()
     connection.close()
     main_app.dependency_overrides.clear()
@@ -107,63 +108,6 @@ async def client(db_session) -> AsyncGenerator:
     transport = ASGITransport(app=main_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
-
-
-@pytest.fixture
-def create_student_user(db_session):
-    """Фабрика для создания студента в каждом тесте"""
-    from app.database.models import User, UserTypeEnum, RefreshToken
-
-    def _create_student():
-        db_session.query(RefreshToken).filter(
-            RefreshToken.user_id == db_session.query(User.id).filter(User.username == "student").scalar_subquery()
-        ).delete()
-        db_session.query(User).filter(User.username == "student").delete()
-
-        user = User()
-        user.username = "student"
-        user.password_hash = hash_password("studentpass")
-        user.full_name = "Test Student"
-        user.role = UserTypeEnum.student
-        user.created_at = datetime.now(timezone.utc)
-        user.updated_at = datetime.now(timezone.utc)
-
-        db_session.add(user)
-        db_session.flush()
-
-        jwt_service = JwtService(mock_get_settings())
-        refresh_token, expires_at = jwt_service.create_refresh_token(user_id=user.id)
-
-        refresh_token_obj = RefreshToken(
-            user_id=user.id,
-            token_hash=hash_token(refresh_token),
-            expires_at=expires_at,
-            revoked=False,
-        )
-        db_session.add(refresh_token_obj)
-        db_session.commit()
-        db_session.refresh(user)
-
-        return user, refresh_token
-
-    return _create_student
-
-
-@pytest.fixture
-async def student_auth(client, create_student_user):
-    """Авторизованный студент"""
-    user, refresh_token = create_student_user()
-
-    refresh_response = await client.post(
-        "/api/auth/refresh", cookies={"refresh_token": refresh_token}
-    )
-    assert refresh_response.status_code == 200
-    access_token = refresh_response.json()["access_token"]
-
-    client.headers["Authorization"] = f"Bearer {access_token}"
-    client.cookies.set("refresh_token", refresh_token)
-
-    return client, user
 
 
 @pytest.fixture

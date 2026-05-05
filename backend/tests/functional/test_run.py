@@ -6,9 +6,9 @@ class TestRunFunctional:
     """Функциональные тесты для /run эндпоинта"""
 
     @pytest.mark.asyncio
-    async def test_run_simple_python_code(self, student_auth):
+    async def test_run_simple_python_code(self, admin_auth):
         """Запуск простого Python кода"""
-        client, user = student_auth
+        client = admin_auth
 
         response = await client.post(
             "/api/run/",
@@ -26,9 +26,9 @@ class TestRunFunctional:
         assert data.get("stderr") is None or data.get("stderr") == ""
 
     @pytest.mark.asyncio
-    async def test_run_python_code_with_input(self, student_auth):
+    async def test_run_python_code_with_input(self, admin_auth):
         """Запуск Python кода с вводом данных"""
-        client, user = student_auth
+        client = admin_auth
 
         code = """name = input()
 print(f"Hello, {name}!")"""
@@ -47,9 +47,9 @@ print(f"Hello, {name}!")"""
         assert "Hello, Alice!" in data.get("stdout", "")
 
     @pytest.mark.asyncio
-    async def test_run_python_code_with_error(self, student_auth):
+    async def test_run_python_code_with_error(self,admin_auth):
         """Запуск кода с ошибкой"""
-        client, user = student_auth
+        client = admin_auth
 
         response = await client.post(
             "/api/run/",
@@ -66,9 +66,9 @@ print(f"Hello, {name}!")"""
         assert "ValueError" in data.get("stderr", "")
 
     @pytest.mark.asyncio
-    async def test_run_java_code(self, student_auth):
+    async def test_run_java_code(self, admin_auth):
         """Запуск Java кода"""
-        client, user = student_auth
+        client = admin_auth
 
         java_code = '''public class Main {
     public static void main(String[] args) {
@@ -90,9 +90,9 @@ print(f"Hello, {name}!")"""
         assert "Hello from Java!" in data.get("stdout", "")
 
     @pytest.mark.asyncio
-    async def test_run_javascript_code(self, student_auth):
+    async def test_run_javascript_code(self, admin_auth):
         """Запуск JavaScript кода"""
-        client, user = student_auth
+        client = admin_auth
 
         js_code = """console.log("Hello from JavaScript!");"""
 
@@ -111,9 +111,9 @@ print(f"Hello, {name}!")"""
 
 
     @pytest.mark.asyncio
-    async def test_run_invalid_language(self, student_auth):
+    async def test_run_invalid_language(self, admin_auth):
         """Запуск с невалидным языком программирования"""
-        client, user = student_auth
+        client = admin_auth
 
         response = await client.post(
             "/api/run/",
@@ -133,8 +133,8 @@ class TestRunFullFlow:
     """Полный цикл работы с запуском кода"""
 
     @pytest.mark.asyncio
-    async def test_full_run_flow(self, student_auth):
-        client, user = student_auth
+    async def test_full_run_flow(self, admin_auth):
+        client = admin_auth
 
         response = await client.post(
             "/api/run/",

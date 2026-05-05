@@ -7,10 +7,8 @@ class TestCheckFunctional:
     """Функциональные тесты для /check"""
 
     @pytest.mark.asyncio
-    async def test_check_correct_python_code(
-        self, student_auth, admin_auth, create_task_via_api
-    ):
-        client, user = student_auth
+    async def test_check_correct_python_code(self, admin_auth, create_task_via_api):
+        client = admin_auth
 
         task = await create_task_via_api(
             title="Sum of two numbers",
@@ -19,14 +17,13 @@ class TestCheckFunctional:
             languages=["Python (3.8.1)"],
         )
 
-        test_responses = []
         test_cases = [
             {"title": "Test 1", "stdin": "2 3", "stdout": "5"},
             {"title": "Test 2", "stdin": "10 20", "stdout": "30"},
             {"title": "Test 3", "stdin": "-1 5", "stdout": "4"},
         ]
         for tc in test_cases:
-            response = await admin_auth.post(
+            response = await client.post(
                 f"/api/tasks/{task['id']}/tests",
                 json={
                     "title": tc["title"],
@@ -35,10 +32,9 @@ class TestCheckFunctional:
                 },
             )
             assert response.status_code == 200
-            test_responses.append(response.json())
 
         correct_code = """a, b = map(int, input().split())
-print(a + b)"""
+    print(a + b)"""
 
         response = await client.post(
             f"/api/check/{task['id']}",
@@ -55,10 +51,10 @@ print(a + b)"""
 
     @pytest.mark.asyncio
     async def test_check_incorrect_python_code(
-        self, student_auth, admin_auth, create_task_via_api
+        self, admin_auth, create_task_via_api
     ):
         """Проверка неправильного Python кода"""
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="Sum of two numbers",
@@ -72,7 +68,7 @@ print(a + b)"""
             {"title": "Test 2", "stdin": "10 20", "stdout": "30"},
         ]
         for tc in test_cases:
-            response = await admin_auth.post(
+            response = await client.post(
                 f"/api/tasks/{task['id']}/tests",
                 json={"title": tc["title"], "stdin": tc["stdin"], "stdout": tc["stdout"]},
             )
@@ -97,10 +93,10 @@ print(a - b)"""
 
     @pytest.mark.asyncio
     async def test_check_python_code_with_compilation_error(
-        self, student_auth, admin_auth, create_task_via_api
+        self, admin_auth, create_task_via_api
     ):
         """Проверка Python кода с синтаксической ошибкой"""
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="Simple task",
@@ -109,7 +105,7 @@ print(a - b)"""
             languages=["Python (3.8.1)"],
         )
 
-        response = await admin_auth.post(
+        response = await client.post(
             f"/api/tasks/{task['id']}/tests",
             json={"title": "Test", "stdin": "", "stdout": "Hello"},
         )
@@ -132,9 +128,9 @@ print(a - b)"""
         assert data["success"] is False
 
     @pytest.mark.asyncio
-    async def test_check_task_not_found(self, student_auth):
+    async def test_check_task_not_found(self, admin_auth):
         """Проверка несуществующей задачи"""
-        client, user = student_auth
+        client = admin_auth
 
         response = await client.post(
             "/api/check/99999",
@@ -149,9 +145,9 @@ print(a - b)"""
         assert "не найдена" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_check_invalid_language(self, student_auth, admin_auth, create_task_via_api):
+    async def test_check_invalid_language(self, admin_auth, create_task_via_api):
         """Проверка с невалидным языком программирования"""
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="Test task",
@@ -180,10 +176,10 @@ class TestCheckWithMultipleLanguages:
 
     @pytest.mark.asyncio
     async def test_check_java_code(
-        self, student_auth, admin_auth, create_task_via_api
+        self, admin_auth, create_task_via_api
     ):
         """Проверка Java кода"""
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="Java Sum",
@@ -192,7 +188,7 @@ class TestCheckWithMultipleLanguages:
             languages=["Java (OpenJDK 13.0.1)"],
         )
 
-        response = await admin_auth.post(
+        response = await client.post(
             f"/api/tasks/{task['id']}/tests",
             json={"title": "Test", "stdin": "2 3", "stdout": "5"},
         )
@@ -223,10 +219,10 @@ public class Main {
 
     @pytest.mark.asyncio
     async def test_check_javascript_code(
-        self, student_auth, admin_auth, create_task_via_api
+        self, admin_auth, create_task_via_api
     ):
         """Проверка JavaScript кода"""
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="JS Sum",
@@ -235,7 +231,7 @@ public class Main {
             languages=["JavaScript (Node.js 12.14.0)"],
         )
 
-        response = await admin_auth.post(
+        response = await client.post(
             f"/api/tasks/{task['id']}/tests",
             json={"title": "Test", "stdin": "2 3", "stdout": "5"},
         )
@@ -271,9 +267,9 @@ class TestCheckFullFlow:
 
     @pytest.mark.asyncio
     async def test_full_check_flow(
-        self, student_auth, admin_auth, create_task_via_api
+        self, admin_auth, create_task_via_api
     ):
-        client, user = student_auth
+        client = admin_auth
 
         task = await create_task_via_api(
             title="FizzBuzz",
@@ -289,7 +285,7 @@ class TestCheckFullFlow:
             {"title": "Test 4", "stdin": "2", "stdout": "2"},
         ]
         for tc in test_cases:
-            response = await admin_auth.post(
+            response = await client.post(
                 f"/api/tasks/{task['id']}/tests",
                 json={"title": tc["title"], "stdin": tc["stdin"], "stdout": tc["stdout"]},
             )

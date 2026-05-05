@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator, Field
 
 from app.schemas.task import TaskResponse
 
@@ -16,8 +16,8 @@ class ModuleBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ModuleCreate(BaseModel):
-    title: str
-    description: str
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
 
 class ModulePatch(BaseModel):
     title: str | None = None

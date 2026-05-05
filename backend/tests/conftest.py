@@ -1,35 +1,44 @@
 import os
-import sys
-from pathlib import Path
+from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import pytest
+from typing import AsyncGenerator
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, Session
 
 os.environ["POSTGRES_USER"] = "test_user"
 os.environ["POSTGRES_PASSWORD"] = "test_pass"
 os.environ["POSTGRES_DB"] = "test_db"
 os.environ["POSTGRES_HOST"] = "localhost"
-os.environ["POSTGRES_PORT"] = "5432"
-os.environ["JWT_SECRET_KEY"] = "test_secret_key_for_testing_only_12345"
+os.environ["POSTGRES_PORT"] = "5433"
+os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
 os.environ["MOCK_JUDGE0"] = "true"
 
-import pytest
-from typing import AsyncGenerator
-from httpx import AsyncClient, ASGITransport
-from fastapi import FastAPI
-
+from app.main import app as main_app
+from app.database.database import session_generator
+from app.database import models
 from app.core.config import get_settings, Settings
-from tests.mocks import create_mock_pwd_context, mock_hash_token
+
+TEST_DATABASE_URL = "postgresql://test_user:test_pass@localhost:5433/test_db"
+
+# @pytest.fixture(autouse=True, scope="session")
+# def mock_pwd_context():
+#     with patch('app.core.security.pwd_context') as mock_pwd:
+#         mock_pwd.verify = MagicMock(side_effect=lambda password, hashed: hashed == f"hashed_{password}")
+#         mock_pwd.hash = MagicMock(side_effect=lambda password: f"hashed_{password}")
+#         yield mock_pwd
 
 def mock_get_settings():
     return Settings(
-        postgres_user=os.environ["POSTGRES_USER"],
-        postgres_password=os.environ["POSTGRES_PASSWORD"],
-        postgres_db=os.environ["POSTGRES_DB"],
-        postgres_host=os.environ["POSTGRES_HOST"],
-        postgres_port=int(os.environ["POSTGRES_PORT"]),
-        mock_judge0=os.environ["MOCK_JUDGE0"],
+        postgres_user="test_user",
+        postgres_password="test_pass",
+        postgres_db="test_db",
+        postgres_host="localhost",
+        postgres_port=5433,
+        mock_judge0="true",
         judge0_url="http://test_judge0:2358",
-        jwt_secret_key=os.environ["JWT_SECRET_KEY"],
+        jwt_secret_key="test_secret_key_12345",
         access_token_expire_minutes=30,
         refresh_token_expire_days=7,
         admin_username="admin",
@@ -38,23 +47,250 @@ def mock_get_settings():
 
 
 import app.core.config
+
 app.core.config.get_settings = mock_get_settings
 
+@pytest.fixture(scope="session")
+def engine():
+    engine = create_engine(TEST_DATABASE_URL)
+    models.Base.metadata.create_all(bind=engine)
 
-import app.core.security
-app.core.security.pwd_context = create_mock_pwd_context()
+    from app.database.models import Language
+    from sqlalchemy.orm import sessionmaker
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    default_languages = [
+        "python",
+        "javascript",
+        "java",
+        "cpp",
+        "c",
+        "go",
+        "rust",
+    ]
+
+    created_count = 0
+    for lang_name in default_languages:
+        lang = session.query(Language).filter(Language.language == lang_name).first()
+        if not lang:
+            session.add(Language(language=lang_name))
+            created_count += 1
+            print(f"Created language: {lang_name}")
+
+    session.commit()
+    print(f"Total languages created: {created_count}")
+
+    # Проверим сколько языков в БД
+    total_langs = session.query(Language).count()
+    print(f"Total languages in DB: {total_langs}")
+
+    session.commit()
+    session.close()
+
+    yield engine
+    models.Base.metadata.drop_all(bind=engine)
 
 
-import app.services.auth as auth_module
-auth_module.hash_token = mock_hash_token
+@pytest.fixture(scope="function")
+def db_session(engine):
+    connection = engine.connect()
+    session = sessionmaker(bind=connection)()
+
+    def override_get_db():
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            # session.close()
+            pass
+    main_app.dependency_overrides[session_generator] = override_get_db
+
+    yield session
+
+    from app.database.models import Base
+
+    table_names = [
+        "module_tasks_order",
+        "refresh_tokens",
+        "task_tests",
+        "tasks_languages",
+        "tasks",
+        "modules",
+        "users",
+    ]
+
+    session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+
+    for table_name in table_names:
+        session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
+
+    session.commit()
+
+    connection.close()
+    main_app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_admin_auth():
+    from app.core.dependencies import get_current_admin
+    from app.database.models import User, UserTypeEnum
+
+    async def mock_get_current_admin():
+        admin = User()
+        admin.id = 1
+        admin.username = "admin"
+        admin.full_name = "Admin User"
+        admin.role = UserTypeEnum.admin
+        return admin
+
+    main_app.dependency_overrides[get_current_admin] = mock_get_current_admin
+    yield
+
+    main_app.dependency_overrides.pop(get_current_admin, None)
+
 
 @pytest.fixture
-def base_app():
-    return FastAPI()
-
-
-@pytest.fixture
-async def client(base_app) -> AsyncGenerator:
-    transport = ASGITransport(app=base_app)
+async def client(db_session) -> AsyncGenerator:
+    transport = ASGITransport(app=main_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+
+
+@pytest.fixture
+def create_test_user(db_session):
+    from app.database.models import User
+    from app.core.security import hash_password
+    from datetime import datetime, timezone
+    from app.database.models import UserTypeEnum
+
+    def _create_user(
+        username: str = "testuser",
+        password: str = "correctpass",
+        full_name: str = None,
+        role: str = "student",
+        deleted: bool = False,
+    ):
+        user = User()
+        user.username = username
+        user.password_hash = hash_password(password)
+        user.full_name = full_name or f"{username} Full Name"
+
+        if role == "admin":
+            user.role = UserTypeEnum.admin
+        elif role == "teacher":
+            user.role = UserTypeEnum.teacher
+        else:
+            user.role = UserTypeEnum.student
+
+        if deleted:
+            user.deleted_at = datetime.now(timezone.utc)
+
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    return _create_user
+
+
+@pytest.fixture
+def create_test_task(db_session):
+    """Создание тестовой задачи в реальной БД"""
+    from app.database.models import Task, Language
+
+    def _create_task(
+        title: str = "Test Task",
+        description: str = "Task Description",
+        timeout: int = 30,
+        language_names: list = None,
+    ):
+        if language_names is None:
+            language_names = ["python", "javascript"]
+
+        task = Task()
+        task.title = title
+        task.description = description
+        task.timeout = timeout
+
+        db_session.add(task)
+        db_session.flush()
+
+        for lang_name in language_names:
+            lang = (
+                db_session.query(Language)
+                .filter(Language.language == lang_name)
+                .first()
+            )
+            if not lang:
+                lang = Language(language=lang_name)
+                db_session.add(lang)
+                db_session.flush()
+            task.languages.append(lang)
+
+        db_session.commit()
+        db_session.refresh(task)
+        return task
+
+    return _create_task
+
+
+@pytest.fixture
+def create_test_test(db_session):
+    """Создание тестового теста для задачи"""
+    from app.database.models import TaskTest
+
+    def _create_test(
+        task_id: int,
+        title: str = "Test Case",
+        stdin: str = "",
+        stdout: str = "expected output",
+    ):
+        test = TaskTest()
+        test.task_id = task_id
+        test.title = title
+        test.stdin = stdin
+        test.stdout = stdout
+
+        db_session.add(test)
+        db_session.commit()
+        db_session.refresh(test)
+        return test
+
+    return _create_test
+
+
+@pytest.fixture
+def create_test_tasks(db_session, create_test_task):
+    """Создание нескольких тестовых задач"""
+    def _create_tasks(count: int = 3):
+        tasks = []
+        for i in range(1, count + 1):
+            task = create_test_task(title=f"Task {i}")
+            tasks.append(task)
+        return tasks
+    return _create_tasks
+
+@pytest.fixture
+def create_test_module(db_session):
+    """Создание тестового модуля"""
+    from app.database.models import Module
+
+    def _create_module(
+        title: str = "Test Module",
+        description: str = "Module Description",
+    ):
+        module = Module()
+        module.title = title
+        module.description = description
+
+        db_session.add(module)
+        db_session.commit()
+        db_session.refresh(module)
+        return module
+
+    return _create_module

@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 
@@ -13,9 +15,9 @@ async def test_login_success(client, create_test_user):
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
-    assert data["access_token"].startswith("mock_access_")
+    assert data["access_token"] is not None
     assert "refresh_token" in response.cookies
-    assert response.cookies["refresh_token"].startswith("mock_refresh_")
+    assert response.cookies["refresh_token"] is not None
 
 
 @pytest.mark.asyncio
@@ -53,6 +55,7 @@ async def test_refresh_success(client, create_test_user):
         json={"username": "refreshuser", "password": "correctpass"},
     )
     refresh_token = login_resp.cookies["refresh_token"]
+    time.sleep(1)
 
     refresh_resp = await client.post(
         "/api/auth/refresh", cookies={"refresh_token": refresh_token}

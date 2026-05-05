@@ -32,6 +32,7 @@ class ModuleService:
         return self._get_module_or_raise(module_id)
 
     def get_module_tasks(self, module_id: int) -> List[Task]:
+        self._get_module_or_raise(module_id)
         return self.repo.get_tasks(module_id)
 
     def create_module(self, body: ModuleCreate) -> Module | None:

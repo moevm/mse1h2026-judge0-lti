@@ -31,7 +31,7 @@ class TestRunFunctional:
         """Запуск Python кода с вводом данных"""
         client = admin_auth
 
-        code = """print(f"Hello, {input()}")"""
+        code = """print(f"Hello, {input()}!")"""
 
         response = await client.post(
             "/api/run/",

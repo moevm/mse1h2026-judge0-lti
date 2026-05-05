@@ -23,7 +23,7 @@ jobs:
             --abort-on-container-exit \
             --exit-code-from tests
 
-      - name: Show logs on failure (backend + tests only)
+      - name: Show logs on failure
         if: failure()
         run: docker compose -f docker-compose.test.yml logs tests
 

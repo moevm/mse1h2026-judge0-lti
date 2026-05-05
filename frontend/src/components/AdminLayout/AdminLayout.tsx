@@ -7,7 +7,7 @@ const navItems = [
     { to: '/admin/students', label: 'Студенты', icon: 'groups' },
     { to: '/admin/modules', label: 'Модули', icon: 'stars' },
     { to: '/admin/tasks', label: 'Задачи', icon: 'grade' },
-    { to: '/admin/roles', label: 'Роли', icon: 'admin_panel_settings' },
+    { to: '/admin/roles', label: 'Роли', icon: 'admin_panel_settings' }, 
 ];
 
 const AdminLayout = () => {
@@ -38,7 +38,7 @@ const AdminLayout = () => {
                         <NavLink
                             key={item.to}
                             to={item.to}
-                            className={({ isActive }) => 
+                            className={({ isActive }) =>
                                 isActive ? `${styles.navItem} ${styles.active}` : styles.navItem
                             }
                         >

@@ -14,8 +14,6 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token')
-        ?? localStorage.getItem('accessToken')
-        ?? localStorage.getItem('token')
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`
@@ -26,10 +24,28 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
     response => response,
-    (error) => {
-        const config = error.config as InternalAxiosRequestConfig & { silent?: boolean }
+    async (error) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & { silent?: boolean; _retry?: boolean }
 
-        if (!config?.silent) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true
+
+            try {
+                const res = await api.post('/auth/refresh', {}, { withCredentials: true })
+                const access = res.data.access_token
+
+                localStorage.setItem('access_token', access)
+                originalRequest.headers.Authorization = `Bearer ${access}`
+
+                return api(originalRequest)
+            } catch {
+                localStorage.removeItem('access_token')
+                window.location.href = '/403'
+                return Promise.reject(error)
+            }
+        }
+
+        if (!originalRequest?.silent) {
             const message = error.response?.data?.detail
                 ?? error.response?.data?.message
                 ?? `Ошибка запроса: ${error.message}`
@@ -40,33 +56,4 @@ api.interceptors.response.use(
     }
 )
 
-api.interceptors.response.use(
-  res => res,
-  async (error) => {
-    const originalRequest = error.config
-
-    if (error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error)
-    }
-
-    originalRequest._retry = true
-
-    try {
-      const res = await api.post('/auth/refresh', {}, { withCredentials: true })
-
-      const access = res.data.access_token
-      localStorage.setItem('access_token', access)
-
-      originalRequest.headers = {
-        ...originalRequest.headers,
-        Authorization: `Bearer ${access}`,
-      }
-
-      return api(originalRequest)
-    } catch (e) {
-      localStorage.removeItem('access_token')
-      return Promise.reject(e)
-    }
-  }
-)
 export default api

@@ -25,9 +25,7 @@ async def lti_launch(
     #     print(f"{key}: {value}")
     user = lti_service.upsert_user(user_id, username, full_name, roles)
     access_token, refresh_token = auth_service.issue_lti_session(user)
-    response = RedirectResponse(
-        url=f"http://localhost?module_id={module_id}", status_code=303
-    )
+    response = RedirectResponse(url=f"http://localhost?lti=1&module_id={module_id}", status_code=303)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

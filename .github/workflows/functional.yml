@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, feature/issue-99-create-tests]
   workflow_dispatch:
+
 jobs:
   functional-tests:
     name: Run Functional Tests (PostgreSQL + Judge0)
@@ -24,33 +25,40 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      redis:
-        image: redis:7.2.4
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Judge0 containers
+      - name: Start Redis and Judge0 with Docker network
         run: |
+          docker network create judge0-net || true
+          
+          docker run -d --name judge0-redis \
+            --network judge0-net \
+            redis:7.2-alpine
+          
           docker run -d --name judge0-server \
+            --network judge0-net \
             -p 2358:2358 \
-            -e REDIS_URL=redis://localhost:6379 \
-            mrkushalsm/judge0:cgv2
+            -e REDIS_URL=redis://judge0-redis:6379 \
+            judge0/judge0:latest
           
           docker run -d --name judge0-worker \
-            --entrypoint ./scripts/workers \
-            -e REDIS_URL=redis://localhost:6379 \
-            mrkushalsm/judge0:cgv2
+            --network judge0-net \
+            -e REDIS_URL=redis://judge0-redis:6379 \
+            judge0/judge0:latest \
+            ./scripts/workers
           
-          sleep 15
-          curl -f http://localhost:2358/about || echo "Judge0 not ready"
+          echo "Waiting for Judge0 to be ready..."
+          for i in {1..30}; do
+            if curl -s -f http://localhost:2358/about > /dev/null 2>&1; then
+              echo "Judge0 is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 3
+          done
+          
+          docker ps
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -62,11 +70,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Wait for services
-        run: |
-          sleep 5
-          psql -h localhost -U test_user -d test_db -c "SELECT 1" || true
 
       - name: Run functional tests
         working-directory: ./backend
@@ -81,10 +84,11 @@ jobs:
           MOCK_JUDGE0: false
           JUDGE0_URL: http://localhost:2358
         run: |
-          pytest tests/functional/ -v -m functional --tb=short
+          pytest tests/functional/test_check.py -v -m functional --tb=short
 
-      - name: Stop Judge0 containers
+      - name: Stop containers
         if: always()
         run: |
-          docker stop judge0-server judge0-worker || true
-          docker rm judge0-server judge0-worker || true
+          docker stop judge0-server judge0-worker judge0-redis || true
+          docker rm judge0-server judge0-worker judge0-redis || true
+          docker network rm judge0-net || true

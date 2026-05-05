@@ -14,6 +14,11 @@ import AdminModuleTasksPage from './pages/AdminModuleTasksPage/AdminModuleTasksP
 import AdminTasksPage from "./pages/AdminTasksPage/AdminTasksPage.tsx"
 import AdminTaskEditPage from "./pages/AdminTaskEditPage/AdminTaskEditPage.tsx"
 import AdminLoginPage from './pages/AdminLoginPage/AdminLoginPage.tsx'
+import AdminStudentsPage from './pages/AdminStudentsPage/AdminStudentsPage.tsx'
+import AdminStudentPage from './pages/AdminStudentPage/AdminStudentPage.tsx'
+import AdminStudentModulePage from './pages/AdminStudentModulePage/AdminStudentModulePage.tsx'
+import AdminStudentTaskPage from './pages/AdminStudentTaskPage/AdminStudentTaskPage.tsx'
+import AdminStudentAttemptPage from './pages/AdminStudentAttemptPage/AdminStudentAttemptPage'
 
 function App() {
   return (
@@ -23,16 +28,29 @@ function App() {
         <Route path="/task" element={<IDEPage />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
-        
+
         <Route path="/admin" element={<AdminLoginPage />} />
-        
+
+        {/* СТУДЕНТЫ */}
+        <Route path="/admin/students" element={<ProtectedAdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<AdminStudentsPage />} />
+            <Route path=":userId" element={<AdminStudentPage />} />
+            {/* НОВЫЙ РОУТ: модули студента */}
+            <Route path=":userId/modules/:moduleId" element={<AdminStudentModulePage />} />
+            {/* НОВЫЙ РОУТ: задачи студента в модуле */}
+            <Route path=":userId/modules/:moduleId/tasks/:taskId" element={<AdminStudentTaskPage />} />
+            <Route path=":userId/attempts/:attemptId" element={<AdminStudentAttemptPage />} />
+          </Route>
+        </Route>
+
         <Route path="/admin/modules" element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminModulesPage />} />
             <Route path=":moduleId" element={<AdminModuleTasksPage />} />
           </Route>
         </Route>
-        
+
         <Route path="/admin/tasks" element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminTasksPage />} />
@@ -40,7 +58,7 @@ function App() {
             <Route path="new" element={<AdminTaskEditPage />} />
           </Route>
         </Route>
-        
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

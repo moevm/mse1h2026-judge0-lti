@@ -92,7 +92,7 @@ def db_session(engine):
             session.rollback()
             raise
         finally:
-            session.close()
+            pass
 
     main_app.dependency_overrides[session_generator] = override_get_db
 
@@ -101,14 +101,16 @@ def db_session(engine):
     from app.database.models import Base
 
     table_names = [
-        "module_tasks_order",
         "refresh_tokens",
+        "module_tasks_order",
         "task_tests",
         "tasks_languages",
         "tasks",
         "modules",
         "users",
     ]
+
+    session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
     for table_name in table_names:
         session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
     session.commit()

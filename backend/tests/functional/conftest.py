@@ -3,7 +3,7 @@ import pytest
 from typing import AsyncGenerator
 from datetime import datetime, timezone
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.services.jwt import JwtService
@@ -47,8 +47,6 @@ from app.database import models
 from app.core.security import hash_password, hash_token
 
 
-
-
 @pytest.fixture(scope="session")
 def engine():
     engine = create_engine(DB_URL)
@@ -59,7 +57,15 @@ def engine():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    default_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
+    default_languages = [
+        "Python (3.8.1)",
+        "JavaScript (Node.js 12.14.0)",
+        "Java (OpenJDK 13.0.1)",
+        "C (Clang 7.0.1)",
+        "C++ (Clang 7.0.1)",
+        "Go (1.13)",
+        "Rust (1.40)",
+    ]
     for lang_name in default_languages:
         lang = session.query(Language).filter(Language.language == lang_name).first()
         if not lang:
@@ -104,7 +110,7 @@ def db_session(engine):
         "users",
     ]
     for table_name in table_names:
-        session.execute(f'TRUNCATE TABLE "{table_name}" CASCADE')
+        session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
     session.commit()
 
     transaction.rollback()
@@ -168,7 +174,27 @@ async def student_auth(client, student_user):
 
 
 @pytest.fixture
-async def admin_auth(client):
+def create_admin_user(db_session):
+    """Создаем админа в БД"""
+    from app.database.models import User, UserTypeEnum
+
+    admin = db_session.query(User).filter(User.username == "admin").first()
+    if not admin:
+        admin = User()
+        admin.username = "admin"
+        admin.password_hash = hash_password("adminpass")
+        admin.full_name = "Admin User"
+        admin.role = UserTypeEnum.admin
+        admin.created_at = datetime.now(timezone.utc)
+        admin.updated_at = datetime.now(timezone.utc)
+        db_session.add(admin)
+        db_session.commit()
+        db_session.refresh(admin)
+    return admin
+
+
+@pytest.fixture
+async def admin_auth(client, create_admin_user):
     """Авторизованный админ"""
     login_response = await client.post(
         "/api/auth/login", json={"username": "admin", "password": "adminpass"}

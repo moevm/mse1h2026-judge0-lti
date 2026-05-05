@@ -36,9 +36,6 @@ from app.main import app as main_app
 from app.database.database import session_generator
 from app.database import models
 
-
-
-
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:17-alpine") as postgres:

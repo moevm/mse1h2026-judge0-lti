@@ -1,10 +1,99 @@
+version: '3.8'
+
 services:
-  postgres:
+  postgresdb:
     image: postgres:17-alpine
+    env_file:
+      - .env.test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-net
+
+  redis:
+    image: redis:7.2.4
+    command: ["redis-server", "--requirepass", "test_redis_pass"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "test_redis_pass", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-net
+
+  judge0_server:
+    image: mrkushalsm/judge0:cgv2
+    env_file: ./judge0.conf
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgresdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2358/about"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - test-net
+
+  judge0_worker:
+    image: mrkushalsm/judge0:cgv2
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgresdb:
+        condition: service_healthy
+      judge0_server:
+        condition: service_healthy
+    networks:
+      - test-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: prod
+    env_file:
+      - .env.test
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+      judge0_worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-net
+
+  tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    depends_on:
+      backend:
+        condition: service_healthy
     environment:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_pass
-      POSTGRES_DB: test_db
-    ports:
-      - "5433:5432"
-    tmpfs: /var/lib/postgresql/data
+      API_URL: http://backend:8000
+    networks:
+      - test-net
+
+networks:
+  test-net:
+    driver: bridge

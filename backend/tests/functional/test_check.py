@@ -7,21 +7,42 @@ class TestCheckFunctional:
     """Функциональные тесты для /check"""
 
     @pytest.mark.asyncio
-    async def test_check_correct_python_code(self, admin_auth):
+    async def test_check_correct_python_code(self, admin_auth, create_task_via_api):
         client = admin_auth
 
-        correct_code = """a, b = map(int, input().split())
-    print(a + b)"""
+        task = await create_task_via_api(
+            title="Sum of two numbers",
+            description="Calculate sum of two integers",
+            timeout=30,
+            languages=["Python (3.8.1)"],
+        )
+
+        test_cases = [
+            {"title": "Test 1", "stdin": "2 3", "stdout": "5"},
+            {"title": "Test 2", "stdin": "10 20", "stdout": "30"},
+            {"title": "Test 3", "stdin": "-1 5", "stdout": "4"},
+        ]
+        for tc in test_cases:
+            response = await client.post(
+                f"/api/tasks/{task['id']}/tests",
+                json={
+                    "title": tc["title"],
+                    "stdin": tc["stdin"],
+                    "stdout": tc["stdout"],
+                },
+            )
+            assert response.status_code == 200
+
+        correct_code = """print(sum(map(int, input().split())))"""
 
         response = await client.post(
-            f"/api/check/1",
+            f"/api/check/{task['id']}",
             json={
                 "language": "Python (3.8.1)",
                 "code": correct_code,
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-        print(response.json())
 
         assert response.status_code == 200
         data = response.json()
@@ -53,8 +74,7 @@ class TestCheckFunctional:
             assert response.status_code == 200
 
         # Проверяем неправильное решение
-        incorrect_code = """a, b = map(int, input().split())
-print(a - b)"""
+        incorrect_code = """print(sum(map(int, input().split())) + 1)"""
 
         response = await client.post(
             f"/api/check/{task['id']}",
@@ -89,8 +109,7 @@ print(a - b)"""
         )
         assert response.status_code == 200
 
-        code_with_error = """print("Hello"
-"""
+        code_with_error = """print("Hello"""
 
         response = await client.post(
             f"/api/check/{task['id']}",

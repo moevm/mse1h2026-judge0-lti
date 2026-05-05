@@ -25,6 +25,7 @@ interface UseAuthReturn {
     login: (credentials: LoginCredentials) => Promise<AuthResponse>;
     logout: () => Promise<void>;
     getAccessToken: () => string | null;
+    refreshUser: () => Promise<void>;
 }
 
 const ACCESS_TOKEN_KEY = 'access_token';
@@ -147,6 +148,17 @@ export const useAuth = (): UseAuthReturn => {
         initAuth();
     }, [getAccessToken, fetchUserInfo, clearAuthData]);
 
+    const refreshUser = useCallback(async () => {
+        const token = getAccessToken();
+        if (!token) return;
+
+        const userInfo = await fetchUserInfo();
+        if (userInfo) {
+            localStorage.setItem(USER_KEY, JSON.stringify(userInfo));
+            setUser(userInfo);
+        }
+    }, [getAccessToken, fetchUserInfo]);
+
     const isAuthenticated = !!user;
     const isAdmin = user?.role === 'admin';
 
@@ -158,5 +170,6 @@ export const useAuth = (): UseAuthReturn => {
         login,
         logout,
         getAccessToken,
+        refreshUser
     };
 };

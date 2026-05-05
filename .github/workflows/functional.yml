@@ -25,40 +25,62 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      judge0-postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: judge0
+          POSTGRES_PASSWORD: judge0
+          POSTGRES_DB: judge0
+        options: >-
+          --health-cmd "pg_isready -U judge0"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      judge0-redis:
+        image: redis:7.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Redis and Judge0 with Docker network
+      - name: Start Judge0
         run: |
           docker network create judge0-net || true
-          
-          docker run -d --name judge0-redis \
-            --network judge0-net \
-            redis:7.2-alpine
-          
+
+          # подключаем уже запущенные service-контейнеры к сети
+          docker network connect judge0-net $(docker ps -q --filter "ancestor=postgres:17-alpine")
+          docker network connect judge0-net $(docker ps -q --filter "ancestor=redis:7.2-alpine")
+
           docker run -d --name judge0-server \
             --network judge0-net \
+            --privileged \
             -p 2358:2358 \
-            -e REDIS_URL=redis://judge0-redis:6379 \
-            judge0/judge0:latest
-          
+            -v ${{ github.workspace }}/judge0.conf:/judge0.conf:ro \
+            mrkushalsm/judge0:cgv2
+
           docker run -d --name judge0-worker \
             --network judge0-net \
-            -e REDIS_URL=redis://judge0-redis:6379 \
-            judge0/judge0:latest \
+            --privileged \
+            -v ${{ github.workspace }}/judge0.conf:/judge0.conf:ro \
+            mrkushalsm/judge0:cgv2 \
             ./scripts/workers
-          
-          echo "Waiting for Judge0 to be ready..."
-          for i in {1..30}; do
-            if curl -s -f http://localhost:2358/about > /dev/null 2>&1; then
-              echo "Judge0 is ready!"
+
+          echo "Waiting for Judge0..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:2358/about > /dev/null; then
+              echo "Judge0 ready!"
               break
             fi
-            echo "Waiting... ($i/30)"
-            sleep 3
+            echo "Waiting... ($i/60)"
+            sleep 5
           done
-          
-          docker ps
+
+          curl -sf http://localhost:2358/about || (echo "Judge0 failed to start" && docker logs judge0-server && exit 1)
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -84,11 +106,11 @@ jobs:
           MOCK_JUDGE0: false
           JUDGE0_URL: http://localhost:2358
         run: |
-          pytest tests/functional/test_check.py -v -m functional --tb=short
+          pytest tests/functional/ -v -m functional --tb=short
 
       - name: Stop containers
         if: always()
         run: |
-          docker stop judge0-server judge0-worker judge0-redis || true
-          docker rm judge0-server judge0-worker judge0-redis || true
+          docker stop judge0-server judge0-worker || true
+          docker rm judge0-server judge0-worker || true
           docker network rm judge0-net || true

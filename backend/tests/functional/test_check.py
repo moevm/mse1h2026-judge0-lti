@@ -110,7 +110,7 @@ class TestCheckFunctional:
         assert response.status_code == 200
 
         code_with_error = """print("Hello"""
-
+        print(response.json())
         response = await client.post(
             f"/api/check/{task['id']}",
             json={
@@ -162,7 +162,7 @@ class TestCheckFunctional:
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-
+        print(response.json())
         assert response.status_code == 400
         assert "недопустимый язык" in response.json()["detail"].lower()
 
@@ -208,8 +208,8 @@ public class Main {
                 "code": java_code,
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
-        )
-
+        )   
+        print(response.json())
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -252,6 +252,7 @@ rl.on('line', (input) => {
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
+        print(response.json())
 
         assert response.status_code == 200
         data = response.json()

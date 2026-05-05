@@ -14,11 +14,12 @@ import AdminModuleTasksPage from './pages/AdminModuleTasksPage/AdminModuleTasksP
 import AdminTasksPage from "./pages/AdminTasksPage/AdminTasksPage.tsx"
 import AdminTaskEditPage from "./pages/AdminTaskEditPage/AdminTaskEditPage.tsx"
 import AdminLoginPage from './pages/AdminLoginPage/AdminLoginPage.tsx'
+import AdminRolesPage from './pages/AdminRolesPage/AdminRolesPage.tsx'
 import AdminStudentsPage from './pages/AdminStudentsPage/AdminStudentsPage.tsx'
 import AdminStudentPage from './pages/AdminStudentPage/AdminStudentPage.tsx'
 import AdminStudentModulePage from './pages/AdminStudentModulePage/AdminStudentModulePage.tsx'
 import AdminStudentTaskPage from './pages/AdminStudentTaskPage/AdminStudentTaskPage.tsx'
-import AdminStudentAttemptPage from './pages/AdminStudentAttemptPage/AdminStudentAttemptPage'
+import AdminStudentAttemptPage from './pages/AdminStudentAttemptPage/AdminStudentAttemptPage.tsx'
 
 function App() {
   return (
@@ -31,31 +32,27 @@ function App() {
 
         <Route path="/admin" element={<AdminLoginPage />} />
 
-        {/* СТУДЕНТЫ */}
-        <Route path="/admin/students" element={<ProtectedAdminRoute />}>
+        <Route element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>
-            <Route index element={<AdminStudentsPage />} />
-            <Route path=":userId" element={<AdminStudentPage />} />
-            {/* НОВЫЙ РОУТ: модули студента */}
-            <Route path=":userId/modules/:moduleId" element={<AdminStudentModulePage />} />
-            {/* НОВЫЙ РОУТ: задачи студента в модуле */}
-            <Route path=":userId/modules/:moduleId/tasks/:taskId" element={<AdminStudentTaskPage />} />
-            <Route path=":userId/attempts/:attemptId" element={<AdminStudentAttemptPage />} />
-          </Route>
-        </Route>
 
-        <Route path="/admin/modules" element={<ProtectedAdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route index element={<AdminModulesPage />} />
-            <Route path=":moduleId" element={<AdminModuleTasksPage />} />
-          </Route>
-        </Route>
+            {/* Студенты */}
+            <Route path="/admin/students" element={<AdminStudentsPage />} />
+            <Route path="/admin/students/:userId" element={<AdminStudentPage />} />
+            <Route path="/admin/students/:userId/modules/:moduleId" element={<AdminStudentModulePage />} />
+            <Route path="/admin/students/:userId/modules/:moduleId/tasks/:taskId" element={<AdminStudentTaskPage />} />
+            <Route path="/admin/students/:userId/attempts/:attemptId" element={<AdminStudentAttemptPage />} />
 
-        <Route path="/admin/tasks" element={<ProtectedAdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route index element={<AdminTasksPage />} />
-            <Route path=":taskId" element={<AdminTaskEditPage />} />
-            <Route path="new" element={<AdminTaskEditPage />} />
+            {/* Модули */}
+            <Route path="/admin/modules" element={<AdminModulesPage />} />
+            <Route path="/admin/modules/:moduleId" element={<AdminModuleTasksPage />} />
+
+            {/* Задачи */}
+            <Route path="/admin/tasks" element={<AdminTasksPage />} />
+            <Route path="/admin/tasks/:taskId" element={<AdminTaskEditPage />} />
+            <Route path="/admin/tasks/new" element={<AdminTaskEditPage />} />
+
+            {/* Роли */}
+            <Route path="/admin/roles" element={<AdminRolesPage />} />
           </Route>
         </Route>
 

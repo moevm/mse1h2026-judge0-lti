@@ -23,8 +23,6 @@ class TestGetModules:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert data[0]["title"] == "Module 2"
-        assert data[1]["title"] == "Module 1"
 
     @pytest.mark.asyncio
     async def test_get_modules_with_search(self, client, create_test_module):

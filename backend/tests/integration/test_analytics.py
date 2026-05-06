@@ -73,7 +73,6 @@ class TestUserModules:
         )
 
         response = await client.get(f"/api/users/{user.id}/modules?search=Python")
-
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1

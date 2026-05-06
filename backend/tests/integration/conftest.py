@@ -2,8 +2,8 @@ import os
 import pytest
 from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from testcontainers.postgres import PostgresContainer
 
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
@@ -33,6 +33,7 @@ def mock_get_settings():
         admin_password="adminpass",
     )
 
+
 import app.core.config
 app.core.config.get_settings = mock_get_settings
 
@@ -40,10 +41,12 @@ from app.main import app as main_app
 from app.database.database import session_generator
 from app.database import models
 
+
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:17-alpine") as postgres:
         yield postgres
+
 
 @pytest.fixture(scope="session")
 def engine(postgres_container):
@@ -77,39 +80,23 @@ def db_session(engine):
     def override_get_db():
         try:
             yield session
-            session.commit()
+            session.flush()
         except Exception:
             session.rollback()
             raise
-        finally:
-            # session.close()
-            pass
+
     main_app.dependency_overrides[session_generator] = override_get_db
 
     yield session
 
-    from app.database.models import Base
-
-    table_names = [
-        "module_tasks_order",
-        "refresh_tokens",
-        "task_tests",
-        "tasks_languages",
-        "tasks",
-        "modules",
-        "users",
-    ]
-
-    session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
-
-    for table_name in table_names:
-        session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
-
-    session.commit()
     transaction.rollback()
     connection.close()
     main_app.dependency_overrides.clear()
-
+@pytest.fixture
+async def client(db_session) -> AsyncGenerator:
+    transport = ASGITransport(app=main_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
 
 @pytest.fixture(autouse=True)
 def mock_judge_service():
@@ -129,29 +116,10 @@ def mock_judge_service():
     async def mock_get_judge_service():
         return mock_service
 
-    from app.main import app
-
-    app.dependency_overrides[get_judge_service] = mock_get_judge_service
-
+    main_app.dependency_overrides[get_judge_service] = mock_get_judge_service
     yield
+    main_app.dependency_overrides.pop(get_judge_service, None)
 
-    app.dependency_overrides.pop(get_judge_service, None)
-
-
-@pytest.fixture
-async def auth_client(client, create_test_user):
-    """Создает авторизованного клиента с реальным пользователем"""
-    user = create_test_user(
-        username="analytics_user", password="testpass", role="admin"
-    )
-
-    login_response = await client.post(
-        "/api/auth/login", json={"username": "analytics_user", "password": "testpass"}
-    )
-    access_token = login_response.json()["access_token"]
-
-    client.headers["Authorization"] = f"Bearer {access_token}"
-    return client, user
 
 @pytest.fixture(autouse=True)
 def mock_admin_auth():
@@ -168,23 +136,37 @@ def mock_admin_auth():
 
     main_app.dependency_overrides[get_current_admin] = mock_get_current_admin
     yield
-
     main_app.dependency_overrides.pop(get_current_admin, None)
 
 
 @pytest.fixture
-async def client(db_session) -> AsyncGenerator:
-    transport = ASGITransport(app=main_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+async def auth_client(client, create_test_user):
+    from app.services.jwt import JwtService
+
+    user = create_test_user(
+        username="analytics_user", password="testpass", role="admin"
+    )
+
+    user_id = user.id
+    name = user.username
+
+    jwt_service = JwtService(mock_get_settings())
+    access_token = jwt_service.create_access_token(user_id=user_id, role="admin")
+
+    client.headers["Authorization"] = f"Bearer {access_token}"
+
+    class _User:
+        id = user_id
+        username = name
+
+    return client, _User()
 
 
 @pytest.fixture
 def create_test_user(db_session):
-    from app.database.models import User
+    from app.database.models import User, UserTypeEnum
     from app.core.security import hash_password
     from datetime import datetime, timezone
-    from app.database.models import UserTypeEnum
 
     def _create_user(
         username: str = "testuser",
@@ -209,7 +191,7 @@ def create_test_user(db_session):
             user.deleted_at = datetime.now(timezone.utc)
 
         db_session.add(user)
-        db_session.commit()
+        db_session.flush()
         db_session.refresh(user)
         return user
 
@@ -218,13 +200,12 @@ def create_test_user(db_session):
 
 @pytest.fixture
 def create_test_task(db_session):
-    """Создание тестовой задачи в реальной БД"""
     from app.database.models import Task, Language
 
     def _create_task(
         title: str = "Test Task",
         description: str = "Task Description",
-        timeout: int = 30,
+        timeout: int = 10,
         language_names: list = None,
     ):
         if language_names is None:
@@ -250,7 +231,7 @@ def create_test_task(db_session):
                 db_session.flush()
             task.languages.append(lang)
 
-        db_session.commit()
+        db_session.flush()
         db_session.refresh(task)
         return task
 
@@ -259,7 +240,6 @@ def create_test_task(db_session):
 
 @pytest.fixture
 def create_test_test(db_session):
-    """Создание тестового теста для задачи"""
     from app.database.models import TaskTest
 
     def _create_test(
@@ -275,7 +255,7 @@ def create_test_test(db_session):
         test.stdout = stdout
 
         db_session.add(test)
-        db_session.commit()
+        db_session.flush()
         db_session.refresh(test)
         return test
 
@@ -284,7 +264,6 @@ def create_test_test(db_session):
 
 @pytest.fixture
 def create_test_tasks(db_session, create_test_task):
-    """Создание нескольких тестовых задач"""
     def _create_tasks(count: int = 3):
         tasks = []
         for i in range(1, count + 1):
@@ -293,9 +272,9 @@ def create_test_tasks(db_session, create_test_task):
         return tasks
     return _create_tasks
 
+
 @pytest.fixture
 def create_test_module(db_session):
-    """Создание тестового модуля"""
     from app.database.models import Module
 
     def _create_module(
@@ -307,7 +286,7 @@ def create_test_module(db_session):
         module.description = description
 
         db_session.add(module)
-        db_session.commit()
+        db_session.flush()
         db_session.refresh(module)
         return module
 

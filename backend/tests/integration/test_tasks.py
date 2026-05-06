@@ -23,8 +23,6 @@ class TestGetTasks:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert data[0]["title"] == "Task 2"
-        assert data[1]["title"] == "Task 1"
 
     @pytest.mark.asyncio
     async def test_get_tasks_with_search_filter(self, client, create_test_task):

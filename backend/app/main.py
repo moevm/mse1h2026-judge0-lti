@@ -7,7 +7,6 @@ from fastapi.responses import JSONResponse
 from app.routers import lti, tasks, modules, check, languages, users, run, auth, analytics
 from app.database.database import create_tables, seed_database
 
-# создает таблицы в postgres
 create_tables()
 seed_database()
 

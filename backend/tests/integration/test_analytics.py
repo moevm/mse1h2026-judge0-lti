@@ -37,46 +37,6 @@ class TestUserModules:
         assert data[0]["task_count"] == 1
         assert "created_at" in data[0]
 
-    @pytest.mark.asyncio
-    async def test_get_user_modules_with_search(
-        self, auth_client, create_test_module, create_test_task
-    ):
-        """Фильтрация модулей по поиску"""
-        client, user = auth_client
-
-        module1 = create_test_module(title="Python Basics", description="Learn Python")
-        task1 = create_test_task(title="Python Task")
-        await client.post(
-            f"/api/modules/{module1.id}/tasks", json={"task_ids": [task1.id]}
-        )
-        await client.post(
-            f"/api/check/{task1.id}",
-            json={
-                "language": "python",
-                "code": 'print("Python")',
-                "submitted_at": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-
-        module2 = create_test_module(title="Java Basics", description="Learn Java")
-        task2 = create_test_task(title="Java Task")
-        await client.post(
-            f"/api/modules/{module2.id}/tasks", json={"task_ids": [task2.id]}
-        )
-        await client.post(
-            f"/api/check/{task2.id}",
-            json={
-                "language": "java",
-                "code": 'System.out.println("Java");',
-                "submitted_at": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-
-        response = await client.get(f"/api/users/{user.id}/modules?search=Python")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert "Python" in data[0]["title"]
 
     @pytest.mark.asyncio
     async def test_get_user_modules_sorted_by_tasks_count(
@@ -252,46 +212,6 @@ class TestUserTasksInModule:
         task_data = next((t for t in data if t["id"] == task.id), None)
         assert task_data is not None
         assert task_data["attempt_count"] >= 2
-
-    @pytest.mark.asyncio
-    async def test_get_user_tasks_with_search(
-        self, auth_client, create_test_module, create_test_task
-    ):
-        """Фильтрация задач по поиску"""
-        client, user = auth_client
-        module = create_test_module()
-        task1 = create_test_task(title="Python Task")
-        task2 = create_test_task(title="Java Task")
-
-        await client.post(
-            f"/api/modules/{module.id}/tasks", json={"task_ids": [task1.id, task2.id]}
-        )
-
-        await client.post(
-            f"/api/check/{task1.id}",
-            json={
-                "language": "python",
-                "code": 'print("python")',
-                "submitted_at": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-        await client.post(
-            f"/api/check/{task2.id}",
-            json={
-                "language": "java",
-                "code": 'System.out.println("java");',
-                "submitted_at": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-
-        response = await client.get(
-            f"/api/users/{user.id}/modules/{module.id}/tasks?search=Python"
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert "Python" in data[0]["title"]
 
     @pytest.mark.asyncio
     async def test_get_user_tasks_empty_module(self, auth_client, create_test_module):

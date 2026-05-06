@@ -1,8 +1,8 @@
 name: Integration Tests
 
 on:
-  push:
-    branches: [feature/issue-99-create-tests]
+  pull_request:
+    branches: [main]
 
 jobs:
   integration-tests:

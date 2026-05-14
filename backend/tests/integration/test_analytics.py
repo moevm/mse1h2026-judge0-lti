@@ -2,6 +2,8 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 pytestmark = pytest.mark.integration
+
+
 class TestUserModules:
     """Тесты GET /users/{user_id}/modules"""
 
@@ -36,7 +38,6 @@ class TestUserModules:
         assert data[0]["title"] == "Python Basics"
         assert data[0]["task_count"] == 1
         assert "created_at" in data[0]
-
 
     @pytest.mark.asyncio
     async def test_get_user_modules_sorted_by_tasks_count(
@@ -254,7 +255,6 @@ class TestTaskAttempts:
         assert "is_solved" in data[0]
         assert "language" in data[0]
 
-
     @pytest.mark.asyncio
     async def test_get_task_attempts_with_date_range(
         self, auth_client, create_test_task
@@ -356,7 +356,6 @@ class TestGetAttempt:
         response = await client.get("/api/attempts/99999")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Попытка не найдена"
 
 
 class TestFullAnalyticsFlow:

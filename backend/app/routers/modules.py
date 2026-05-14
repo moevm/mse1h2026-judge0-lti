@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.params import Depends
 
 from app.schemas.module import (
@@ -11,14 +11,7 @@ from app.schemas.module import (
     ModuleFilter,
 )
 from app.schemas.task import TaskResponse
-from app.services.module import (
-    get_module_service,
-    ModuleService,
-    ModuleNotFoundException,
-    TaskNotExistsException,
-    DuplicateTaskInRequestException,
-    TaskAlreadyInModuleException,
-)
+from app.services.module import get_module_service, ModuleService
 from app.mappers.module import ModuleMapper
 from app.schemas.module import ModuleCreate
 from app.core.dependencies import get_current_admin

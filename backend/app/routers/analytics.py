@@ -14,7 +14,6 @@ from app.schemas.auth import TokenUser
 
 from app.services.analytics import (
     AnalyticsService,
-    AttemptNotFoundException,
     get_analytics_service,
 )
 from fastapi import APIRouter, Depends, HTTPException

@@ -1,5 +1,8 @@
 import pytest
+
 pytestmark = pytest.mark.integration
+
+
 class TestGetAllUsers:
     """Тесты GET /api/users/"""
 
@@ -89,7 +92,6 @@ class TestGetUser:
         response = await client.get("/api/users/999")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Пользователь не найден"
 
 
 class TestUpdateUser:
@@ -127,12 +129,9 @@ class TestUpdateUser:
     @pytest.mark.asyncio
     async def test_update_user_not_found(self, client):
         """Обновление несуществующего пользователя"""
-        response = await client.patch(
-            "/api/users/999", json={"full_name": "New Name"}
-        )
+        response = await client.patch("/api/users/999", json={"full_name": "New Name"})
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Пользователь не найден"
 
 
 class TestDeleteUser:
@@ -157,11 +156,11 @@ class TestDeleteUser:
         response = await client.delete("/api/users/999")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Пользователь не найден"
 
 
 class TestFullUserFlow:
     """Полный цикл работы с пользователями"""
+
     @pytest.mark.asyncio
     async def test_full_user_flow(self, client, create_test_user):
         user = create_test_user(

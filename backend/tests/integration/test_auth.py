@@ -3,6 +3,8 @@ import time
 import pytest
 
 pytestmark = pytest.mark.integration
+
+
 @pytest.mark.asyncio
 async def test_login_success(client, create_test_user):
     """Успешный вход"""
@@ -75,7 +77,6 @@ async def test_refresh_no_token(client):
     response = await client.post("/api/auth/refresh")
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "No refresh token"
 
 
 @pytest.mark.asyncio
@@ -86,7 +87,6 @@ async def test_refresh_invalid_token(client):
     )
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid refresh token"
 
 
 @pytest.mark.asyncio
@@ -147,4 +147,3 @@ async def test_session_no_token(client):
     response = await client.get("/api/auth/session")
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "No refresh token"

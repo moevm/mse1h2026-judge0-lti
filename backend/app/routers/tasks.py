@@ -65,9 +65,7 @@ async def create_task(
     service: TaskService = Depends(get_task_service),
     admin: TokenUser = Depends(get_current_admin),
 ):
-
     task = service.create_task(body)
-
     return TaskMapper.to_task_response(task)
 
 
@@ -105,7 +103,6 @@ async def create_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ) -> TaskTestResponse:
-
     test = service.create_test(task_id, body)
     return test
 
@@ -158,6 +155,5 @@ async def patch_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-
     test = service.update_test(task_id, test_id, body)
     return test

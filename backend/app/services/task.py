@@ -13,9 +13,7 @@ class TaskService:
         self.lang_repo = lang_repo
 
     def get_task_by_id(self, task_id: int) -> Task:
-        task = self.repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException()
+        task = self._get_task_or_raise(task_id)
         return task
 
     def get_all_tasks(self) -> List[Task]:
@@ -45,9 +43,7 @@ class TaskService:
         return self.repo.save(task)
 
     def update_task(self, task_id: int, data: TaskPatch) -> Task:
-        task = self.repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException()
+        task = self._get_task_or_raise(task_id)
         update_data = data.model_dump(exclude_unset=True)
         if "languages" in update_data:
             lang_names = update_data.pop("languages")
@@ -78,10 +74,14 @@ class TaskService:
         return self.repo.get_filtered(filters)
 
     def delete_task(self, task_id: int) -> None:
+        task = self._get_task_or_raise(task_id)
+        self.repo.delete(task)
+
+    def _get_task_or_raise(self, task_id: int) -> Task:
         task = self.repo.get_by_id(task_id)
         if not task:
-            raise TaskNotFoundException()
-        self.repo.delete(task)
+            raise TaskNotFoundException(f"Задача {task_id} не найдена")
+        return task
 
 
 def get_task_service(

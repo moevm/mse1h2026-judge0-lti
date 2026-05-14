@@ -1,12 +1,9 @@
 from fastapi.params import Depends
+from app.core.exceptions.tasks import InvalidLanguageException
 from app.services.judge import JudgeService
 from app.schemas.run import RunRequest
 from app.services.judge import get_judge_service
 from app.repositories.language import LanguageRepository, get_language_repository
-
-
-class LanguageNotFoundException(Exception):
-    pass
 
 
 class RunService:
@@ -17,7 +14,7 @@ class RunService:
     async def run_code(self, body: RunRequest):
         language = self.lang_repo.get_language_by_name(body.language)
         if not language:
-            raise LanguageNotFoundException("Language not found")
+            raise InvalidLanguageException()
         return await self.judge.submit(body.code, language.id, body.stdin, 5)
 
 

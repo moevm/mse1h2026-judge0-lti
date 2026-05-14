@@ -1,7 +1,7 @@
 class AppException(Exception):
     status_code: int = 400
-    detail: str = "Application error"
+    default_detail: str = "Application error"
 
     def __init__(self, detail: str | None = None):
-        if detail:
-            self.detail = detail
+        self.detail = detail or self.default_detail
+        super().__init__(self.detail)

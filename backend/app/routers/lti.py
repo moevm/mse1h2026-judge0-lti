@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Request, Depends, Response
-from fastapi.responses import RedirectResponse
-from app.services.lti import LtiService, get_lti_service
-from app.services.jwt import JwtService, get_jwt_service
 from app.services.auth import AuthService, get_auth_service
+from app.services.lti import LtiService, get_lti_service
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 
 router = APIRouter(prefix="/lti", tags=["lti"])
 
@@ -25,7 +24,9 @@ async def lti_launch(
     #     print(f"{key}: {value}")
     user = lti_service.upsert_user(user_id, username, full_name, roles)
     access_token, refresh_token = auth_service.issue_lti_session(user)
-    response = RedirectResponse(url=f"http://localhost?lti=1&module_id={module_id}", status_code=303)
+    response = RedirectResponse(
+        url=f"http://localhost?lti=1&module_id={module_id}", status_code=303
+    )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

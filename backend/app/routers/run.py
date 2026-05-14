@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.params import Depends
 
 from app.schemas.run import RunRequest, RunResponse
-from app.services.run import RunService, get_run_service, LanguageNotFoundException
-from app.services.judge import Judge0Exception
+from app.services.run import RunService, get_run_service
 
 router = APIRouter(prefix="/run", tags=["run"])
 
@@ -13,14 +12,7 @@ async def run_code(
     body: RunRequest,
     service: RunService = Depends(get_run_service),
 ) -> RunResponse:
-    try:
-        result = await service.run_code(body)
-    except LanguageNotFoundException as e:
-        raise HTTPException(
-            status_code=400, detail="Недопустимый язык программирования"
-        )
-    except Judge0Exception:
-        raise HTTPException(status_code=500, detail="Ошибка связи с Judge0")
+    result = await service.run_code(body)
     return RunResponse(
         stdout=result.get("stdout"),
         stderr=result.get("stderr"),

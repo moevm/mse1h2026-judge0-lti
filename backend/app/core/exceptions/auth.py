@@ -3,16 +3,24 @@ from app.core.exceptions.base import AppException
 
 class UnauthorizedException(AppException):
     status_code = 401
-    detail = "Не авторизован"
+    default_detail = "Не авторизован"
 
 
 class InvalidCredentialsException(UnauthorizedException):
-    detail = "Неверный логин или пароль"
+    default_detail = "Неверный логин или пароль"
 
 
 class InvalidRefreshTokenException(UnauthorizedException):
-    detail = "Недействительный или просроченный refresh токен"
+    default_detail = "Недействительный или просроченный refresh токен"
 
 
 class RefreshTokenMissingException(UnauthorizedException):
-    detail = "Отсутствует refresh токен"
+    default_detail = "Отсутствует refresh токен"
+
+
+class InvalidAccessTokenException(UnauthorizedException):
+    default_detail = "Недействительный или просроченный access токен"
+
+
+class InvalidTokenTypeException(UnauthorizedException):
+    default_detail = "Неверный тип токена"

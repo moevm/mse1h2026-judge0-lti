@@ -1,6 +1,5 @@
-from app.core.exceptions.base import AppException
+from app.core.exceptions.base import NotFoundException
 
 
-class AttemptNotFoundException(AppException):
-    status_code = 404
+class AttemptNotFoundException(NotFoundException):
     default_detail = "Попытка не найдена"

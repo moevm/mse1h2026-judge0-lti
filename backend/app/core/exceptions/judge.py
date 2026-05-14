@@ -1,6 +1,5 @@
-from app.core.exceptions.base import AppException
+from app.core.exceptions.base import ServerException
 
 
-class JudgeException(AppException):
-    status_code = 500
+class JudgeException(ServerException):
     default_detail = "Ошибка связи с Judge0"

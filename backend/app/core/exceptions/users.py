@@ -1,6 +1,5 @@
-from app.core.exceptions.base import AppException
+from app.core.exceptions.base import NotFoundException
 
 
-class UserNotFoundException(AppException):
-    status_code = 404
+class UserNotFoundException(NotFoundException):
     default_detail = "Пользователь не найден"

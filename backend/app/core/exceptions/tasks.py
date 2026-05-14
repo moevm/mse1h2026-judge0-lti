@@ -1,21 +1,17 @@
-from app.core.exceptions.base import AppException
+from app.core.exceptions.base import NotFoundException, BadRequestException
 
 
-class TaskNotFoundException(AppException):
-    status_code = 404
+class TaskNotFoundException(NotFoundException):
     default_detail = "Задача не найдена"
 
 
-class TaskTestNotFoundException(AppException):
-    status_code = 404
+class TaskTestNotFoundException(NotFoundException):
     default_detail = "Тест не найден"
 
 
-class InvalidLanguageException(AppException):
-    status_code = 400
+class InvalidLanguageException(BadRequestException):
     default_detail = "Указан недопустимый язык программирования"
 
 
-class InvalidTaskTestsFileException(AppException):
-    status_code = 400
+class InvalidTaskTestsFileException(BadRequestException):
     default_detail = "Некорректный JSON файл"

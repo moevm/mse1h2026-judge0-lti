@@ -12,10 +12,10 @@ from app.repositories.refresh_token import (
 )
 from app.core.security import verify_password
 from app.core.security import hash_token
-
-
-class InvalidCredentialsException(Exception):
-    pass
+from app.core.exceptions.auth import (
+    InvalidCredentialsException,
+    InvalidRefreshTokenException,
+)
 
 
 class AuthService:
@@ -32,7 +32,7 @@ class AuthService:
     def login(self, body: AuthRequest):
         user = self.user_repo.get_by_username(body.username)
         if not user or not verify_password(body.password, user.password_hash):
-            raise InvalidCredentialsException
+            raise InvalidCredentialsException()
 
         access_token = self.issue_access_token(user)
 
@@ -58,7 +58,7 @@ class AuthService:
             or db_token.revoked
             or db_token.expires_at < datetime.now(timezone.utc)
         ):
-            raise InvalidCredentialsException
+            raise InvalidRefreshTokenException()
         user = self.user_repo.get_by_id(db_token.user_id)
         new_access = self.issue_access_token(user)
         new_refresh, expires_at = self.jwt_service.create_refresh_token(
@@ -105,7 +105,7 @@ class AuthService:
         token_hash = hash_token(refresh_token)
         db_token = self.token_repo.get_by_hash(token_hash)
         if not db_token or db_token.revoked:
-            raise InvalidCredentialsException
+            raise InvalidRefreshTokenException()
         return self.user_repo.get_by_id(db_token.user_id)
 
 

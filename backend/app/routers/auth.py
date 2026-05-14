@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response, Request
+from app.schemas.auth import AuthRequest, AuthResponse
+from app.services.auth import AuthService, get_auth_service
+from fastapi import APIRouter, Request, Response
 from fastapi.params import Depends
 
-from app.schemas.auth import AuthResponse, AuthRequest
-from app.services.jwt import JwtService, get_jwt_service
-from app.services.auth import InvalidCredentialsException, get_auth_service, AuthService
+from app.core.exceptions.auth import RefreshTokenMissingException
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -18,13 +18,7 @@ async def login(
     response: Response,
     service: AuthService = Depends(get_auth_service),
 ) -> AuthResponse:
-    try:
-        access_token, refresh_token = service.login(body)
-    except InvalidCredentialsException:
-        raise HTTPException(
-            status_code=401,
-            detail="Неверный логин или пароль",
-        )
+    access_token, refresh_token = service.login(body)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -46,11 +40,8 @@ async def refresh(
 ):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="No refresh token")
-    try:
-        access_token, new_refresh_token = service.refresh(refresh_token)
-    except InvalidCredentialsException:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+        raise RefreshTokenMissingException()
+    access_token, new_refresh_token = service.refresh(refresh_token)
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
@@ -74,15 +65,13 @@ async def logout(
     response.delete_cookie("refresh_token")
     return {"ok": True}
 
+
 # использовать этот эндпоинт на фронте для получения access токена после редиректа с lti
 @router.get("/session", summary="Получить access токен по refresh (после lti)")
 def session(request: Request, service: AuthService = Depends(get_auth_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="No refresh token")
-    try:
-        user = service.get_user_from_refresh(refresh_token)
-    except InvalidCredentialsException:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise RefreshTokenMissingException()
+    user = service.get_user_from_refresh(refresh_token)
 
     return {"access_token": service.issue_access_token(user)}

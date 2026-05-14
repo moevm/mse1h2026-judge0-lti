@@ -2,16 +2,9 @@ from typing import List
 from fastapi.params import Depends
 from app.repositories.task import TaskRepository, get_task_repository
 from app.database.models import Task, TaskTest
-from app.schemas.task import TaskPatch, TaskCreate, TaskTestCreate, TaskFilter
+from app.schemas.task import TaskPatch, TaskCreate, TaskFilter
 from app.repositories.language import LanguageRepository, get_language_repository
-
-
-class TaskNotFoundException(Exception):
-    pass
-
-
-class InvalidLanguageException(Exception):
-    pass
+from app.core.exceptions.tasks import InvalidLanguageException, TaskNotFoundException
 
 
 class TaskService:
@@ -22,7 +15,7 @@ class TaskService:
     def get_task_by_id(self, task_id: int) -> Task:
         task = self.repo.get_by_id(task_id)
         if not task:
-            raise TaskNotFoundException
+            raise TaskNotFoundException()
         return task
 
     def get_all_tasks(self) -> List[Task]:
@@ -54,7 +47,7 @@ class TaskService:
     def update_task(self, task_id: int, data: TaskPatch) -> Task:
         task = self.repo.get_by_id(task_id)
         if not task:
-            raise TaskNotFoundException
+            raise TaskNotFoundException()
         update_data = data.model_dump(exclude_unset=True)
         if "languages" in update_data:
             lang_names = update_data.pop("languages")
@@ -78,7 +71,7 @@ class TaskService:
         found = {l.language for l in languages}
         requested = set(lang_names)
         if found != requested:
-            raise InvalidLanguageException
+            raise InvalidLanguageException()
         return languages
 
     def get_filtered_tasks(self, filters: TaskFilter):
@@ -87,8 +80,9 @@ class TaskService:
     def delete_task(self, task_id: int) -> None:
         task = self.repo.get_by_id(task_id)
         if not task:
-            raise TaskNotFoundException
+            raise TaskNotFoundException()
         self.repo.delete(task)
+
 
 def get_task_service(
     repo: TaskRepository = Depends(get_task_repository),

@@ -1,20 +1,16 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File
+from pydantic import ValidationError
 from app.schemas.task import TaskResponse, TaskCreate, TaskFilter
-from app.services.task import (
-    get_task_service,
-    TaskNotFoundException,
-    InvalidLanguageException,
-)
+from app.services.task import get_task_service
 from app.services.task import TaskService
 from app.mappers.task import TaskMapper
 from app.schemas.task import TaskPatch
 from app.services.task_test import (
     TaskTestService,
     get_task_test_service,
-    TaskTestNotFoundException,
 )
 
 from app.schemas.task_test import (
@@ -25,6 +21,7 @@ from app.schemas.task_test import (
 )
 from app.core.dependencies import get_current_admin
 from app.schemas.auth import TokenUser
+from app.core.exceptions.tasks import InvalidTaskTestsFileException
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -47,10 +44,7 @@ async def get_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    try:
-        task = service.get_task_by_id(task_id)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+    task = service.get_task_by_id(task_id)
     return TaskMapper.to_task_response(task)
 
 
@@ -61,14 +55,7 @@ async def patch_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    try:
-        task = service.update_task(task_id, body)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
-    except InvalidLanguageException:
-        raise HTTPException(
-            status_code=400, detail="Указан недопустимый язык программирования"
-        )
+    task = service.update_task(task_id, body)
     return TaskMapper.to_task_response(task)
 
 
@@ -78,12 +65,9 @@ async def create_task(
     service: TaskService = Depends(get_task_service),
     admin: TokenUser = Depends(get_current_admin),
 ):
-    try:
-        task = service.create_task(body)
-    except InvalidLanguageException:
-        raise HTTPException(
-            status_code=400, detail="Указан недопустимый язык программирования"
-        )
+
+    task = service.create_task(body)
+
     return TaskMapper.to_task_response(task)
 
 
@@ -93,10 +77,7 @@ async def delete_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    try:
-        service.delete_task(task_id)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+    service.delete_task(task_id)
 
 
 @router.get(
@@ -109,10 +90,7 @@ async def get_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    try:
-        tests = service.get_tests(task_id)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+    tests = service.get_tests(task_id)
     return tests
 
 
@@ -127,10 +105,8 @@ async def create_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ) -> TaskTestResponse:
-    try:
-        test = service.create_test(task_id, body)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
+
+    test = service.create_test(task_id, body)
     return test
 
 
@@ -145,12 +121,7 @@ async def delete_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    try:
-        service.delete_test(task_id, test_id)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
-    except TaskTestNotFoundException:
-        raise HTTPException(status_code=404, detail="Тест не найден")
+    service.delete_test(task_id, test_id)
 
 
 @router.post(
@@ -171,11 +142,8 @@ async def upload_task_tests(
         tests = service.create_tests_bulk(task_id, parsed)
         return tests
 
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Некорректный JSON файл")
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (json.JSONDecodeError, ValidationError):
+        raise InvalidTaskTestsFileException()
 
 
 @router.patch(
@@ -190,10 +158,6 @@ async def patch_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    try:
-        test = service.update_test(task_id, test_id, body)
-    except TaskNotFoundException:
-        raise HTTPException(status_code=404, detail="Задача не найдена")
-    except TaskTestNotFoundException:
-        raise HTTPException(status_code=404, detail="Тест не найден")
+
+    test = service.update_test(task_id, test_id, body)
     return test

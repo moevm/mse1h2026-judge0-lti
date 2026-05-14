@@ -1,4 +1,4 @@
-from .base import AppException
+from app.core.exceptions.base import AppException
 
 
 class UnauthorizedException(AppException):

@@ -1,5 +1,6 @@
 from fastapi import Depends
 from dataclasses import dataclass
+from app.core.exceptions.tasks import InvalidLanguageException, TaskNotFoundException
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
 from app.repositories.task import TaskRepository, get_task_repository
@@ -8,6 +9,7 @@ from app.repositories.attempt import AttemptRepository, get_attempt_repository
 from app.repositories.solution import SolutionRepository, get_solution_repository
 from app.database.models import Solution, Attempt
 
+
 @dataclass
 class CheckResult:
     success: bool
@@ -15,14 +17,6 @@ class CheckResult:
     total: int
     error: str | None = None
     comment: str | None = None
-
-
-class TaskNotFoundException(Exception):
-    pass
-
-
-class InvalidLanguageException(Exception):
-    pass
 
 
 class CheckService:
@@ -45,12 +39,12 @@ class CheckService:
     ) -> CheckResult:
         task = self.task_repo.get_by_id(task_id)
         if not task:
-            raise TaskNotFoundException
+            raise TaskNotFoundException()
 
         language = self.lang_repo.get_language_by_name(body.language)
         allowed = {lang.language for lang in task.languages}
         if not language or language.language not in allowed:
-            raise InvalidLanguageException
+            raise InvalidLanguageException()
 
         solution = self.solution_repo.get(user_id, task_id)
         if not solution:
@@ -93,8 +87,16 @@ class CheckService:
                     "stdout": result.get("stdout"),
                     "stderr": result.get("stderr"),
                     "compile_output": result.get("compile_output"),
-                    "memory_kb": int(result.get("memory")) if result.get("memory") is not None else None,
-                    "time_ms": int(float(result.get("time", 0)) * 1000) if result.get("time") is not None else None,
+                    "memory_kb": (
+                        int(result.get("memory"))
+                        if result.get("memory") is not None
+                        else None
+                    ),
+                    "time_ms": (
+                        int(float(result.get("time", 0)) * 1000)
+                        if result.get("time") is not None
+                        else None
+                    ),
                     "is_solved": False,
                     "message": final_result.comment,
                 }
@@ -116,8 +118,16 @@ class CheckService:
                     "stdout": result.get("stdout"),
                     "stderr": result.get("stderr"),
                     "compile_output": result.get("compile_output"),
-                    "memory_kb": int(result.get("memory")) if result.get("memory") is not None else None,
-                    "time_ms": int(float(result.get("time", 0)) * 1000) if result.get("time") is not None else None,
+                    "memory_kb": (
+                        int(result.get("memory"))
+                        if result.get("memory") is not None
+                        else None
+                    ),
+                    "time_ms": (
+                        int(float(result.get("time", 0)) * 1000)
+                        if result.get("time") is not None
+                        else None
+                    ),
                     "is_solved": False,
                     "message": final_result.comment,
                 }

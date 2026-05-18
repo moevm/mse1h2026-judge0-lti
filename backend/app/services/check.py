@@ -52,6 +52,7 @@ class CheckService:
                 user_id=user_id,
                 task_id=task_id,
                 is_solved=False,
+                score=0,
             )
             solution = self.solution_repo.create(solution)
 
@@ -71,6 +72,7 @@ class CheckService:
 
             expected = (test.stdout or "").strip()
             stdout = (result.get("stdout") or "").strip()
+
             if result["status"]["id"] not in (3, 4):
                 final_result = CheckResult(
                     success=False,
@@ -149,8 +151,11 @@ class CheckService:
                 "message": "Все тесты пройдены успешно",
             }
 
-            if not solution.is_solved:
-                solution.is_solved = True
+        score = (passed * 100) // total if total > 0 else 0
+
+        solution.is_solved = (passed == total)
+        solution.score = score
+        self.solution_repo.save(solution)
 
         attempt = Attempt(
             solution_id=solution.id,

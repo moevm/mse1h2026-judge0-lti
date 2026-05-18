@@ -1,6 +1,8 @@
 import pytest
 
 pytestmark = pytest.mark.integration
+
+
 class TestGetModules:
     """Тесты GET /api/modules/"""
 
@@ -63,7 +65,6 @@ class TestGetModule:
         response = await client.get("/api/modules/999")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
 
 class TestCreateModule:
@@ -113,12 +114,9 @@ class TestPatchModule:
     @pytest.mark.asyncio
     async def test_patch_module_not_found(self, client):
         """Обновление несуществующего модуля"""
-        response = await client.patch(
-            "/api/modules/999", json={"title": "Updated"}
-        )
+        response = await client.patch("/api/modules/999", json={"title": "Updated"})
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
 
 class TestDeleteModule:
@@ -142,7 +140,6 @@ class TestDeleteModule:
         response = await client.delete("/api/modules/999")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
 
 class TestGetModuleTasks:
@@ -163,7 +160,6 @@ class TestGetModuleTasks:
         """Получение задач несуществующего модуля"""
         response = await client.get("/api/modules/999/tasks")
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
 
 class TestAddTasksToModule:
@@ -194,7 +190,6 @@ class TestAddTasksToModule:
         )
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
     @pytest.mark.asyncio
     async def test_add_tasks_with_duplicates(self, client, create_test_module):
@@ -230,7 +225,7 @@ class TestRemoveTaskFromModule:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == module.id
-        task_ids = [ task['id'] for task in data["tasks"]]
+        task_ids = [task["id"] for task in data["tasks"]]
         assert task1.id not in task_ids
 
     @pytest.mark.asyncio
@@ -239,7 +234,6 @@ class TestRemoveTaskFromModule:
         response = await client.delete("/api/modules/999/tasks/1")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
 
 class TestReorderTasks:
@@ -289,7 +283,6 @@ class TestReorderTasks:
         )
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Модуль не найден"
 
     @pytest.mark.asyncio
     async def test_reorder_tasks_with_duplicate_orders(

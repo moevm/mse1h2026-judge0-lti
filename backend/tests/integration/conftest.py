@@ -35,6 +35,7 @@ def mock_get_settings():
 
 
 import app.core.config
+
 app.core.config.get_settings = mock_get_settings
 
 from app.main import app as main_app
@@ -60,6 +61,7 @@ def engine(postgres_container):
     default_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
     for lang_name in default_languages:
         from app.database.models import Language
+
         lang = session.query(Language).filter(Language.language == lang_name).first()
         if not lang:
             session.add(Language(language=lang_name))
@@ -92,11 +94,14 @@ def db_session(engine):
     transaction.rollback()
     connection.close()
     main_app.dependency_overrides.clear()
+
+
 @pytest.fixture
 async def client(db_session) -> AsyncGenerator:
     transport = ASGITransport(app=main_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+
 
 @pytest.fixture(autouse=True)
 def mock_judge_service():
@@ -270,6 +275,7 @@ def create_test_tasks(db_session, create_test_task):
             task = create_test_task(title=f"Task {i}")
             tasks.append(task)
         return tasks
+
     return _create_tasks
 
 

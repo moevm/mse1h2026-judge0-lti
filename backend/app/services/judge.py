@@ -3,10 +3,7 @@ import httpx
 from fastapi import Request
 from fastapi.params import Depends
 from app.core.config import Settings, get_settings
-
-
-class Judge0Exception(Exception):
-    pass
+from app.core.exceptions.judge import JudgeException
 
 
 class JudgeService:
@@ -39,7 +36,7 @@ class JudgeService:
         )
 
         if response.status_code not in (200, 201):
-            raise Judge0Exception
+            raise JudgeException()
 
         result = response.json()
         # декодируем ответ из base64

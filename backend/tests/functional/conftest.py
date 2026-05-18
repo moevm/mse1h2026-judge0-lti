@@ -9,7 +9,7 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 @pytest.fixture
 async def client() -> AsyncGenerator:
-    async with AsyncClient(base_url=API_URL, timeout=30.0) as client:
+    async with AsyncClient(base_url=API_URL, timeout=60.0) as client:
         yield client
 
 

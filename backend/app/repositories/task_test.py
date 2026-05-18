@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database.database import session_generator
 from app.database.models import TaskTest
 
+
 class TaskTestRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -15,6 +16,13 @@ class TaskTestRepository:
 
     def get_by_id(self, test_id: int):
         query = select(TaskTest).where(TaskTest.id == test_id)
+        return self.db.scalars(query).first()
+
+    def get_by_id_and_task(self, test_id: int, task_id: int) -> TaskTest | None:
+        query = select(TaskTest).where(
+            TaskTest.id == test_id,
+            TaskTest.task_id == task_id,
+        )
         return self.db.scalars(query).first()
 
     def add(self, test: TaskTest):
@@ -34,5 +42,7 @@ class TaskTestRepository:
         self.db.flush()
 
 
-def get_task_test_repository(db: Session = Depends(session_generator)) -> TaskTestRepository:
+def get_task_test_repository(
+    db: Session = Depends(session_generator),
+) -> TaskTestRepository:
     return TaskTestRepository(db)

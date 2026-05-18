@@ -11,4 +11,5 @@ judge0.conf
 docker-compose.test.yaml
 docker-compose.override.yml
 
-.DS_Store/
+.DS_Store
+*.db

@@ -1,24 +1,22 @@
 from typing import List
 from fastapi import Depends
+
+from app.core.exceptions.modules import (
+    ModuleNotFoundException,
+    DuplicateTaskInRequestException,
+    TaskNotExistsException,
+    TaskAlreadyInModuleException,
+    ModuleTasksMismatchException,
+)
 from app.database.models import Module, Task, ModuleTaskOrder
 from app.repositories.module import ModuleRepository, get_module_repository
-from app.schemas.module import ModulePatch, ModuleCreate, ModuleAddTasks, ModuleTasksReorder, ModuleFilter
-
-
-class ModuleNotFoundException(Exception):
-    pass
-
-class TaskNotExistsException(Exception):
-    pass
-
-class DuplicateTaskInRequestException(Exception):
-    pass
-
-class TaskAlreadyInModuleException(Exception):
-    pass
-
-class InvalidTaskOrderException(Exception):
-    pass
+from app.schemas.module import (
+    ModulePatch,
+    ModuleCreate,
+    ModuleAddTasks,
+    ModuleTasksReorder,
+    ModuleFilter,
+)
 
 
 class ModuleService:
@@ -36,7 +34,9 @@ class ModuleService:
         return self.repo.get_tasks(module_id)
 
     def create_module(self, body: ModuleCreate) -> Module | None:
-        module = self.repo.create(Module(title=body.title, description=body.description))
+        module = self.repo.create(
+            Module(title=body.title, description=body.description)
+        )
         return module
 
     def delete_module(self, module_id: int) -> None:
@@ -56,13 +56,13 @@ class ModuleService:
     def add_tasks(self, module_id: int, body: ModuleAddTasks) -> Module:
         module = self._get_module_or_raise(module_id)
         if len(body.task_ids) != len(set(body.task_ids)):
-            raise DuplicateTaskInRequestException
+            raise DuplicateTaskInRequestException()
         existing_task_ids = self.repo.get_existing_task_ids(body.task_ids)
         if len(existing_task_ids) != len(body.task_ids):
-            raise TaskNotExistsException
+            raise TaskNotExistsException()
         module_task_ids = self.repo.get_module_task_ids(module_id)
         if any(task_id in module_task_ids for task_id in body.task_ids):
-            raise TaskAlreadyInModuleException
+            raise TaskAlreadyInModuleException()
         max_order = self.repo.get_max_order(module_id)
         for i, task_id in enumerate(body.task_ids):
             link = ModuleTaskOrder(
@@ -79,7 +79,7 @@ class ModuleService:
         module = self._get_module_or_raise(module_id)
         link = self.repo.get_module_task_link(module_id, task_id)
         if not link:
-            raise TaskNotExistsException
+            raise TaskNotExistsException()
         self.repo.delete_link(module_id, task_id)
         self.repo.shift_orders_after(module_id, link.order)
         self.repo.flush()
@@ -92,11 +92,11 @@ class ModuleService:
         module = self._get_module_or_raise(module_id)
         task_ids = [t.task_id for t in body.tasks]
         if len(task_ids) != len(set(task_ids)):
-            raise DuplicateTaskInRequestException
+            raise DuplicateTaskInRequestException()
         links = self.repo.get_module_task_links_dict(module_id)
         incoming_ids = set(task_ids)
         if incoming_ids != set(links.keys()):
-            raise TaskNotExistsException
+            raise ModuleTasksMismatchException()
         mapping = body.to_mapping()
         self.repo.reorder_module_tasks(module_id, mapping)
         self.repo.flush()
@@ -106,7 +106,7 @@ class ModuleService:
     def _get_module_or_raise(self, module_id: int) -> Module:
         module = self.repo.get_by_id(module_id)
         if not module:
-            raise ModuleNotFoundException
+            raise ModuleNotFoundException(f"Модуль {module_id} не найден")
         return module
 
 

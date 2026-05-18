@@ -1,12 +1,10 @@
 from datetime import timezone, datetime
 from fastapi import Depends
+
+from app.core.exceptions.analytics import AttemptNotFoundException
 from app.repositories.analytics import AnalyticsRepository, get_analytics_repository
 from app.schemas.analytics import UserModulesFilter, UserTasksFilter, AttemptsFilter
 from app.database.models import Module, Task, Solution, Attempt
-
-
-class AttemptNotFoundException(Exception):
-    pass
 
 
 class AnalyticsService:
@@ -21,10 +19,7 @@ class AnalyticsService:
             result.append((module, task_count))
 
         if filters.sort_by == "tasks_count":
-            result.sort(
-                key=lambda x: x[1],
-                reverse=filters.sort_order == "desc"
-            )
+            result.sort(key=lambda x: x[1], reverse=filters.sort_order == "desc")
         return result
 
     def get_user_tasks_in_module(
@@ -40,7 +35,7 @@ class AnalyticsService:
     def get_attempt_by_id(self, attempt_id: int) -> Attempt:
         attempt = self.repo.get_attempt_by_id(attempt_id)
         if not attempt:
-            raise AttemptNotFoundException
+            raise AttemptNotFoundException(f"Попытка {attempt_id} не найдена")
         return attempt
 
     def is_my_student(self, teacher_id: int, student_id: int) -> bool:
@@ -54,6 +49,6 @@ class AnalyticsService:
 
 
 def get_analytics_service(
-    repo: AnalyticsRepository = Depends(get_analytics_repository)
+    repo: AnalyticsRepository = Depends(get_analytics_repository),
 ) -> AnalyticsService:
     return AnalyticsService(repo)

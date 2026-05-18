@@ -1,15 +1,11 @@
 from typing import List
 from fastapi.params import Depends
 
+from app.core.exceptions.tasks import TaskNotFoundException, TaskTestNotFoundException
 from app.repositories.task_test import TaskTestRepository, get_task_test_repository
 from app.repositories.task import TaskRepository, get_task_repository
-from app.database.models import TaskTest
+from app.database.models import TaskTest, Task
 from app.schemas.task_test import TaskTestCreate, TaskTestFileSchema, TaskTestPatch
-from app.services.task import TaskNotFoundException
-
-
-class TaskTestNotFoundException(Exception):
-    pass
 
 
 class TaskTestService:
@@ -18,15 +14,11 @@ class TaskTestService:
         self.task_repo = task_repo
 
     def get_tests(self, task_id: int):
-        task = self.task_repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
+        task = self._get_task_or_raise(task_id)
         return self.repo.get_by_task_id(task_id)
 
     def create_test(self, task_id: int, body: TaskTestCreate):
-        task = self.task_repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
+        task = self._get_task_or_raise(task_id)
         test = TaskTest(
             title=body.title, stdin=body.stdin, stdout=body.stdout, task_id=task_id
         )
@@ -35,14 +27,8 @@ class TaskTestService:
         return test
 
     def update_test(self, task_id: int, test_id: int, body: TaskTestPatch):
-        task = self.task_repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
-        test = self.repo.get_by_id(test_id)
-        if not test:
-            raise TaskTestNotFoundException
-        if test.task_id != task_id:
-            raise TaskNotFoundException
+        task = self._get_task_or_raise(task_id)
+        test = self._get_test_or_raise(task_id, test_id)
         data = body.model_dump(exclude_unset=True)
         for key, value in data.items():
             setattr(test, key, value)
@@ -50,20 +36,12 @@ class TaskTestService:
         return test
 
     def delete_test(self, task_id: int, test_id: int) -> None:
-        task = self.task_repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
-        test = self.repo.get_by_id(test_id)
-        if not test:
-            raise TaskTestNotFoundException
-        if test.task_id != task_id:
-            raise TaskTestNotFoundException
+        task = self._get_task_or_raise(task_id)
+        test = self._get_test_or_raise(task_id, test_id)
         self.repo.delete(test)
 
     def create_tests_bulk(self, task_id, body: TaskTestFileSchema):
-        task = self.task_repo.get_by_id(task_id)
-        if not task:
-            raise TaskNotFoundException
+        task = self._get_task_or_raise(task_id)
         tests = [
             TaskTest(
                 title=t.title,
@@ -76,6 +54,21 @@ class TaskTestService:
         self.repo.add_all(tests)
         self.repo.flush()
         return tests
+
+    def _get_task_or_raise(self, task_id: int) -> Task:
+        task = self.task_repo.get_by_id(task_id)
+        if not task:
+            raise TaskNotFoundException(f"Задача {task_id} не найдена")
+        return task
+
+    def _get_test_or_raise(self, task_id: int, test_id: int) -> TaskTest:
+        test = self.repo.get_by_id_and_task(test_id, task_id)
+        if not test:
+            raise TaskTestNotFoundException(
+                f"Тест {test_id} не найден в задаче {task_id}"
+            )
+        return test
+
 
 def get_task_test_service(
     repo: TaskTestRepository = Depends(get_task_test_repository),

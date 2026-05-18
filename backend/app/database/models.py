@@ -167,5 +167,6 @@ class Attempt(Base):
     created_at          = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     solution            = relationship("Solution", back_populates="attempts")
-
+    score               = Column(Integer, nullable=True)
+    
 # @formatter:on

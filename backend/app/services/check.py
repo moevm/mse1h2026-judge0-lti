@@ -101,6 +101,7 @@ class CheckService:
                     ),
                     "is_solved": False,
                     "message": final_result.comment,
+                    "score": (passed * 100) // total if total > 0 else 0,
                 }
                 break
 
@@ -132,6 +133,7 @@ class CheckService:
                     ),
                     "is_solved": False,
                     "message": final_result.comment,
+                    "score": (passed * 100) // total if total > 0 else 0,
                 }
                 break
 
@@ -149,12 +151,17 @@ class CheckService:
                 "time_ms": None,
                 "is_solved": True,
                 "message": "Все тесты пройдены успешно",
+                "score": (passed * 100) // total if total > 0 else 0,
             }
 
-        score = (passed * 100) // total if total > 0 else 0
+        new_score = (passed * 100) // total if total > 0 else 0
 
-        solution.is_solved = (passed == total)
-        solution.score = score
+        if new_score > solution.score:
+            solution.score = new_score
+
+        if not solution.is_solved and passed == total:
+            solution.is_solved = True
+
         self.solution_repo.save(solution)
 
         attempt = Attempt(
@@ -170,6 +177,7 @@ class CheckService:
             memory_kb=last_attempt_data.get("memory_kb"),
             time_ms=last_attempt_data.get("time_ms"),
             message=last_attempt_data.get("message"),
+            score=last_attempt_data.get("score"),
         )
         self.attempt_repo.create(attempt)
 

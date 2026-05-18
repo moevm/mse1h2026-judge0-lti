@@ -146,6 +146,8 @@ class Solution(Base):
     task            = relationship("Task", back_populates="solutions")
     attempts        = relationship("Attempt", back_populates="solution", cascade="all, delete-orphan")
 
+    score = Column(Integer, nullable=False, default=0)
+    
 
 class Attempt(Base):
     __tablename__ = "attempts"

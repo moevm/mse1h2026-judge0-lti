@@ -194,24 +194,28 @@ def insert_solutions(db: Session) -> list[Solution]:
             user_id=3,
             task_id=1,
             is_solved=True,
+            score=100,
         ),
         Solution(
             id=2,
             user_id=3,
             task_id=2,
             is_solved=False,
+            score=0,
         ),
         Solution(
             id=3,
             user_id=4,
             task_id=1,
             is_solved=True,
+            score=100,
         ),
         Solution(
             id=4,
             user_id=4,
             task_id=2,
             is_solved=False,
+            score=0,
         ),
     ]
     db.add_all(solutions)

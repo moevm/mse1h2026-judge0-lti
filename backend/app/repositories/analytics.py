@@ -60,6 +60,7 @@ class AnalyticsRepository:
             select(
                 Task,
                 Solution,
+                Solution.score,
                 func.coalesce(attempt_count_subq.c.attempt_count, 0),
                 last_attempt_subq.c.last_attempt,
                 func.count(TaskTest.id).label("test_count"),

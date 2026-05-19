@@ -146,6 +146,8 @@ class Solution(Base):
     task            = relationship("Task", back_populates="solutions")
     attempts        = relationship("Attempt", back_populates="solution", cascade="all, delete-orphan")
 
+    score = Column(Integer, nullable=False, default=0)
+    
 
 class Attempt(Base):
     __tablename__ = "attempts"
@@ -165,5 +167,6 @@ class Attempt(Base):
     created_at          = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     solution            = relationship("Solution", back_populates="attempts")
-
+    score               = Column(Integer, nullable=True)
+    
 # @formatter:on

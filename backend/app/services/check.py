@@ -52,6 +52,7 @@ class CheckService:
                 user_id=user_id,
                 task_id=task_id,
                 is_solved=False,
+                score=0,
             )
             solution = self.solution_repo.create(solution)
 
@@ -71,6 +72,7 @@ class CheckService:
 
             expected = (test.stdout or "").strip()
             stdout = (result.get("stdout") or "").strip()
+
             if result["status"]["id"] not in (3, 4):
                 final_result = CheckResult(
                     success=False,
@@ -99,6 +101,7 @@ class CheckService:
                     ),
                     "is_solved": False,
                     "message": final_result.comment,
+                    "score": (passed * 100) // total if total > 0 else 0,
                 }
                 break
 
@@ -130,6 +133,7 @@ class CheckService:
                     ),
                     "is_solved": False,
                     "message": final_result.comment,
+                    "score": (passed * 100) // total if total > 0 else 0,
                 }
                 break
 
@@ -147,10 +151,18 @@ class CheckService:
                 "time_ms": None,
                 "is_solved": True,
                 "message": "Все тесты пройдены успешно",
+                "score": (passed * 100) // total if total > 0 else 0,
             }
 
-            if not solution.is_solved:
-                solution.is_solved = True
+        new_score = (passed * 100) // total if total > 0 else 0
+
+        if new_score > solution.score:
+            solution.score = new_score
+
+        if not solution.is_solved and passed == total:
+            solution.is_solved = True
+
+        self.solution_repo.save(solution)
 
         attempt = Attempt(
             solution_id=solution.id,
@@ -165,6 +177,7 @@ class CheckService:
             memory_kb=last_attempt_data.get("memory_kb"),
             time_ms=last_attempt_data.get("time_ms"),
             message=last_attempt_data.get("message"),
+            score=last_attempt_data.get("score"),
         )
         self.attempt_repo.create(attempt)
 

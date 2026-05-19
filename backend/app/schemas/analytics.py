@@ -20,6 +20,7 @@ class UserTaskResponse(BaseModel):
     is_solved: bool
     last_attempt_at: Optional[datetime] = None
     test_count: int
+    score: int = 0
 
 
 class AttemptResponse(BaseModel):

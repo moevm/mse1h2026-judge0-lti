@@ -20,6 +20,7 @@ class AnalyticsMapper:
     def to_task_response(
         task: Task,
         solution: Solution,
+        score: int,
         attempt_count: int,
         last_attempt_at: Optional[datetime],
         test_count: int
@@ -31,6 +32,7 @@ class AnalyticsMapper:
             is_solved=solution.is_solved,
             last_attempt_at=last_attempt_at,
             test_count=test_count,
+            score=score,
         )
 
     @staticmethod

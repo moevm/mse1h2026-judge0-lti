@@ -54,9 +54,9 @@ def get_user_tasks_in_module(
     rows = service.get_user_tasks_in_module(user_id, module_id, filters)
     return [
         AnalyticsMapper.to_task_response(
-            task, solution, attempt_count, last_attempt_at, test_count
+            task, solution, score, attempt_count, last_attempt_at, test_count
         )
-        for task, solution, attempt_count, last_attempt_at, test_count in rows
+        for task, solution, score, attempt_count, last_attempt_at, test_count in rows
     ]
 
 

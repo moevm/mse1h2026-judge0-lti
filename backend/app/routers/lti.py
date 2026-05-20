@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.core.config import get_settings
+from app.core.exceptions.auth import RefreshTokenMissingException
 from app.services.auth import AuthService, get_auth_service
 from app.services.lti import LtiService, get_lti_service
 from cryptography.hazmat.primitives import serialization
@@ -122,13 +123,8 @@ async def public_key():
 def session(request: Request, auth_service: AuthService = Depends(get_auth_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="No session")
-
-    from app.core.exceptions.auth import InvalidRefreshTokenException
-    try:
-        user = auth_service.get_user_from_refresh(refresh_token)
-    except InvalidRefreshTokenException:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+        raise RefreshTokenMissingException()
+    user = auth_service.get_user_from_refresh(refresh_token)
 
     return {"access_token": auth_service.issue_access_token(user)}
 

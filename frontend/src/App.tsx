@@ -22,6 +22,7 @@ import AdminStudentPage from './pages/AdminStudentPage/AdminStudentPage.tsx'
 import AdminStudentModulePage from './pages/AdminStudentModulePage/AdminStudentModulePage.tsx'
 import AdminStudentTaskPage from './pages/AdminStudentTaskPage/AdminStudentTaskPage.tsx'
 import AdminStudentAttemptPage from './pages/AdminStudentAttemptPage/AdminStudentAttemptPage.tsx'
+import LtiKeyPage from './pages/LtiKeyPage/LtiKeyPage.tsx'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/task" element={<IDEPage />} />
         </Route>
+        <Route path="/lti-key" element={<LtiKeyPage />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
 

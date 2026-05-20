@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "adminpass"
 
+    moodle_jwks_url: str = "http://moodle/mod/lti/certs.php"
+    lti_client_id: str = "your_client_id"
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

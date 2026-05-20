@@ -59,30 +59,34 @@ async def lti13_login(request: Request):
     else:
         params = request.query_params
 
-    login_hint = params.get("login_hint")
+    iss = params.get("iss")
     target_link_uri = params.get("target_link_uri")
+    login_hint = params.get("login_hint")
     client_id = params.get("client_id")
+    lti_message_hint = params.get("lti_message_hint")
 
-    # Генерируем state и nonce
+    moodle_auth_url = f"{iss}/mod/lti/auth.php"
+
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(32)
 
-    # Сохраняем state и nonce (пока в памяти)
+    auth_params = {
+        "scope": "openid",
+        "response_type": "id_token",
+        "client_id": client_id,
+        "redirect_uri": target_link_uri,
+        "login_hint": login_hint,
+        "state": state,
+        "nonce": nonce,
+        "response_mode": "form_post",
+    }
 
-    # Возвращаем форму, которая отправит POST на launch13
-    html_form = f"""
-    <html>
-    <body onload="document.forms[0].submit()">
-    <form action="{target_link_uri}" method="POST">
-        <input type="hidden" name="state" value="{state}">
-        <input type="hidden" name="nonce" value="{nonce}">
-        <input type="hidden" name="login_hint" value="{login_hint}">
-        <input type="hidden" name="client_id" value="{client_id}">
-    </form>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_form)
+    if lti_message_hint:
+        auth_params["lti_message_hint"] = lti_message_hint
+
+    redirect_url = f"{moodle_auth_url}?{urlencode(auth_params)}"
+
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.post("/launch13")
@@ -95,25 +99,20 @@ async def lti13_launch(
     id_token = form_data.get("id_token")
     state = form_data.get("state")
 
-    # Добавим логирование
     print(f"Received id_token: {id_token[:100] if id_token else 'None'}...")
 
     if not id_token:
         return JSONResponse({"error": "id_token not found"}, status_code=400)
 
-    # Декодируем id_token без проверки подписи
     import jwt
     import base64
 
-    # id_token может быть в виде строки, разбиваем на части
     try:
-        # Просто разделяем по точкам и декодируем payload
         parts = id_token.split('.')
         if len(parts) != 3:
             return JSONResponse({"error": "Invalid id_token format"}, status_code=400)
 
         payload_b64 = parts[1]
-        # Добавляем padding если нужно
         payload_b64 += '=' * (4 - len(payload_b64) % 4)
         payload_json = base64.urlsafe_b64decode(payload_b64)
         decoded = json.loads(payload_json)
@@ -124,12 +123,10 @@ async def lti13_launch(
         print(f"Error decoding id_token: {e}")
         return JSONResponse({"error": f"Failed to decode id_token: {str(e)}"}, status_code=400)
 
-    # Извлекаем данные
     user_id = decoded.get("sub")
     custom_params = decoded.get("https://purl.imsglobal.org/spec/lti/claim/custom", {})
     module_id = custom_params.get("module_id") or decoded.get("custom_module_id")
 
-    # Временно, если нет module_id - используем заглушку
     if not module_id:
         module_id = 1
         print("WARNING: module_id not found, using default 1")

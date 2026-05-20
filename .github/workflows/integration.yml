@@ -1,8 +1,6 @@
 name: Integration Tests
 
 on:
-  push:
-    branches: [main, 113-update-lti-to-1.3]
   pull_request:
     branches: [main]
 

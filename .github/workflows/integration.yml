@@ -15,6 +15,12 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Generate LTI 1.3 RSA keys
+        run: |
+          mkdir -p backend/keys
+          openssl genrsa -out backend/keys/private.key 2048
+          openssl rsa -in backend/keys/private.key -pubout -out backend/keys/public.key
+
       - name: Install dependencies
         working-directory: ./backend
         run: |

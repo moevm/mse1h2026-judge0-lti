@@ -1,4 +1,4 @@
-from app.core.exceptions.base import NotFoundException, BadRequestException
+from app.core.exceptions.base import ForbiddenException, NotFoundException, BadRequestException
 
 
 class TaskNotFoundException(NotFoundException):
@@ -15,3 +15,6 @@ class InvalidLanguageException(BadRequestException):
 
 class InvalidTaskTestsFileException(BadRequestException):
     default_detail = "Некорректный JSON файл"
+    
+class TaskAttemptsExceededException(ForbiddenException):
+    default_detail = "Максимальное количество попыток по данной задаче исчерпано"

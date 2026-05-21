@@ -28,6 +28,7 @@ class TaskService:
             title=body.title,
             description=body.description,
             timeout=body.timeout,
+            max_attempts=body.max_attempts,
         )
         task.languages = languages
         if body.tests:

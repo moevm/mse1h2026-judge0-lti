@@ -87,6 +87,8 @@ class Task(Base):
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
+    
+    max_attempts    = Column(Integer, nullable=True, default=None)
 
     languages       = relationship("Language", secondary="tasks_languages", back_populates="tasks")
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")

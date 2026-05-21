@@ -1,6 +1,6 @@
 from fastapi import Depends
 from dataclasses import dataclass
-from app.core.exceptions.tasks import InvalidLanguageException, TaskNotFoundException
+from app.core.exceptions.tasks import InvalidLanguageException, TaskAttemptsExceededException, TaskNotFoundException
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
 from app.repositories.task import TaskRepository, get_task_repository
@@ -61,6 +61,10 @@ class CheckService:
                     break
             if not active_found:
                 raise ModuleSessionNotActiveException()
+
+        attempts_used = self.attempt_repo.count_by_user_and_task(user_id, task_id)
+        if task.max_attempts is not None and attempts_used >= task.max_attempts:
+            raise TaskAttemptsExceededException()
 
         language = self.lang_repo.get_language_by_name(body.language)
         allowed = {lang.language for lang in task.languages}

@@ -155,6 +155,12 @@ def start_module_session(
     user: TokenUser = Depends(get_current_user_payload),
     service: ModuleSessionService = Depends(get_module_session_service),
 ):
+    """
+    Запускает (или возвращает уже существующую) сессию прохождения модуля.
+    Сессия может быть:
+    - ограниченной по времени (expires_at установлен)
+    - без ограничения времени (expires_at = NULL)
+    """
     session = service.start_session(module_id, user)
     return ModuleSessionMapper.to_response(session)
 
@@ -169,5 +175,25 @@ def get_module_session(
     user: TokenUser = Depends(get_current_user_payload),
     service: ModuleSessionService = Depends(get_module_session_service),
 ):
+    """
+    Возвращает активную сессию пользователя для указанного модуля.
+    Активной считается сессия, которая:
+    - не завершена (finished_at IS NULL)
+    - не истекла по времени (expires_at IS NULL или expires_at > now)
+    
+    Если активной сессии нет — возвращается {"session": null}.
+    """
     session = service.get_session(module_id, user)
+    return ModuleSessionMapper.to_response(session)
+
+@router.get("/{module_id}/session/finish", summary="Завершить активную сессию прохождения модуля")
+def finish_module_session(
+    module_id: int,
+    user: TokenUser = Depends(get_current_user_payload),
+    service: ModuleSessionService = Depends(get_module_session_service),
+):
+    """
+    Завершает активную сессию пользователя для указанного модуля.
+    """
+    session = service.finish_session(module_id, user)
     return ModuleSessionMapper.to_response(session)

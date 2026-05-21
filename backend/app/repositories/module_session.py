@@ -53,6 +53,11 @@ class ModuleSessionRepository:
             )
         )
         return self.db.execute(query).scalar() or 0
+    def finish_session(self, session: ModuleSession) -> ModuleSession:
+        session.finished_at = datetime.now(timezone.utc)
+        self.db.flush()
+        self.db.refresh(session)
+        return session
 
 
 def get_module_session_repository(db: Session = Depends(session_generator)):

@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import Depends
 
-from app.core.exceptions.module_session import ModuleAttemptsExceededException
+from app.core.exceptions.module_session import ModuleAttemptsExceededException, ModuleSessionNotActiveException
 from app.database.models import ModuleSession
 from app.repositories.module_session import (
     ModuleSessionRepository,
@@ -39,6 +39,12 @@ class ModuleSessionService:
 
     def get_session(self, module_id: int, user: TokenUser) -> ModuleSession | None:
         return self.repo.get_active_session(user.user_id, module_id)
+    
+    def finish_session(self, module_id: int, user: TokenUser) -> ModuleSession:
+        session = self.repo.get_active_session(user.user_id, module_id)
+        if not session:
+            raise ModuleSessionNotActiveException()
+        return self.repo.finish_session(session)
 
 
 def get_module_session_service(

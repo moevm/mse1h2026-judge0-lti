@@ -1,12 +1,12 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.schemas.solution import SolutionFilter, SolutionWithUserResponse
 from app.schemas.attempt import AttemptResponse
 from app.services.solution import SolutionService, get_solution_service
 from app.core.dependencies import get_current_admin
 from app.schemas.auth import TokenUser
-from app.core.exceptions.tasks import TaskNotFoundException
+from app.mappers.solution import SolutionMapper
 
 router = APIRouter(prefix="/solutions", tags=["solutions"])
 
@@ -35,20 +35,7 @@ async def get_task_solutions(
     service: SolutionService = Depends(get_solution_service),
 ):
     solutions = service.get_solutions_by_task(task_id, filters)
-    return [
-        {
-            "id": s.id,
-            "task_id": s.task_id,
-            "user_id": s.user_id,
-            "username": s.user.username if s.user else None,
-            "full_name": s.user.full_name if s.user else None,
-            "is_solved": s.is_solved,
-            "score": s.score,
-            "created_at": s.created_at,
-            "updated_at": s.updated_at,
-        }
-        for s in solutions
-    ]
+    return [SolutionMapper.to_solution_with_user_response(s) for s in solutions]
 
 
 @router.get(
@@ -67,9 +54,5 @@ async def get_solution_attempts(
     admin: TokenUser = Depends(get_current_admin),
     service: SolutionService = Depends(get_solution_service),
 ):
-    try:
-        attempts = service.get_solution_attempts(solution_id)
-    except TaskNotFoundException as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-    return attempts
+    attempts = service.get_solution_attempts(solution_id)
+    return [SolutionMapper.to_attempt_response(a) for a in attempts]

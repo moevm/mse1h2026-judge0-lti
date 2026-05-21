@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.models import Attempt
 from app.database.database import session_generator
+from typing import List
 
 
 class AttemptRepository:
@@ -21,6 +22,11 @@ class AttemptRepository:
             select(Attempt)
             .where(Attempt.solution_id == solution_id)
             .order_by(Attempt.created_at.desc())
+        ).all()
+
+    def get_by_solution_id(self, solution_id: int) -> List[Attempt]:
+        return self.db.scalars(
+            select(Attempt).where(Attempt.solution_id == solution_id).order_by(Attempt.created_at)
         ).all()
 
 def get_attempt_repository(db: Session = Depends(session_generator)):

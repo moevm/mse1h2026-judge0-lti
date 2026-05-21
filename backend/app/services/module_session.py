@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import Depends
 
-from app.core.exceptions.module_sessions import ModuleAttemptsExceededException
+from app.core.exceptions.module_session import ModuleAttemptsExceededException
 from app.database.models import ModuleSession
 from app.repositories.module_session import (
     ModuleSessionRepository,
@@ -22,8 +22,8 @@ class ModuleSessionService:
         active_session = self.repo.get_active_session(user.user_id, module_id)
         if active_session:
             return active_session
-        sessions_count = self.repo.count_sessions(user.user_id, module_id)
-        if sessions_count >= module.max_attempts:
+        used_sessions = self.repo.count_used_sessions(user.user_id, module_id)
+        if used_sessions >= module.max_attempts:
             raise ModuleAttemptsExceededException()
         now = datetime.now(timezone.utc)
         session = ModuleSession(

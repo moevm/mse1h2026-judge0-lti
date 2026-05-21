@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 from fastapi import Depends
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session
 
 from app.database.database import session_generator
@@ -16,25 +19,36 @@ class ModuleSessionRepository:
         return module_session
 
     def get_active_session(self, user_id: int, module_id: int):
-        return (
-            self.db.query(ModuleSession)
-            .filter(
+        now = datetime.now(timezone.utc)
+        query = (
+            select(ModuleSession)
+            .where(
                 ModuleSession.user_id == user_id,
                 ModuleSession.module_id == module_id,
+                ModuleSession.finished_at.is_(None),
+                ModuleSession.expires_at > now,
             )
             .order_by(ModuleSession.started_at.desc())
-            .first()
+            .limit(1)
         )
 
-    def count_sessions(self, user_id: int, module_id: int) -> int:
-        return (
-            self.db.query(ModuleSession)
-            .filter(
+        return self.db.execute(query).scalar_one_or_none()
+
+    def count_used_sessions(self, user_id: int, module_id: int):
+        now = datetime.now(timezone.utc)
+        query = (
+            select(func.count())
+            .select_from(ModuleSession)
+            .where(
                 ModuleSession.user_id == user_id,
                 ModuleSession.module_id == module_id,
+                or_(
+                    ModuleSession.finished_at.is_not(None),
+                    ModuleSession.expires_at <= now,
+                ),
             )
-            .count()
         )
+        return self.db.execute(query).scalar()
 
 
 def get_module_session_repository(db: Session = Depends(session_generator)):

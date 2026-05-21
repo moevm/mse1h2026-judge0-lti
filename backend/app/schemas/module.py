@@ -10,6 +10,8 @@ class ModuleBase(BaseModel):
     id: int
     title: str
     description: str
+    duration_seconds: int | None
+    max_attempts: int | None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -19,11 +21,15 @@ class ModuleBase(BaseModel):
 class ModuleCreate(BaseModel):
     title: str = Field(min_length=1)
     description: str = Field(min_length=1)
+    duration_seconds: int | None = Field(default=None, gt=0)
+    max_attempts: int | None = Field(default=None, gt=0)
 
 
 class ModulePatch(BaseModel):
     title: str | None = None
     description: str | None = None
+    duration_seconds: int | None = None
+    max_attempts: int | None = None
 
 
 class ModuleWithTaskIdResponse(ModuleBase):

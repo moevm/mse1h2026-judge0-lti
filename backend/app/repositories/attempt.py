@@ -1,9 +1,9 @@
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from sqlalchemy.orm import Session
 
-from app.database.models import Attempt
+from app.database.models import Attempt, Solution
 from app.database.database import session_generator
 from typing import List
 
@@ -23,7 +23,20 @@ class AttemptRepository:
             .where(Attempt.solution_id == solution_id)
             .order_by(Attempt.created_at.desc())
         ).all()
+        
+    def count_by_user_and_task(self, user_id: int, task_id: int) -> int:
+        query = (
+            select(func.count())
 
+            .select_from(Attempt)
+            .join(Solution, Solution.id == Attempt.solution_id)
+            .where(
+                Solution.user_id == user_id,
+                Solution.task_id == task_id,
+            )
+        )
+
+        return self.db.execute(query).scalar_one()
     def get_by_solution_id(self, solution_id: int) -> List[Attempt]:
         return self.db.scalars(
             select(Attempt).where(Attempt.solution_id == solution_id).order_by(Attempt.created_at)

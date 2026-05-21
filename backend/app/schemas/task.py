@@ -15,6 +15,7 @@ class TaskResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     tests: List[TaskTestResponse]
+    max_attempts: int | None = None
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("languages", mode="before")
@@ -29,6 +30,7 @@ class TaskPatch(BaseModel):
     timeout: int | None = Field(None, ge=0)
     languages: List[str] | None = None
     tests: List[TaskTestCreate] | None = None
+    max_attempts: int | None = Field(None, ge=1)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -37,6 +39,7 @@ class TaskCreate(BaseModel):
     title: str
     description: str
     timeout: int = Field(ge=0)
+    max_attempts: int | None = Field(None, ge=1)
     languages: List[str]
     tests: List[TaskTestCreate] | None = None
     model_config = ConfigDict(extra="forbid")

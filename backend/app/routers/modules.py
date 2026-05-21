@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter
 from fastapi.params import Depends
 
+from app.mappers.module_session import ModuleSessionMapper
 from app.schemas.module import (
     ModuleWithTaskIdResponse,
     ModuleResponse,
@@ -10,12 +11,14 @@ from app.schemas.module import (
     ModuleTasksReorder,
     ModuleFilter,
 )
+from app.schemas.module_session import ModuleSessionResponse
 from app.schemas.task import TaskResponse
 from app.services.module import get_module_service, ModuleService
 from app.mappers.module import ModuleMapper
 from app.schemas.module import ModuleCreate
-from app.core.dependencies import get_current_admin
+from app.core.dependencies import get_current_admin, get_current_user_payload
 from app.schemas.auth import TokenUser
+from app.services.module_session import ModuleSessionService, get_module_session_service
 
 router = APIRouter(prefix="/modules", tags=["modules"])
 
@@ -140,3 +143,57 @@ async def reorder_tasks_in_module(
     return ModuleMapper.to_module_with_tasks(
         service.reorder_tasks_in_module(module_id, body)
     )
+
+
+@router.post(
+    "/{module_id}/start",
+    response_model=ModuleSessionResponse,
+    summary="Старт прохождения модуля",
+)
+def start_module_session(
+    module_id: int,
+    user: TokenUser = Depends(get_current_user_payload),
+    service: ModuleSessionService = Depends(get_module_session_service),
+):
+    """
+    Запускает (или возвращает уже существующую) сессию прохождения модуля.
+    Сессия может быть:
+    - ограниченной по времени (expires_at установлен)
+    - без ограничения времени (expires_at = NULL)
+    """
+    session = service.start_session(module_id, user)
+    return ModuleSessionMapper.to_response(session)
+
+
+@router.get(
+    "/{module_id}/session",
+    response_model=ModuleSessionResponse,
+    summary="Получить активную сессию прохождения модуля (или её отсутствие)",
+)
+def get_module_session(
+    module_id: int,
+    user: TokenUser = Depends(get_current_user_payload),
+    service: ModuleSessionService = Depends(get_module_session_service),
+):
+    """
+    Возвращает активную сессию пользователя для указанного модуля.
+    Активной считается сессия, которая:
+    - не завершена (finished_at IS NULL)
+    - не истекла по времени (expires_at IS NULL или expires_at > now)
+    
+    Если активной сессии нет — возвращается {"session": null}.
+    """
+    session = service.get_session(module_id, user)
+    return ModuleSessionMapper.to_response(session)
+
+@router.get("/{module_id}/session/finish", summary="Завершить активную сессию прохождения модуля")
+def finish_module_session(
+    module_id: int,
+    user: TokenUser = Depends(get_current_user_payload),
+    service: ModuleSessionService = Depends(get_module_session_service),
+):
+    """
+    Завершает активную сессию пользователя для указанного модуля.
+    """
+    session = service.finish_session(module_id, user)
+    return ModuleSessionMapper.to_response(session)

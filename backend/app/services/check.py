@@ -1,6 +1,6 @@
 from fastapi import Depends
 from dataclasses import dataclass
-from app.core.exceptions.tasks import InvalidLanguageException, TaskNotFoundException
+from app.core.exceptions.tasks import InvalidLanguageException, TaskAttemptsExceededException, TaskNotFoundException
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
 from app.repositories.task import TaskRepository, get_task_repository
@@ -8,6 +8,11 @@ from app.repositories.language import LanguageRepository, get_language_repositor
 from app.repositories.attempt import AttemptRepository, get_attempt_repository
 from app.repositories.solution import SolutionRepository, get_solution_repository
 from app.database.models import Solution, Attempt
+from app.repositories.module_session import (
+    ModuleSessionRepository,
+    get_module_session_repository,
+)
+from app.core.exceptions.module_session import ModuleSessionNotActiveException
 
 
 @dataclass
@@ -27,12 +32,14 @@ class CheckService:
         solution_repo: SolutionRepository,
         attempt_repo: AttemptRepository,
         judge: JudgeService,
+        module_session_repo: ModuleSessionRepository,
     ) -> None:
         self.task_repo = task_repo
         self.lang_repo = lang_repo
         self.solution_repo = solution_repo
         self.attempt_repo = attempt_repo
         self.judge = judge
+        self.module_session_repo = module_session_repo
 
     async def check_solution(
         self, task_id: int, user_id: int, body: CheckRequest
@@ -40,6 +47,24 @@ class CheckService:
         task = self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException()
+
+        module_links = getattr(task, "module_links", None)
+        if module_links:
+            active_found = False
+            for link in module_links:
+                module_id = getattr(link, "module_id", None)
+                if module_id is None:
+                    continue
+                active = self.module_session_repo.get_active_session(user_id, module_id)
+                if active:
+                    active_found = True
+                    break
+            if not active_found:
+                raise ModuleSessionNotActiveException()
+
+        attempts_used = self.attempt_repo.count_by_user_and_task(user_id, task_id)
+        if task.max_attempts is not None and attempts_used >= task.max_attempts:
+            raise TaskAttemptsExceededException()
 
         language = self.lang_repo.get_language_by_name(body.language)
         allowed = {lang.language for lang in task.languages}
@@ -190,5 +215,8 @@ def get_check_service(
     solution_repo: SolutionRepository = Depends(get_solution_repository),
     attempt_repo: AttemptRepository = Depends(get_attempt_repository),
     judge: JudgeService = Depends(get_judge_service),
+    module_session_repo: ModuleSessionRepository = Depends(get_module_session_repository),
 ) -> CheckService:
-    return CheckService(task_repo, lang_repo, solution_repo, attempt_repo, judge)
+    return CheckService(
+        task_repo, lang_repo, solution_repo, attempt_repo, judge, module_session_repo
+    )

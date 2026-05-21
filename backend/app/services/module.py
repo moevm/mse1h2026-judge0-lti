@@ -35,7 +35,7 @@ class ModuleService:
 
     def create_module(self, body: ModuleCreate) -> Module | None:
         module = self.repo.create(
-            Module(title=body.title, description=body.description)
+            Module(**body.model_dump())
         )
         return module
 
@@ -45,10 +45,9 @@ class ModuleService:
 
     def patch_module(self, module_id: int, body: ModulePatch) -> Module:
         module = self._get_module_or_raise(module_id)
-        if body.title is not None:
-            module.title = body.title
-        if body.description is not None:
-            module.description = body.description
+        data = body.model_dump(exclude_unset=True)
+        for key, value in data.items():
+            setattr(module, key, value)
         self.repo.flush()
         self.repo.refresh(module)
         return module

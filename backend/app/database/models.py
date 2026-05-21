@@ -41,6 +41,9 @@ class User(Base):
     solutions       = relationship("Solution", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens  = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     deleted_at      = Column(TIMESTAMP(timezone=True), nullable=True)
+    sessions        = relationship(
+        "ModuleSession", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Module(Base):
@@ -50,11 +53,28 @@ class Module(Base):
     title           = Column(String(128), index=True)
     description     = Column(Text, nullable=False)
 
+    duration_seconds = Column(Integer, nullable=True, default=None)
+    max_attempts     = Column(Integer, nullable=True, default=None)
+
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
 
     task_links      = relationship("ModuleTaskOrder", back_populates="module",order_by="ModuleTaskOrder.order", cascade="all, delete-orphan")
+    sessions        = relationship("ModuleSession", back_populates="module", cascade="all, delete-orphan")
 
+
+class ModuleSession(Base):
+    __tablename__ = "module_sessions"
+
+    id              = Column(BIGINT, primary_key=True, index=True)
+    user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
+    module_id       = Column(BIGINT, ForeignKey("modules.id"), nullable=False, index=True)
+    started_at      = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    expires_at      = Column(TIMESTAMP(timezone=True), nullable=True)
+    finished_at     = Column(TIMESTAMP(timezone=True), nullable=True)
+
+    user   = relationship("User")
+    module = relationship("Module", back_populates="sessions")
 
 class Task(Base):
     __tablename__   = "tasks"
@@ -67,6 +87,8 @@ class Task(Base):
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
+    
+    max_attempts    = Column(Integer, nullable=True, default=None)
 
     languages       = relationship("Language", secondary="tasks_languages", back_populates="tasks")
     solutions       = relationship("Solution", back_populates="task", cascade="all, delete-orphan")
@@ -147,7 +169,7 @@ class Solution(Base):
     attempts        = relationship("Attempt", back_populates="solution", cascade="all, delete-orphan")
 
     score = Column(Integer, nullable=False, default=0)
-    
+
 
 class Attempt(Base):
     __tablename__ = "attempts"
@@ -168,5 +190,5 @@ class Attempt(Base):
 
     solution            = relationship("Solution", back_populates="attempts")
     score               = Column(Integer, nullable=True)
-    
+
 # @formatter:on

@@ -10,6 +10,8 @@ class ModuleMapper:
             id=module.id,
             title=module.title,
             description=module.description,
+            duration_seconds=module.duration_seconds,
+            max_attempts=module.max_attempts,
             created_at=module.created_at,
             updated_at=module.updated_at,
             tasks=[link.task_id for link in module.task_links],
@@ -21,6 +23,8 @@ class ModuleMapper:
             id=module.id,
             title=module.title,
             description=module.description,
+            duration_seconds=module.duration_seconds,
+            max_attempts=module.max_attempts,
             created_at=module.created_at,
             updated_at=module.updated_at,
             tasks=[

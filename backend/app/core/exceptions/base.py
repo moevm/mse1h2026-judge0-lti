@@ -17,3 +17,6 @@ class BadRequestException(AppException):
 
 class ServerException(AppException):
     status_code = 500
+
+class ForbiddenException(AppException):
+    status_code = 403

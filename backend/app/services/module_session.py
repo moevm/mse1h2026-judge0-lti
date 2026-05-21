@@ -37,7 +37,7 @@ class ModuleSessionService:
 
         return self.repo.add(session)
 
-    def get_session(self, module_id: int, user: TokenUser):
+    def get_session(self, module_id: int, user: TokenUser) -> ModuleSession | None:
         return self.repo.get_active_session(user.user_id, module_id)
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import Depends
-from sqlalchemy import select, func, or_
+from sqlalchemy import and_, select, func, or_
 from sqlalchemy.orm import Session
 
 from app.database.database import session_generator
@@ -25,7 +25,10 @@ class ModuleSessionRepository:
                 ModuleSession.user_id == user_id,
                 ModuleSession.module_id == module_id,
                 ModuleSession.finished_at.is_(None),
-                ModuleSession.expires_at > func.now(),
+                or_(
+                    ModuleSession.expires_at.is_(None),
+                    ModuleSession.expires_at > func.now(),
+                ),
             )
             .order_by(ModuleSession.started_at.desc())
             .limit(1)
@@ -42,11 +45,13 @@ class ModuleSessionRepository:
                 ModuleSession.module_id == module_id,
                 or_(
                     ModuleSession.finished_at.is_not(None),
-                    ModuleSession.expires_at <= func.now(),
+                    and_(
+                        ModuleSession.expires_at.is_not(None),
+                        ModuleSession.expires_at <= func.now(),
+                    ),
                 ),
             )
         )
-
         return self.db.execute(query).scalar_one()
 
 

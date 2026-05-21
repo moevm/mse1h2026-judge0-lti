@@ -52,7 +52,7 @@ class ModuleSessionRepository:
                 ),
             )
         )
-        return self.db.execute(query).scalar_one()
+        return self.db.execute(query).scalar() or 0
 
 
 def get_module_session_repository(db: Session = Depends(session_generator)):

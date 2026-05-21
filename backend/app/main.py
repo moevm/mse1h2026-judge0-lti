@@ -14,6 +14,7 @@ from app.routers import (
     run,
     auth,
     analytics,
+    solutions,
 )
 from app.database.database import create_tables, seed_database
 from app.core.exception_handler import app_exception_handler
@@ -43,7 +44,7 @@ api_router.include_router(languages.router)
 api_router.include_router(users.router)
 api_router.include_router(run.router)
 api_router.include_router(analytics.router)
-
+api_router.include_router(solutions.router)
 
 app.include_router(api_router)
 

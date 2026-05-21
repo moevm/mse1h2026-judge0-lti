@@ -15,7 +15,7 @@ class TestUserModules:
         client, user = auth_client
         module = create_test_module(title="Python Basics", description="Learn Python")
         task = create_test_task(title="Task 1")
-
+        await client.post(f"/api/modules/{module.id}/start")
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
         )
@@ -51,6 +51,7 @@ class TestUserModules:
         await client.post(
             f"/api/modules/{module1.id}/tasks", json={"task_ids": [task1.id]}
         )
+        await client.post(f"/api/modules/{module1.id}/start")
         await client.post(
             f"/api/check/{task1.id}",
             json={
@@ -66,6 +67,7 @@ class TestUserModules:
         await client.post(
             f"/api/modules/{module2.id}/tasks", json={"task_ids": [task2.id, task3.id]}
         )
+        await client.post(f"/api/modules/{module2.id}/start")
         await client.post(
             f"/api/check/{task2.id}",
             json={
@@ -120,6 +122,8 @@ class TestUserTasksInModule:
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task1.id, task2.id]}
         )
+        
+        await client.post(f"/api/modules/{module.id}/start")
 
         await client.post(
             f"/api/check/{task1.id}",
@@ -139,6 +143,7 @@ class TestUserTasksInModule:
         )
 
         response = await client.get(f"/api/users/{user.id}/modules/{module.id}/tasks")
+        print(response.json())
 
         assert response.status_code == 200
         data = response.json()
@@ -159,6 +164,7 @@ class TestUserTasksInModule:
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
         )
+        await client.post(f"/api/modules/{module.id}/start")
 
         response = await client.post(
             f"/api/check/{task.id}",
@@ -189,11 +195,12 @@ class TestUserTasksInModule:
         client, user = auth_client
         module = create_test_module()
         task = create_test_task()
+        
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
         )
-
+        await client.post(f"/api/modules/{module.id}/start")
         for i in range(3):
             await client.post(
                 f"/api/check/{task.id}",
@@ -230,10 +237,16 @@ class TestTaskAttempts:
     """Тесты GET /tasks/{task_id}/attempts"""
 
     @pytest.mark.asyncio
-    async def test_get_task_attempts_success(self, auth_client, create_test_task):
+    async def test_get_task_attempts_success(self, auth_client, create_test_task, create_test_module):
         """Успешное получение попыток задачи"""
         client, user = auth_client
+        module = create_test_module(title="Module for Attempts")
         task = create_test_task()
+        await client.post(
+            f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
+        )
+
+        await client.post(f"/api/modules/{module.id}/start")
 
         for i in range(3):
             await client.post(
@@ -245,6 +258,7 @@ class TestTaskAttempts:
                 },
             )
 
+        
         response = await client.get(f"/api/tasks/{task.id}/attempts?user_id={user.id}")
 
         assert response.status_code == 200
@@ -374,6 +388,7 @@ class TestFullAnalyticsFlow:
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
         )
+        await client.post(f"/api/modules/{module.id}/start")
 
         check_response = await client.post(
             f"/api/check/{task.id}",

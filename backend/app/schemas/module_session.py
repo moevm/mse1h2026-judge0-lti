@@ -7,7 +7,7 @@ class ModuleSessionBase(BaseModel):
     user_id: int
     module_id: int
     started_at: datetime
-    expires_at: datetime
+    expires_at: datetime | None = None
     finished_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -19,19 +19,22 @@ class ModuleSessionService:
 
     def start_session(self, module_id: int, user: TokenUser) -> ModuleSession:
         module = self.module_service.get_module_by_id(module_id)
-        active_session = self.repo.get_active_session(user.user_id, module_id)
-        if active_session:
-            return active_session
-        used_sessions = self.repo.count_used_sessions(user.user_id, module_id)
-        if used_sessions >= module.max_attempts:
+        active = self.repo.get_active_session(user.user_id, module_id)
+        if active:
+            return active
+        used = self.repo.count_finished_sessions(user.user_id, module_id)
+        if module.max_attempts is not None and used >= module.max_attempts:
             raise ModuleAttemptsExceededException()
         now = datetime.now(timezone.utc)
         session = ModuleSession(
             module_id=module_id,
             user_id=user.user_id,
             started_at=now,
-            expires_at=now + timedelta(seconds=module.duration_seconds),
+            expires_at=now + timedelta(seconds=module.duration_seconds)
+            if module.duration_seconds is not None
+            else None,
         )
+
         return self.repo.add(session)
 
     def get_session(self, module_id: int, user: TokenUser):

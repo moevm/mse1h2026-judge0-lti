@@ -53,8 +53,8 @@ class Module(Base):
     title           = Column(String(128), index=True)
     description     = Column(Text, nullable=False)
 
-    duration_seconds = Column(Integer, nullable=False, index=True, default=3600)
-    max_attempts     = Column(Integer, nullable=False, default=1)
+    duration_seconds = Column(Integer, nullable=True, default=None)
+    max_attempts     = Column(Integer, nullable=True, default=None)
 
     created_at      = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at      = Column(TIMESTAMP(timezone=True),server_default=func.now(), onupdate=func.now())
@@ -70,7 +70,7 @@ class ModuleSession(Base):
     user_id         = Column(BIGINT, ForeignKey("users.id"), nullable=False, index=True)
     module_id       = Column(BIGINT, ForeignKey("modules.id"), nullable=False, index=True)
     started_at      = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    expires_at      = Column(TIMESTAMP(timezone=True), nullable=False)
+    expires_at      = Column(TIMESTAMP(timezone=True), nullable=True)
     finished_at     = Column(TIMESTAMP(timezone=True), nullable=True)
 
     user   = relationship("User")

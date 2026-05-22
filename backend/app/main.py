@@ -23,7 +23,6 @@ from app.core.exceptions.base import AppException
 create_tables()
 seed_database()
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.http_client = httpx.AsyncClient(timeout=30.0)
@@ -31,7 +30,13 @@ async def lifespan(app: FastAPI):
     await app.state.http_client.aclose()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    openapi_version="3.0.2",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan
+)
 app.add_exception_handler(AppException, app_exception_handler)
 api_router = APIRouter(prefix="/api")
 

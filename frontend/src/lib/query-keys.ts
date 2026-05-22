@@ -1,4 +1,5 @@
 import type {ModuleFilters} from "../api/modules.api.ts";
+import type { TaskSolutionFilters } from "../api/task_solutions.api.ts";
 
 export const moduleKeys = {
     all: ['modules'] as const,
@@ -25,4 +26,13 @@ export const solutionKeys = {
         ['solutions', 'user', userId, 'task', taskId] as const,
     attempts: (userId: number | string, taskId: number | string) =>
         ['solutions', 'user', userId, 'task', taskId, 'attempts'] as const,
+}
+
+export const taskSolutionsKeys = {
+    all: ['admin', 'task-solutions'] as const,
+    byTask: (taskId: number | string) => [...taskSolutionsKeys.all, 'task', taskId] as const,
+    byTaskWithFilters: (taskId: number | string, filters?: TaskSolutionFilters) => 
+        [...taskSolutionsKeys.byTask(taskId), filters] as const,
+    attempts: (solutionId: number | string) => 
+        [...taskSolutionsKeys.all, 'attempts', solutionId] as const,
 }

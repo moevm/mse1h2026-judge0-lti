@@ -92,11 +92,13 @@ def insert_modules(db: Session) -> list[Module]:
             id=1,
             title="Введение в Python",
             description="Базовые конструкции языка Python",
+            duration_seconds=30
         ),
         Module(
             id=2,
             title="Алгоритмы и структуры",
             description="Сортировки, деревья, графы",
+            duration_seconds=None
         ),
     ]
     db.add_all(modules)

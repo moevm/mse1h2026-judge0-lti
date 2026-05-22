@@ -8,6 +8,11 @@ export const moduleKeys = {
     tasks: (moduleId: number | string) => [...moduleKeys.all, 'tasks', moduleId] as const,
 }
 
+export const moduleSessionKeys = {
+    all: ['module-sessions'] as const,
+    detail: (moduleId: number | string) => [...moduleSessionKeys.all, 'detail', moduleId] as const,
+}
+
 export const taskKeys = {
     all: ['tasks'] as const,
     lists: () => [...taskKeys.all, 'list'] as const,

@@ -1,5 +1,3 @@
-
-
 .profileIcon {
   display: block;
   margin-bottom: 34px;
@@ -114,6 +112,27 @@
     md-icon {
         font-size: 18px;
         transition: color 0.2s;
+    }
+}
+
+.viewButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #6750a4;
+
+    &:hover {
+        background: rgba(103, 80, 164, 0.1);
+    }
+
+    md-icon {
+        font-size: 18px;
     }
 }
 

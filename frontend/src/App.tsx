@@ -15,6 +15,7 @@ import AdminTasksPage from "./pages/AdminTasksPage/AdminTasksPage.tsx"
 import AdminTaskEditPage from "./pages/AdminTaskEditPage/AdminTaskEditPage.tsx"
 import AdminLoginPage from './pages/AdminLoginPage/AdminLoginPage.tsx'
 import AdminRolesPage from './pages/AdminRolesPage/AdminRolesPage.tsx'
+import AdminTaskSolutions from './pages/AdminTaskSolutions/AdminTaskSolutions.tsx'
 
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute.tsx";
 import AdminStudentsPage from './pages/AdminStudentsPage/AdminStudentsPage.tsx'
@@ -56,6 +57,7 @@ function App() {
             <Route path="/admin/tasks" element={<AdminTasksPage />} />
             <Route path="/admin/tasks/:taskId" element={<AdminTaskEditPage />} />
             <Route path="/admin/tasks/new" element={<AdminTaskEditPage />} />
+            <Route path="/admin/tasks/:taskId/solutions" element={<AdminTaskSolutions />} />
 
             {/* Роли */}
             <Route path="/admin/roles" element={<AdminRolesPage />} />

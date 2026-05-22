@@ -239,6 +239,7 @@ const AdminTasksPage = () => {
                                 <th>Создана</th>
                                 <th>Обновлена</th>
                                 <th></th>
+                                <th></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -269,6 +270,15 @@ const AdminTasksPage = () => {
                                     </td>
                                     <td className={styles.date}>
                                         {formatDate(task.updated_at)}
+                                    </td>
+                                    <td className={styles.actions}>
+                                        <button
+                                            type="button"
+                                            className={styles.viewButton}
+                                            onClick={() => navigate(`/admin/tasks/${task.id}/solutions`)}
+                                        >
+                                            <md-icon>visibility</md-icon>
+                                        </button>
                                     </td>
                                     <td className={styles.actions}>
                                         <button

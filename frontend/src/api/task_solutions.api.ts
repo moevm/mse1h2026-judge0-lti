@@ -28,12 +28,18 @@ export interface TaskSolution {
 export interface SolutionAttempt {
     id: number
     solution_id: number
-    code: string
-    output?: string
-    error?: string
-    execution_time?: number
-    memory_used?: number
-    status: 'pending' | 'success' | 'error'
+    source_code: string
+    language: string
+    status: string
+    exit_code: number
+    stdout: string | null
+    stderr: string | null
+    compile_output: string | null
+    memory_kb: number | null
+    time_ms: number | null
+    is_solved: boolean
+    message: string | null
+    score: number | null
     created_at: string
 }
 

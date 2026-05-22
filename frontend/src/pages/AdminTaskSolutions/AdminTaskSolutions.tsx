@@ -206,7 +206,7 @@ const AdminTaskSolutions = () => {
                                         <button
                                             type="button"
                                             className={styles.viewButton}
-                                            onClick={() => navigate(`/admin/tasks`)}
+                                            onClick={() => navigate(`/admin/tasks/${tid}/solutions/${solution.id}/attempts`)}
                                         >
                                             <md-icon>visibility</md-icon>
                                         </button>

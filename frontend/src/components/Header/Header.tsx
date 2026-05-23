@@ -7,6 +7,7 @@ import themeIcon from '../../assets/icons/theme_icon.svg';
 import profileIcon from '../../assets/icons/profile_icon.svg';
 import logoutIcon from '../../assets/icons/logout_icon.svg';
 import IconButton from '../../UI/IconButton/IconButton.tsx';
+import { useEffect, useState } from 'react';
 
 interface HeaderProps {
     selectedLanguage: string | null;
@@ -14,15 +15,42 @@ interface HeaderProps {
     onRun: () => void;
     onCheck: () => void;
     languages: string[];
+    timeRemaining: number | null;
+    canExecute: boolean;
 }
 
 const Header = ({
-                    selectedLanguage,
-                    setSelectedLanguage,
-                    onRun,
-                    onCheck,
-                    languages,
-                }: HeaderProps) => {
+    selectedLanguage,
+    setSelectedLanguage,
+    onRun,
+    onCheck,
+    languages,
+    timeRemaining,
+    canExecute
+}: HeaderProps) => {
+
+    const [formattedTime, setFormattedTime] = useState<string>('');
+
+    useEffect(() => {
+        if (timeRemaining === null) {
+            setFormattedTime('∞');
+            return;
+        }
+        
+        const formatTime = (seconds: number): string => {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+        
+        setFormattedTime(formatTime(timeRemaining));
+    }, [timeRemaining]);
+
     return (
         <div className={styles.header}>
             <div className={styles.logoContainer}>
@@ -53,13 +81,15 @@ const Header = ({
                     icon={runIcon}
                     label="Запустить" 
                     type="run"
-                    onClick={onRun}    
+                    onClick={onRun}
+                    disabled={!canExecute}
                 />
                 <IconButton
                     icon={submitIcon}
                     label="Проверить"
                     type="submit"
                     onClick={onCheck}
+                    disabled={!canExecute}
                 />
                 <div className={styles.infoBadge}>
                     <img src={attemptIcon} alt="attempts"/>
@@ -69,7 +99,7 @@ const Header = ({
                 </div>
                 <div className={styles.infoBadge}>
                     <img src={timeIcon} alt="time"/>
-                    <span className={styles.timeText}>45:32</span>
+                    <span className={styles.timeText}>{formattedTime}</span>
                 </div>
             </div>
             <div className={styles.profile}>

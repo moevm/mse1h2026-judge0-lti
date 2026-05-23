@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 from app.core.config import get_settings
 
@@ -13,14 +15,15 @@ Session = async_sessionmaker(
 )
 
 
-async def session_generator():
+async def session_generator() -> AsyncGenerator[AsyncSession, None]:
     async with Session() as db:
         try:
             yield db
-            await db.commit()
         except:
             await db.rollback()
             raise
+        finally:
+            await db.close()
 
 
 async def create_tables():

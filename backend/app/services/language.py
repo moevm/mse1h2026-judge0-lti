@@ -8,9 +8,8 @@ class LanguageService:
     def __init__(self, repo: LanguageRepository) -> None:
         self.repo = repo
 
-    def get_all_languages(self) -> List[Language]:
-        languages = self.repo.get_all()
-        return languages
+    async def get_all_languages(self) -> List[Language]:
+        return await self.repo.get_all()
 
 
 def get_language_service(

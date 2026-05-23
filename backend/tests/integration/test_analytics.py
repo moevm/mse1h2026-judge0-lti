@@ -13,8 +13,8 @@ class TestUserModules:
     ):
         """Успешное получение модулей пользователя"""
         client, user = auth_client
-        module = create_test_module(title="Python Basics", description="Learn Python")
-        task = create_test_task(title="Task 1")
+        module = await create_test_module(title="Python Basics", description="Learn Python")
+        task = await create_test_task(title="Task 1")
         await client.post(f"/api/modules/{module.id}/start")
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
@@ -28,6 +28,7 @@ class TestUserModules:
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
             },
         )
+        print(check_response.json())
         assert check_response.status_code == 200
 
         response = await client.get(f"/api/users/{user.id}/modules")
@@ -46,8 +47,8 @@ class TestUserModules:
         """Сортировка модулей по количеству задач"""
         client, user = auth_client
 
-        module1 = create_test_module(title="Module 1")
-        task1 = create_test_task(title="Task 1")
+        module1 = await create_test_module(title="Module 1")
+        task1 = await create_test_task(title="Task 1")
         await client.post(
             f"/api/modules/{module1.id}/tasks", json={"task_ids": [task1.id]}
         )
@@ -61,9 +62,9 @@ class TestUserModules:
             },
         )
 
-        module2 = create_test_module(title="Module 2")
-        task2 = create_test_task(title="Task 2")
-        task3 = create_test_task(title="Task 3")
+        module2 = await create_test_module(title="Module 2")
+        task2 = await create_test_task(title="Task 2")
+        task3 = await create_test_task(title="Task 3")
         await client.post(
             f"/api/modules/{module2.id}/tasks", json={"task_ids": [task2.id, task3.id]}
         )
@@ -115,14 +116,14 @@ class TestUserTasksInModule:
     ):
         """Успешное получение задач модуля"""
         client, user = auth_client
-        module = create_test_module(title="Module")
-        task1 = create_test_task(title="Task 1")
-        task2 = create_test_task(title="Task 2")
+        module = await create_test_module(title="Module")
+        task1 = await create_test_task(title="Task 1")
+        task2 = await create_test_task(title="Task 2")
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task1.id, task2.id]}
         )
-        
+
         await client.post(f"/api/modules/{module.id}/start")
 
         await client.post(
@@ -158,8 +159,8 @@ class TestUserTasksInModule:
     ):
         """Получение задач модуля с решениями"""
         client, user = auth_client
-        module = create_test_module(title="Module")
-        task = create_test_task(title="Task to Solve")
+        module = await create_test_module(title="Module")
+        task = await create_test_task(title="Task to Solve")
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
@@ -193,9 +194,9 @@ class TestUserTasksInModule:
     ):
         """Фильтрация по количеству попыток"""
         client, user = auth_client
-        module = create_test_module()
-        task = create_test_task()
-        
+        module = await create_test_module()
+        task = await create_test_task()
+
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
@@ -225,7 +226,7 @@ class TestUserTasksInModule:
     async def test_get_user_tasks_empty_module(self, auth_client, create_test_module):
         """Модуль без задач"""
         client, user = auth_client
-        module = create_test_module(title="Empty Module")
+        module = await create_test_module(title="Empty Module")
 
         response = await client.get(f"/api/users/{user.id}/modules/{module.id}/tasks")
 
@@ -240,8 +241,8 @@ class TestTaskAttempts:
     async def test_get_task_attempts_success(self, auth_client, create_test_task, create_test_module):
         """Успешное получение попыток задачи"""
         client, user = auth_client
-        module = create_test_module(title="Module for Attempts")
-        task = create_test_task()
+        module = await create_test_module(title="Module for Attempts")
+        task = await create_test_task()
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}
         )
@@ -258,7 +259,7 @@ class TestTaskAttempts:
                 },
             )
 
-        
+
         response = await client.get(f"/api/tasks/{task.id}/attempts?user_id={user.id}")
 
         assert response.status_code == 200
@@ -275,7 +276,7 @@ class TestTaskAttempts:
     ):
         """Фильтрация попыток по диапазону дат"""
         client, user = auth_client
-        task = create_test_task()
+        task = await create_test_task()
 
         await client.post(
             f"/api/check/{task.id}",
@@ -306,7 +307,7 @@ class TestTaskAttempts:
     ):
         """Фильтрация попыток по языку программирования"""
         client, user = auth_client
-        task = create_test_task()
+        task = await create_test_task()
 
         await client.post(
             f"/api/check/{task.id}",
@@ -334,7 +335,7 @@ class TestGetAttempt:
     async def test_get_attempt_success(self, auth_client, create_test_task):
         """Успешное получение попытки по ID"""
         client, user = auth_client
-        task = create_test_task()
+        task = await create_test_task()
 
         check_response = await client.post(
             f"/api/check/{task.id}",
@@ -382,8 +383,8 @@ class TestFullAnalyticsFlow:
 
         client, user = auth_client
 
-        module = create_test_module(title="Analytics Module", description="Test")
-        task = create_test_task(title="Analytics Task")
+        module = await create_test_module(title="Analytics Module", description="Test")
+        task = await create_test_task(title="Analytics Task")
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task.id]}

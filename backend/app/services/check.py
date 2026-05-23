@@ -1,6 +1,10 @@
 from fastapi import Depends
 from dataclasses import dataclass
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.exceptions.tasks import InvalidLanguageException, TaskAttemptsExceededException, TaskNotFoundException
+from app.database.database import session_generator
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
 from app.repositories.task import TaskRepository, get_task_repository
@@ -27,6 +31,7 @@ class CheckResult:
 class CheckService:
     def __init__(
         self,
+        db: AsyncSession,
         task_repo: TaskRepository,
         lang_repo: LanguageRepository,
         solution_repo: SolutionRepository,
@@ -34,6 +39,7 @@ class CheckService:
         judge: JudgeService,
         module_session_repo: ModuleSessionRepository,
     ) -> None:
+        self.db = db
         self.task_repo = task_repo
         self.lang_repo = lang_repo
         self.solution_repo = solution_repo
@@ -44,7 +50,7 @@ class CheckService:
     async def check_solution(
         self, task_id: int, user_id: int, body: CheckRequest
     ) -> CheckResult:
-        task = self.task_repo.get_by_id(task_id)
+        task = await self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException()
 
@@ -55,23 +61,23 @@ class CheckService:
                 module_id = getattr(link, "module_id", None)
                 if module_id is None:
                     continue
-                active = self.module_session_repo.get_active_session(user_id, module_id)
+                active = await self.module_session_repo.get_active_session(user_id, module_id)
                 if active:
                     active_found = True
                     break
             if not active_found:
                 raise ModuleSessionNotActiveException()
 
-        attempts_used = self.attempt_repo.count_by_user_and_task(user_id, task_id)
+        attempts_used = await self.attempt_repo.count_by_user_and_task(user_id, task_id)
         if task.max_attempts is not None and attempts_used >= task.max_attempts:
             raise TaskAttemptsExceededException()
 
-        language = self.lang_repo.get_language_by_name(body.language)
+        language = await self.lang_repo.get_language_by_name(body.language)
         allowed = {lang.language for lang in task.languages}
         if not language or language.language not in allowed:
             raise InvalidLanguageException()
 
-        solution = self.solution_repo.get(user_id, task_id)
+        solution = await self.solution_repo.get(user_id, task_id)
         if not solution:
             solution = Solution(
                 user_id=user_id,
@@ -79,7 +85,8 @@ class CheckService:
                 is_solved=False,
                 score=0,
             )
-            solution = self.solution_repo.create(solution)
+            solution = await self.solution_repo.create(solution)
+            await self.db.flush()
 
         tests = task.tests
         total = len(tests)
@@ -187,7 +194,6 @@ class CheckService:
         if not solution.is_solved and passed == total:
             solution.is_solved = True
 
-        self.solution_repo.save(solution)
 
         attempt = Attempt(
             solution_id=solution.id,
@@ -204,12 +210,14 @@ class CheckService:
             message=last_attempt_data.get("message"),
             score=last_attempt_data.get("score"),
         )
-        self.attempt_repo.create(attempt)
+        await self.attempt_repo.create(attempt)
+        await self.db.commit()
 
         return final_result
 
 
 def get_check_service(
+    db: AsyncSession = Depends(session_generator),
     task_repo: TaskRepository = Depends(get_task_repository),
     lang_repo: LanguageRepository = Depends(get_language_repository),
     solution_repo: SolutionRepository = Depends(get_solution_repository),
@@ -218,5 +226,5 @@ def get_check_service(
     module_session_repo: ModuleSessionRepository = Depends(get_module_session_repository),
 ) -> CheckService:
     return CheckService(
-        task_repo, lang_repo, solution_repo, attempt_repo, judge, module_session_repo
+        db, task_repo, lang_repo, solution_repo, attempt_repo, judge, module_session_repo
     )

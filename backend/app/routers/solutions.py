@@ -34,7 +34,7 @@ async def get_task_solutions(
     admin: TokenUser = Depends(get_current_admin),
     service: SolutionService = Depends(get_solution_service),
 ):
-    solutions = service.get_solutions_by_task(task_id, filters)
+    solutions = await service.get_solutions_by_task(task_id, filters)
     return [SolutionMapper.to_solution_with_user_response(s) for s in solutions]
 
 
@@ -54,5 +54,5 @@ async def get_solution_attempts(
     admin: TokenUser = Depends(get_current_admin),
     service: SolutionService = Depends(get_solution_service),
 ):
-    attempts = service.get_solution_attempts(solution_id)
+    attempts = await service.get_solution_attempts(solution_id)
     return [SolutionMapper.to_attempt_response(a) for a in attempts]

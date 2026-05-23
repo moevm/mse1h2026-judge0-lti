@@ -29,12 +29,12 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 @router.get(
     "/", response_model=List[TaskResponse], summary="Получить список всех задач"
 )
-def get_tasks(
+async def get_tasks(
     filters: TaskFilter = Depends(),
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ) -> List[TaskResponse]:
-    tasks = service.get_filtered_tasks(filters)
+    tasks = await service.get_filtered_tasks(filters)
     return TaskMapper.to_task_list_response(tasks)
 
 
@@ -44,7 +44,7 @@ async def get_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.get_task_by_id(task_id)
+    task = await service.get_task_by_id(task_id)
     return TaskMapper.to_task_response(task)
 
 
@@ -55,7 +55,7 @@ async def patch_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.update_task(task_id, body)
+    task = await service.update_task(task_id, body)
     return TaskMapper.to_task_response(task)
 
 
@@ -65,7 +65,7 @@ async def create_task(
     service: TaskService = Depends(get_task_service),
     admin: TokenUser = Depends(get_current_admin),
 ):
-    task = service.create_task(body)
+    task = await service.create_task(body)
     return TaskMapper.to_task_response(task)
 
 
@@ -75,7 +75,7 @@ async def delete_task(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskService = Depends(get_task_service),
 ):
-    service.delete_task(task_id)
+    await service.delete_task(task_id)
 
 
 @router.get(
@@ -88,8 +88,7 @@ async def get_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    tests = service.get_tests(task_id)
-    return tests
+    return await service.get_tests(task_id)
 
 
 @router.post(
@@ -103,8 +102,7 @@ async def create_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ) -> TaskTestResponse:
-    test = service.create_test(task_id, body)
-    return test
+    return await service.create_test(task_id, body)
 
 
 @router.delete(
@@ -118,7 +116,7 @@ async def delete_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    service.delete_test(task_id, test_id)
+    await service.delete_test(task_id, test_id)
 
 
 @router.post(
@@ -136,7 +134,7 @@ async def upload_task_tests(
         content = await file.read()
         data = json.loads(content)
         parsed = TaskTestFileSchema.model_validate(data)
-        tests = service.create_tests_bulk(task_id, parsed)
+        tests = await service.create_tests_bulk(task_id, parsed)
         return tests
 
     except (json.JSONDecodeError, ValidationError):
@@ -155,5 +153,5 @@ async def patch_task_test(
     admin: TokenUser = Depends(get_current_admin),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    test = service.update_test(task_id, test_id, body)
+    test = await service.update_test(task_id, test_id, body)
     return test

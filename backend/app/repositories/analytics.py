@@ -1,6 +1,7 @@
 from fastapi import Depends
 from sqlalchemy import select, func, and_, asc, desc
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.strategy_options import selectinload
 
 from app.database.database import session_generator
 from app.database.models import Module, ModuleTaskOrder, Task, TaskTest, Solution, Attempt
@@ -8,14 +9,15 @@ from app.schemas.analytics import UserModulesFilter, UserTasksFilter, AttemptsFi
 
 
 class AnalyticsRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_user_modules(
+    async def get_user_modules(
         self, user_id: int, filters: UserModulesFilter
     ) -> list[Module]:
         query = (
             select(Module)
+            .options(selectinload(Module.task_links))
             .join(ModuleTaskOrder, ModuleTaskOrder.module_id == Module.id)
             .join(Task, Task.id == ModuleTaskOrder.task_id)
             .join(Solution, Solution.task_id == Task.id)
@@ -33,9 +35,10 @@ class AnalyticsRepository:
 
         query = query.order_by(desc(col) if filters.sort_order == "desc" else asc(col))
 
-        return self.db.scalars(query).all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    def get_user_tasks_in_module(
+    async def get_user_tasks_in_module(
         self, user_id: int, module_id: int, filters: UserTasksFilter
     ):
         attempt_count_subq = (
@@ -124,10 +127,12 @@ class AnalyticsRepository:
         }.get(filters.sort_by, Task.title)
 
         query = query.order_by(desc(col) if filters.sort_order == "desc" else asc(col))
+        result = await self.db.execute(query)
+        return result.all()
 
-        return self.db.execute(query).all()
-
-    def get_attempt_counts(self, user_id: int, task_ids: list[int]) -> dict[int, int]:
+    async def get_attempt_counts(
+        self, user_id: int, task_ids: list[int]
+    ) -> dict[int, int]:
         query = (
             select(
                 Solution.task_id,
@@ -140,10 +145,10 @@ class AnalyticsRepository:
             )
             .group_by(Solution.task_id)
         )
+        result = await self.db.execute(query)
+        return {row.task_id: row.cnt for row in result}
 
-        return {row.task_id: row.cnt for row in self.db.execute(query)}
-
-    def get_last_attempts(self, user_id: int, task_ids: list[int]) -> dict:
+    async def get_last_attempts(self, user_id: int, task_ids: list[int]) -> dict:
         query = (
             select(
                 Solution.task_id,
@@ -156,10 +161,10 @@ class AnalyticsRepository:
             )
             .group_by(Solution.task_id)
         )
+        result = await self.db.execute(query)
+        return {row.task_id: row.last for row in result}
 
-        return {row.task_id: row.last for row in self.db.execute(query)}
-
-    def get_task_attempts(
+    async def get_task_attempts(
         self, task_id: int, user_id: int, filters: AttemptsFilter
     ) -> list[Attempt]:
         query = (
@@ -190,29 +195,35 @@ class AnalyticsRepository:
         if filters.to_date:
             query = query.where(Attempt.created_at <= filters.to_date)
 
-        return self.db.scalars(query.order_by(Attempt.created_at.desc())).all()
-    def get_attempt_by_id(self, attempt_id: int) -> Attempt | None:
-        return self.db.get(Attempt, attempt_id)
+        result = await self.db.execute(query.order_by(Attempt.created_at.desc()))
+        return result.scalars().all()
 
-    def get_teacher_modules(self, teacher_id: int) -> list[Module]:
-        query = select(Module)
-        return self.db.scalars(query).all()
+    async def get_attempt_by_id(self, attempt_id: int) -> Attempt | None:
+        return await self.db.get(Attempt, attempt_id)
 
-    def get_module_tasks(self, module_id: int) -> list[Task]:
-        query = select(Task).join(ModuleTaskOrder).where(
-            ModuleTaskOrder.module_id == module_id
+    async def get_teacher_modules(self, teacher_id: int) -> list[Module]:
+        result = await self.db.execute(select(Module))
+        return result.scalars().all()
+
+    async def get_module_tasks(self, module_id: int) -> list[Task]:
+        query = (
+            select(Task)
+            .join(ModuleTaskOrder)
+            .where(ModuleTaskOrder.module_id == module_id)
         )
-        return self.db.scalars(query).all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    def has_solution(self, user_id: int, task_id: int) -> bool:
+    async def has_solution(self, user_id: int, task_id: int) -> bool:
         query = select(Solution).where(
             Solution.user_id == user_id,
-            Solution.task_id == task_id
+            Solution.task_id == task_id,
         )
-        return self.db.scalar(query) is not None
+        result = await self.db.scalar(query)
+        return result is not None
 
 
 def get_analytics_repository(
-    db: Session = Depends(session_generator)
+    db: AsyncSession = Depends(session_generator)
 ) -> AnalyticsRepository:
     return AnalyticsRepository(db)

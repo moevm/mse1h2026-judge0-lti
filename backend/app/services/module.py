@@ -41,7 +41,6 @@ class ModuleService:
             Module(**body.model_dump())
         )
         await self.db.commit()
-        await self.db.refresh(module)
         return await self.repo.get_by_id(module.id)
 
     async def delete_module(self, module_id: int) -> None:
@@ -55,8 +54,7 @@ class ModuleService:
         for key, value in data.items():
             setattr(module, key, value)
         await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        return await self.repo.get_by_id(module_id)
 
     async def add_tasks(self, module_id: int, body: ModuleAddTasks) -> Module:
         module = await self._get_module_or_raise(module_id)

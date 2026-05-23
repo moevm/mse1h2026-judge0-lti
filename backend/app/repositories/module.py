@@ -63,6 +63,10 @@ class ModuleRepository:
     async def get_tasks(self, module_id: int) -> List[Task]:
         result = await self.db.execute(
             select(Task)
+            .options(
+                selectinload(Task.languages),
+                selectinload(Task.tests),
+            )
             .join(ModuleTaskOrder)
             .where(ModuleTaskOrder.module_id == module_id)
             .order_by(ModuleTaskOrder.order)

@@ -20,11 +20,11 @@ from app.database.database import create_tables, seed_database
 from app.core.exception_handler import app_exception_handler
 from app.core.exceptions.base import AppException
 
-create_tables()
-seed_database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await create_tables()
+    await seed_database()
     app.state.http_client = httpx.AsyncClient(timeout=30.0)
     yield
     await app.state.http_client.aclose()

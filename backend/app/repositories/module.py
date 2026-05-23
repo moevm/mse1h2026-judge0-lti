@@ -48,7 +48,14 @@ class ModuleRepository:
     async def get_by_id(self, module_id: int) -> Module | None:
         result = await self.db.execute(
             select(Module)
-            .options(selectinload(Module.task_links).selectinload(ModuleTaskOrder.task))
+            .options(
+                selectinload(Module.task_links)
+                .selectinload(ModuleTaskOrder.task)
+                .selectinload(Task.languages),
+                selectinload(Module.task_links)
+                .selectinload(ModuleTaskOrder.task)
+                .selectinload(Task.tests),
+            )
             .where(Module.id == module_id)
         )
         return result.scalars().first()
@@ -133,12 +140,9 @@ class ModuleRepository:
         )
 
     async def delete_link(self, module_id: int, task_id: int) -> None:
-        await self.db.execute(
-            delete(ModuleTaskOrder).where(
-                ModuleTaskOrder.module_id == module_id,
-                ModuleTaskOrder.task_id == task_id,
-            )
-        )
+        link = await self.db.get(ModuleTaskOrder, (module_id, task_id))
+        if link:
+            await self.db.delete(link)
 
 
 def get_module_repository(db: AsyncSession = Depends(session_generator)):

@@ -16,7 +16,7 @@ fastapi==0.129.0
 h11==0.16.0
 starlette==0.52.1
 uvicorn==0.41.0
-asyncpg==0.31.0
+
 
 # pydantic
 idna==3.11
@@ -28,6 +28,7 @@ pydantic-settings==2.13.1
 sqlalchemy==2.0.47
 psycopg2-binary==2.9.11
 alembic==1.15.2
+asyncpg==0.31.0
 
 # env
 python-dotenv==1.2.2
@@ -35,11 +36,12 @@ python-dotenv==1.2.2
 # testing
 pytest==8.3.5
 pytest-cov==6.1.1
-pytest-asyncio==0.23.8
+pytest-asyncio==0.24.0
 pytest-mock==3.15.1
 httpx==0.28.1
 python-multipart==0.0.21
 testcontainers==4.14.2
+greenlet==3.5.1
 
 PyJWT==2.3.0
 

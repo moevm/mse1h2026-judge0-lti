@@ -1,9 +1,10 @@
 import os
 import pytest
-from typing import AsyncGenerator
+
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 from testcontainers.postgres import PostgresContainer
 
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
@@ -15,7 +16,6 @@ os.environ["POSTGRES_HOST"] = "localhost"
 os.environ["POSTGRES_PORT"] = "5433"
 
 from app.core.config import Settings
-
 
 def mock_get_settings():
     return Settings(
@@ -33,80 +33,78 @@ def mock_get_settings():
         admin_password="adminpass",
     )
 
-
 import app.core.config
-
 app.core.config.get_settings = mock_get_settings
 
 from app.main import app as main_app
 from app.database.database import session_generator
 from app.database import models
 
-
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:17-alpine") as postgres:
         yield postgres
 
-
-@pytest.fixture(scope="session")
-def engine(postgres_container):
+from sqlalchemy.pool import NullPool
+@pytest_asyncio.fixture(scope="session")
+async def engine(postgres_container):
     url = postgres_container.get_connection_url()
-    engine = create_engine(url)
-    models.Base.metadata.create_all(bind=engine)
+    url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+    engine = create_async_engine(url, poolclass=NullPool, future=True)
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
 
-    default_languages = ["python", "javascript", "java", "cpp", "c", "go", "rust"]
-    for lang_name in default_languages:
+    async with async_sessionmaker(engine, expire_on_commit=False)() as session:
         from app.database.models import Language
-
-        lang = session.query(Language).filter(Language.language == lang_name).first()
-        if not lang:
-            session.add(Language(language=lang_name))
-
-    session.commit()
-    session.close()
+        for lang_name in ["python", "javascript", "java", "cpp", "c", "go", "rust"]:
+            result = await session.execute(
+                select(Language).where(Language.language == lang_name)
+            )
+            if not result.scalars().first():
+                session.add(Language(language=lang_name))
+        await session.commit()
 
     yield engine
-    models.Base.metadata.drop_all(bind=engine)
+    await engine.dispose()
 
+@pytest_asyncio.fixture(scope="session")
+async def session_factory(engine):
+    return async_sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+        autoflush=False,
+    )
 
-@pytest.fixture(scope="function")
-def db_session(engine):
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = sessionmaker(bind=connection)()
-
-    def override_get_db():
-        try:
+@pytest_asyncio.fixture(autouse=True)
+async def override_db(session_factory):
+    async def override_get_db():
+        async with session_factory() as session:
             yield session
-            session.flush()
-        except Exception:
-            session.rollback()
-            raise
-
     main_app.dependency_overrides[session_generator] = override_get_db
-
-    yield session
-
-    transaction.rollback()
-    connection.close()
+    yield
     main_app.dependency_overrides.clear()
 
-
-@pytest.fixture
-async def client(db_session) -> AsyncGenerator:
-    transport = ASGITransport(app=main_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+@pytest_asyncio.fixture(autouse=True)
+async def truncate_tables(engine):
+    yield
+    async with engine.begin() as conn:
+        await conn.execute(text(
+            "TRUNCATE TABLE attempts, solutions, module_sessions, "
+            "refresh_tokens, tasks_languages, module_tasks_order, task_tests, tasks, "
+            "modules, users RESTART IDENTITY CASCADE"
+        ))
+@pytest_asyncio.fixture
+async def client():
+    async with AsyncClient(
+        transport=ASGITransport(app=main_app), base_url="http://test"
+    ) as client:
         yield client
 
-
-@pytest.fixture(autouse=True)
-def mock_judge_service():
-    from app.services.judge import get_judge_service
+@pytest_asyncio.fixture(autouse=True)
+async def mock_judge_service():
     from unittest.mock import AsyncMock, MagicMock
+    from app.services.judge import get_judge_service
 
     mock_service = MagicMock()
     mock_service.execute_code = AsyncMock(
@@ -117,183 +115,149 @@ def mock_judge_service():
             "status": {"id": 3, "description": "Accepted"},
         }
     )
-
-    async def mock_get_judge_service():
+    async def _mock():
         return mock_service
-
-    main_app.dependency_overrides[get_judge_service] = mock_get_judge_service
+    main_app.dependency_overrides[get_judge_service] = _mock
     yield
     main_app.dependency_overrides.pop(get_judge_service, None)
 
-
-@pytest.fixture(autouse=True)
-def mock_admin_auth():
+@pytest_asyncio.fixture(autouse=True)
+async def mock_admin_auth():
     from app.core.dependencies import get_current_admin
     from app.database.models import User, UserTypeEnum
 
-    async def mock_get_current_admin():
+    async def _mock():
         admin = User()
         admin.id = 1
         admin.username = "admin"
         admin.full_name = "Admin User"
         admin.role = UserTypeEnum.admin
         return admin
-
-    main_app.dependency_overrides[get_current_admin] = mock_get_current_admin
+    main_app.dependency_overrides[get_current_admin] = _mock
     yield
     main_app.dependency_overrides.pop(get_current_admin, None)
 
-
-@pytest.fixture
-async def auth_client(client, create_test_user):
-    from app.services.jwt import JwtService
-
-    user = create_test_user(
-        username="analytics_user", password="testpass", role="admin"
-    )
-
-    user_id = user.id
-    name = user.username
-
-    jwt_service = JwtService(mock_get_settings())
-    access_token = jwt_service.create_access_token(user_id=user_id, role="admin")
-
-    client.headers["Authorization"] = f"Bearer {access_token}"
-
-    class _User:
-        id = user_id
-        username = name
-
-    return client, _User()
-
-
-@pytest.fixture
-def create_test_user(db_session):
+@pytest_asyncio.fixture
+async def create_test_user(session_factory):
     from app.database.models import User, UserTypeEnum
     from app.core.security import hash_password
     from datetime import datetime, timezone
 
-    def _create_user(
-        username: str = "testuser",
-        password: str = "correctpass",
-        full_name: str = None,
-        role: str = "student",
-        deleted: bool = False,
+    async def _create_user(
+        username="testuser",
+        password="correctpass",
+        full_name=None,
+        role="student",
+        deleted=False,
     ):
-        user = User()
-        user.username = username
-        user.password_hash = hash_password(password)
-        user.full_name = full_name or f"{username} Full Name"
-
-        if role == "admin":
-            user.role = UserTypeEnum.admin
-        elif role == "teacher":
-            user.role = UserTypeEnum.teacher
-        else:
-            user.role = UserTypeEnum.student
-
-        if deleted:
-            user.deleted_at = datetime.now(timezone.utc)
-
-        db_session.add(user)
-        db_session.flush()
-        db_session.refresh(user)
-        return user
-
+        async with session_factory() as session:
+            user = User()
+            user.username = username
+            user.password_hash = hash_password(password)
+            user.full_name = full_name or f"{username} Full Name"
+            if role == "admin":
+                user.role = UserTypeEnum.admin
+            elif role == "teacher":
+                user.role = UserTypeEnum.teacher
+            else:
+                user.role = UserTypeEnum.student
+            if deleted:
+                user.deleted_at = datetime.now(timezone.utc)
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            return user
     return _create_user
 
-
-@pytest.fixture
-def create_test_task(db_session):
+@pytest_asyncio.fixture
+async def create_test_task(session_factory):
     from app.database.models import Task, Language
 
-    def _create_task(
-        title: str = "Test Task",
-        description: str = "Task Description",
-        timeout: int = 10,
-        language_names: list = None,
+    async def _create_task(
+        title="Test Task",
+        description="Task Description",
+        timeout=10,
+        language_names=None,
     ):
         if language_names is None:
             language_names = ["python", "javascript"]
-
-        task = Task()
-        task.title = title
-        task.description = description
-        task.timeout = timeout
-
-        db_session.add(task)
-        db_session.flush()
-
-        for lang_name in language_names:
-            lang = (
-                db_session.query(Language)
-                .filter(Language.language == lang_name)
-                .first()
+        async with session_factory() as session:
+            task = Task(
+                title=title,
+                description=description,
+                timeout=timeout,
             )
-            if not lang:
-                lang = Language(language=lang_name)
-                db_session.add(lang)
-                db_session.flush()
-            task.languages.append(lang)
-
-        db_session.flush()
-        db_session.refresh(task)
-        return task
-
+            session.add(task)
+            for lang_name in language_names:
+                result = await session.execute(
+                    select(Language).where(Language.language == lang_name)
+                )
+                lang = result.scalars().first()
+                if lang:
+                    task.languages.append(lang)
+            await session.commit()
+            await session.refresh(task)
+            return task
     return _create_task
 
-
-@pytest.fixture
-def create_test_test(db_session):
-    from app.database.models import TaskTest
-
-    def _create_test(
-        task_id: int,
-        title: str = "Test Case",
-        stdin: str = "",
-        stdout: str = "expected output",
-    ):
-        test = TaskTest()
-        test.task_id = task_id
-        test.title = title
-        test.stdin = stdin
-        test.stdout = stdout
-
-        db_session.add(test)
-        db_session.flush()
-        db_session.refresh(test)
-        return test
-
-    return _create_test
-
-
-@pytest.fixture
-def create_test_tasks(db_session, create_test_task):
-    def _create_tasks(count: int = 3):
-        tasks = []
-        for i in range(1, count + 1):
-            task = create_test_task(title=f"Task {i}")
-            tasks.append(task)
-        return tasks
-
-    return _create_tasks
-
-
-@pytest.fixture
-def create_test_module(db_session):
+@pytest_asyncio.fixture
+async def create_test_module(session_factory):
     from app.database.models import Module
 
-    def _create_module(
-        title: str = "Test Module",
-        description: str = "Module Description",
+    async def _create_module(
+        title="Test Module",
+        description="Module Description",
     ):
-        module = Module()
-        module.title = title
-        module.description = description
-
-        db_session.add(module)
-        db_session.flush()
-        db_session.refresh(module)
-        return module
-
+        async with session_factory() as session:
+            module = Module(
+                title=title,
+                description=description,
+            )
+            session.add(module)
+            await session.commit()
+            await session.refresh(module)
+            return module
     return _create_module
+
+@pytest_asyncio.fixture
+async def create_test_test(session_factory):
+    from app.database.models import TaskTest
+
+    async def _create_test(task_id, title="Test Case", stdin="", stdout="expected"):
+        async with session_factory() as session:
+            test = TaskTest()
+            test.task_id = task_id
+            test.title = title
+            test.stdin = stdin
+            test.stdout = stdout
+            session.add(test)
+            await session.commit()
+            await session.refresh(test)
+            return test
+    return _create_test
+
+@pytest_asyncio.fixture
+async def create_test_tasks(create_test_task):
+    async def _create_tasks(count=3):
+        tasks = []
+        for i in range(1, count + 1):
+            tasks.append(await create_test_task(title=f"Task {i}"))
+        return tasks
+    return _create_tasks
+
+@pytest_asyncio.fixture
+async def auth_client(client, create_test_user):
+    from app.services.jwt import JwtService
+
+    user = await create_test_user(
+        username="analytics_user",
+        password="testpass",
+        role="admin",
+    )
+    jwt_service = JwtService(mock_get_settings())
+    token = jwt_service.create_access_token(user_id=user.id, role="admin")
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    class _User:
+        id = user.id
+        username = user.username
+    return client, _User()

@@ -18,8 +18,8 @@ class TestGetTasks:
     @pytest.mark.asyncio
     async def test_get_tasks_with_data(self, client, create_test_task):
         """Получение списка задач с данными"""
-        create_test_task(title="Task 1", description="Desc 1")
-        create_test_task(title="Task 2", description="Desc 2")
+        await create_test_task(title="Task 1", description="Desc 1")
+        await create_test_task(title="Task 2", description="Desc 2")
 
         response = await client.get("/api/tasks/")
 
@@ -30,9 +30,9 @@ class TestGetTasks:
     @pytest.mark.asyncio
     async def test_get_tasks_with_search_filter(self, client, create_test_task):
         """Фильтрация задач по поиску"""
-        create_test_task(title="Python Basics", description="Learn Python")
-        create_test_task(title="Java Basics", description="Learn Java")
-        create_test_task(title="Advanced Python", description="Advanced Python")
+        await create_test_task(title="Python Basics", description="Learn Python")
+        await create_test_task(title="Java Basics", description="Learn Java")
+        await create_test_task(title="Advanced Python", description="Advanced Python")
 
         response = await client.get("/api/tasks/?search=advanced")
         print(response.json())
@@ -43,9 +43,9 @@ class TestGetTasks:
     @pytest.mark.asyncio
     async def test_get_tasks_with_timeout_filter(self, client, create_test_task):
         """Фильтрация задач по timeout"""
-        create_test_task(title="Fast Task", timeout=10)
-        create_test_task(title="Medium Task", timeout=30)
-        create_test_task(title="Slow Task", timeout=60)
+        await create_test_task(title="Fast Task", timeout=10)
+        await create_test_task(title="Medium Task", timeout=30)
+        await create_test_task(title="Slow Task", timeout=60)
 
         response = await client.get("/api/tasks/?timeout_from=20&timeout_to=50")
 
@@ -62,7 +62,7 @@ class TestGetTask:
     @pytest.mark.asyncio
     async def test_get_task_success(self, client, create_test_task):
         """Получение задачи по ID"""
-        task = create_test_task(
+        task = await create_test_task(
             title="Specific Task", description="Specific Desc", timeout=45
         )
 
@@ -88,7 +88,7 @@ class TestCreateTask:
     """Тесты POST /api/tasks/"""
 
     @pytest.mark.asyncio
-    async def test_create_task_success(self, client, db_session):
+    async def test_create_task_success(self, client):
         """Успешное создание задачи"""
         response = await client.post(
             "/api/tasks/",
@@ -132,7 +132,7 @@ class TestPatchTask:
     @pytest.mark.asyncio
     async def test_patch_task_success(self, client, create_test_task):
         """Успешное обновление задачи"""
-        task = create_test_task(
+        task = await create_test_task(
             title="Original Title", description="Original Desc", timeout=30
         )
 
@@ -150,7 +150,7 @@ class TestPatchTask:
     async def test_patch_task_update_languages(self, client, create_test_task):
         """Обновление языков задачи"""
         # Создаем задачу с одним языком
-        task = create_test_task(language_names=["python"])
+        task = await create_test_task(language_names=["python"])
 
         response = await client.patch(
             f"/api/tasks/{task.id}",
@@ -173,7 +173,7 @@ class TestPatchTask:
     @pytest.mark.asyncio
     async def test_patch_task_invalid_language(self, client, create_test_task):
         """Обновление с невалидным языком"""
-        task = create_test_task()
+        task = await create_test_task()
 
         response = await client.patch(
             f"/api/tasks/{task.id}", json={"languages": ["invalid_lang"]}
@@ -189,7 +189,7 @@ class TestDeleteTask:
     @pytest.mark.asyncio
     async def test_delete_task_success(self, client, create_test_task):
         """Успешное удаление задачи"""
-        task = create_test_task(title="To Delete")
+        task = await create_test_task(title="To Delete")
 
         response = await client.delete(f"/api/tasks/{task.id}")
 
@@ -212,7 +212,7 @@ class TestGetTaskTests:
     @pytest.mark.asyncio
     async def test_get_tests_empty(self, client, create_test_task):
         """Получение тестов задачи когда их нет"""
-        task = create_test_task()
+        task = await create_test_task()
 
         response = await client.get(f"/api/tasks/{task.id}/tests")
 
@@ -222,9 +222,9 @@ class TestGetTaskTests:
     @pytest.mark.asyncio
     async def test_get_tests_success(self, client, create_test_task, create_test_test):
         """Получение тестов задачи"""
-        task = create_test_task()
-        create_test_test(task.id, title="Test 1", stdout="output1")
-        create_test_test(task.id, title="Test 2", stdout="output2")
+        task = await create_test_task()
+        await create_test_test(task.id, title="Test 1", stdout="output1")
+        await create_test_test(task.id, title="Test 2", stdout="output2")
 
         response = await client.get(f"/api/tasks/{task.id}/tests")
 
@@ -248,7 +248,7 @@ class TestCreateTaskTest:
     @pytest.mark.asyncio
     async def test_create_test_success(self, client, create_test_task):
         """Успешное создание теста"""
-        task = create_test_task()
+        task = await create_test_task()
 
         response = await client.post(
             f"/api/tasks/{task.id}/tests",
@@ -284,8 +284,8 @@ class TestDeleteTaskTest:
         self, client, create_test_task, create_test_test
     ):
         """Успешное удаление теста"""
-        task = create_test_task()
-        test = create_test_test(task.id, title="To Delete")
+        task = await create_test_task()
+        test = await create_test_test(task.id, title="To Delete")
 
         response = await client.delete(f"/api/tasks/{task.id}/tests/{test.id}")
 
@@ -301,7 +301,7 @@ class TestDeleteTaskTest:
     @pytest.mark.asyncio
     async def test_delete_test_not_found(self, client, create_test_task):
         """Удаление несуществующего теста"""
-        task = create_test_task()
+        task = await create_test_task()
 
         response = await client.delete(f"/api/tasks/{task.id}/tests/999")
 
@@ -314,8 +314,8 @@ class TestPatchTaskTest:
     @pytest.mark.asyncio
     async def test_patch_test_success(self, client, create_test_task, create_test_test):
         """Успешное обновление теста"""
-        task = create_test_task()
-        test = create_test_test(task.id, title="Original", stdin="", stdout="old")
+        task = await create_test_task()
+        test = await create_test_test(task.id, title="Original", stdin="", stdout="old")
 
         response = await client.patch(
             f"/api/tasks/{task.id}/tests/{test.id}",
@@ -340,7 +340,7 @@ class TestPatchTaskTest:
     @pytest.mark.asyncio
     async def test_patch_test_not_found(self, client, create_test_task):
         """Обновление несуществующего теста"""
-        task = create_test_task()
+        task = await create_test_task()
 
         response = await client.patch(
             f"/api/tasks/{task.id}/tests/999", json={"title": "Updated"}
@@ -355,7 +355,7 @@ class TestImportTests:
     @pytest.mark.asyncio
     async def test_import_tests_success(self, client, create_test_task):
         """Успешный импорт тестов из JSON"""
-        task = create_test_task()
+        task = await create_test_task()
 
         tests_data = {
             "tests": [
@@ -379,7 +379,7 @@ class TestImportTests:
     @pytest.mark.asyncio
     async def test_import_tests_invalid_json(self, client, create_test_task):
         """Импорт с невалидным JSON"""
-        task = create_test_task()
+        task = await create_test_task()
 
         files = {"file": ("tests.json", "invalid json {", "application/json")}
 

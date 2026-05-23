@@ -23,7 +23,7 @@ class TaskRepository:
     async def get_by_id(self, task_id: int) -> Task | None:
         result = await self.db.execute(
             select(Task)
-            .options(selectinload(Task.languages), selectinload(Task.tests))
+            .options(selectinload(Task.languages), selectinload(Task.tests), selectinload(Task.module_links),)
             .where(Task.id == task_id)
         )
         return result.scalars().first()

@@ -44,8 +44,7 @@ class TaskService:
             ]
         await self.repo.add(task)
         await self.db.commit()
-        await self.db.refresh(task)
-        return task
+        return await self.repo.get_by_id(task.id)
     async def update_task(self, task_id: int, data: TaskPatch) -> Task:
         task = await self._get_task_or_raise(task_id)
         update_data = data.model_dump(exclude_unset=True)
@@ -65,8 +64,7 @@ class TaskService:
         for key, value in update_data.items():
             setattr(task, key, value)
         await self.db.commit()
-        await self.db.refresh(task)
-        return task
+        return await self.repo.get_by_id(task.id)
 
     async def _resolve_languages(self, lang_names: List[str]):
         languages = await self.lang_repo.get_by_names(lang_names)

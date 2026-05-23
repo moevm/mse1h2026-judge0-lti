@@ -1,6 +1,7 @@
 from fastapi import Depends
 from sqlalchemy import select, func, and_, asc, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.strategy_options import selectinload
 
 from app.database.database import session_generator
 from app.database.models import Module, ModuleTaskOrder, Task, TaskTest, Solution, Attempt
@@ -16,6 +17,7 @@ class AnalyticsRepository:
     ) -> list[Module]:
         query = (
             select(Module)
+            .options(selectinload(Module.task_links))
             .join(ModuleTaskOrder, ModuleTaskOrder.module_id == Module.id)
             .join(Task, Task.id == ModuleTaskOrder.task_id)
             .join(Solution, Solution.task_id == Task.id)

@@ -42,7 +42,7 @@ class ModuleService:
         )
         await self.db.commit()
         await self.db.refresh(module)
-        return module
+        return await self.repo.get_by_id(module.id)
 
     async def delete_module(self, module_id: int) -> None:
         module = await self._get_module_or_raise(module_id)
@@ -77,8 +77,7 @@ class ModuleService:
             )
             await self.repo.add_task_to_module(link)
         await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        return await self.repo.get_by_id(module_id)
 
     async def remove_task_from_module(self, module_id: int, task_id: int) -> Module:
         module = await self._get_module_or_raise(module_id)
@@ -88,8 +87,8 @@ class ModuleService:
         await self.repo.delete_link(module_id, task_id)
         await self.repo.shift_orders_after(module_id, link.order)
         await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        self.db.expire(module)
+        return await self.repo.get_by_id(module_id)
 
     async def reorder_tasks_in_module(
         self, module_id: int, body: ModuleTasksReorder
@@ -105,8 +104,8 @@ class ModuleService:
         mapping = body.to_mapping()
         await self.repo.reorder_module_tasks(module_id, mapping)
         await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        self.db.expire(module)
+        return await self.repo.get_by_id(module_id)
 
     async def _get_module_or_raise(self, module_id: int) -> Module:
         module = await self.repo.get_by_id(module_id)

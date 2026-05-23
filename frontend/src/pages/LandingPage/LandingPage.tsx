@@ -7,25 +7,74 @@ import repeatIcon from '../../assets/icons/repeat_icon.svg';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import { useAuth } from '../../hooks/queries/useAuth';
 import { useModule } from '../../hooks/queries/useModule';
+import { useFinishModuleSession, useModuleSession, useStartModuleSession } from '../../hooks/queries/useModuleSession';
 
 
 const LandingPage = () => {
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const { user, isAdmin } = useAuth();
+    const navigate = useNavigate();
+
+    const [searchParams] = useSearchParams();
     const moduleId = searchParams.get('module_id');
+
     const { data: module } = useModule(moduleId ? Number(moduleId) : null);
+    const { data: sessionData, isLoading: isSessionLoading, refetch: refetchSession } = useModuleSession(moduleId ? Number(moduleId) : null);
+    const { mutate: startSession, isPending: isStarting } = useStartModuleSession();
+    const { mutate: finishSession, isPending: isFinishing } = useFinishModuleSession();
+
     if (!moduleId) {
         return <div>Ошибка: модуль не указан</div>;
     }
+
     const displayUsername = user?.username || user?.id.toString() || "Гость";
 
+    const isSessionActive = sessionData?.session && !sessionData.session.finished_at && 
+        (!sessionData.session.expires_at || new Date(sessionData.session.expires_at) > new Date(sessionData.server_time_now));
+
+    const getStartButtonText = () => {
+        if (isStarting) return "Запуск...";
+        if (isSessionActive) return "Продолжить";
+        return "Начать";
+    };
+
+    const getRetakeButtonText = () => {
+        if (isFinishing) return "Перезапуск...";
+        return "Перепройти";
+    };
+
     const handleStart = () => {
-        navigate(`/task?module_id=${moduleId}`);
+        if (isSessionActive) {
+            navigate(`/task?module_id=${moduleId}`);
+        } else {
+            startSession(Number(moduleId), {
+                onSuccess: () => {
+                    navigate(`/task?module_id=${moduleId}`);
+                }
+            });
+        }
     };
 
     const handleRetake = () => {
-        navigate(`/task?module_id=${moduleId}`);
+        const moduleIdNumber = Number(moduleId);
+        
+        if (sessionData?.session && !sessionData.session.finished_at) {
+            finishSession(moduleIdNumber, {
+                onSuccess: () => {
+                    startSession(moduleIdNumber, {
+                        onSuccess: () => {
+                            refetchSession();
+                            navigate(`/task?module_id=${moduleId}`);
+                        }
+                    });
+                }
+            });
+        } else {
+            startSession(moduleIdNumber, {
+                onSuccess: () => {
+                    navigate(`/task?module_id=${moduleId}`);
+                }
+            });
+        }
     };
 
     const handleAdminPanel = () => {
@@ -60,17 +109,21 @@ const LandingPage = () => {
                 </div>
 
                 <div className={styles.buttonGroup}>
-                    <IconButton 
-                        icon={runIcon}
-                        label="Начать" 
-                        type="run"
-                        onClick={handleStart}    
-                    />
+                    {!isSessionLoading && (
+                        <IconButton 
+                            icon={runIcon}
+                            label={getStartButtonText()} 
+                            type="run"
+                            onClick={handleStart}
+                            disabled={isStarting}    
+                        />
+                    )}
                     <IconButton
                         icon={repeatIcon}
-                        label="Перепройти"
+                        label={getRetakeButtonText()}
                         type="submit"
                         onClick={handleRetake}
+                        disabled={isFinishing || isStarting}
                     />
                 </div>
 

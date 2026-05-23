@@ -2,24 +2,21 @@ from datetime import datetime, timezone
 
 from fastapi import Depends
 from sqlalchemy import and_, select, func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.database import session_generator
 from app.database.models import ModuleSession
 
-
 class ModuleSessionRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def add(self, session: ModuleSession) -> ModuleSession:
+    async def add(self, session: ModuleSession) -> ModuleSession:
         self.db.add(session)
-        self.db.flush()
-        self.db.refresh(session)
         return session
 
-    def get_active_session(self, user_id: int, module_id: int):
-        query = (
+    async def get_active_session(self, user_id: int, module_id: int) -> ModuleSession | None:
+        result = await self.db.execute(
             select(ModuleSession)
             .where(
                 ModuleSession.user_id == user_id,
@@ -33,11 +30,10 @@ class ModuleSessionRepository:
             .order_by(ModuleSession.started_at.desc())
             .limit(1)
         )
+        return result.scalars().first()
 
-        return self.db.execute(query).scalar_one_or_none()
-
-    def count_finished_sessions(self, user_id: int, module_id: int) -> int:
-        query = (
+    async def count_finished_sessions(self, user_id: int, module_id: int) -> int:
+        result = await self.db.scalar(
             select(func.count())
             .select_from(ModuleSession)
             .where(
@@ -52,13 +48,12 @@ class ModuleSessionRepository:
                 ),
             )
         )
-        return self.db.execute(query).scalar() or 0
-    def finish_session(self, session: ModuleSession) -> ModuleSession:
+        return result or 0
+
+    async def finish_session(self, session: ModuleSession) -> ModuleSession:
         session.finished_at = datetime.now(timezone.utc)
-        self.db.flush()
-        self.db.refresh(session)
         return session
 
 
-def get_module_session_repository(db: Session = Depends(session_generator)):
+def get_module_session_repository(db: AsyncSession = Depends(session_generator)):
     return ModuleSessionRepository(db)

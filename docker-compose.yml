@@ -51,6 +51,7 @@ services:
 
   judge0_server:
     image: mrkushalsm/judge0:cgv2
+    platform: linux/amd64
 
     env_file: ./judge0.conf
     container_name: mse1h2026-judge0-lti_judge0-server
@@ -76,6 +77,7 @@ services:
       start_period: 10s
   
   judge0_worker:
+    platform: linux/amd64
     image: mrkushalsm/judge0:cgv2
     container_name: mse1h2026-judge0-lti_judge0-worker
     command: ["./scripts/workers"]
@@ -142,6 +144,8 @@ services:
       start_period: 10s
     networks:
       - app-net
+    ports:
+      - "8000:8000"
     # deploy:
     #   resources:
     #     limits:

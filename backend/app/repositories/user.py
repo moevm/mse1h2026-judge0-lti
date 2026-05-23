@@ -1,31 +1,31 @@
 from fastapi import Depends
 from sqlalchemy import select, or_, func
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database.models import User, Solution
 from app.database.database import session_generator
 from app.schemas.user import UserFilter
 
-
 class UserRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, user_id: int) -> User | None:
-        return self.db.get(User, user_id)
+    async def get_by_id(self, user_id: int) -> User | None:
+        return await self.db.get(User, user_id)
 
-    def get_by_username(self, username: str) -> User | None:
-        query = select(User).where(User.username == username)
-        return self.db.scalars(query).first()
+    async def get_by_username(self, username: str) -> User | None:
+        result = await self.db.execute(
+            select(User).where(User.username == username)
+        )
+        return result.scalars().first()
 
-    def add(self, user: User):
+    async def add(self, user: User) -> None:
         self.db.add(user)
 
-    def get_all(self, filters: UserFilter) -> list[User]:
+    async def get_all(self, filters: UserFilter) -> list[User]:
         query = select(User)
-
         if not filters.include_deleted:
             query = query.where(User.deleted_at == None)
-
         if filters.search:
             s = f"%{filters.search}%"
             query = query.where(
@@ -34,15 +34,17 @@ class UserRepository:
                     User.username.ilike(s),
                 )
             )
-        return self.db.scalars(query).all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    def get_solved_count(self, user_id: int) -> int:
-        query = select(func.count()).select_from(Solution).where(
-            Solution.user_id == user_id,
-            Solution.is_solved == True
+    async def get_solved_count(self, user_id: int) -> int:
+        result = await self.db.scalar(
+            select(func.count()).select_from(Solution).where(
+                Solution.user_id == user_id,
+                Solution.is_solved == True,
+            )
         )
-        return self.db.scalar(query)
+        return result or 0
 
-
-def get_user_repository(db: Session = Depends(session_generator)) -> UserRepository:
+def get_user_repository(db: AsyncSession = Depends(session_generator)) -> UserRepository:
     return UserRepository(db)

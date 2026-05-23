@@ -18,7 +18,7 @@ async def login(
     response: Response,
     service: AuthService = Depends(get_auth_service),
 ) -> AuthResponse:
-    access_token, refresh_token = service.login(body)
+    access_token, refresh_token = await service.login(body)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -41,7 +41,7 @@ async def refresh(
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise RefreshTokenMissingException()
-    access_token, new_refresh_token = service.refresh(refresh_token)
+    access_token, new_refresh_token = await service.refresh(refresh_token)
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
@@ -61,17 +61,17 @@ async def logout(
 ):
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
-        service.logout(refresh_token)
+        await service.logout(refresh_token)
     response.delete_cookie("refresh_token")
     return {"ok": True}
 
 
 # использовать этот эндпоинт на фронте для получения access токена после редиректа с lti
 @router.get("/session", summary="Получить access токен по refresh (после lti)")
-def session(request: Request, service: AuthService = Depends(get_auth_service)):
+async def session(request: Request, service: AuthService = Depends(get_auth_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise RefreshTokenMissingException()
-    user = service.get_user_from_refresh(refresh_token)
+    user = await service.get_user_from_refresh(refresh_token)
 
     return {"access_token": service.issue_access_token(user)}

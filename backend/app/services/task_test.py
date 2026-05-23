@@ -20,7 +20,7 @@ class TaskTestService:
         task = self._get_task_or_raise(task_id)
         return self.repo.get_by_task_id(task_id)
 
-    async def create_test(self, task_id: int, body: TaskTestCreate):
+    async def create_test(self, task_id: int, body: TaskTestCreate) -> TaskTest:
         await self._get_task_or_raise(task_id)
         test = TaskTest(
             title=body.title, stdin=body.stdin, stdout=body.stdout, task_id=task_id

@@ -144,8 +144,6 @@ services:
       start_period: 10s
     networks:
       - app-net
-    ports:
-      - "8000:8000"
     # deploy:
     #   resources:
     #     limits:

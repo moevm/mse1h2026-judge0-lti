@@ -22,7 +22,7 @@ x-resource-limits:
 services:
   postgresdb:
     image: postgres:17-alpine
-    container_name: mse1h2026-judge0-lti_postgresql-judge0
+    #container_name: mse1h2026-judge0-lti_postgresql-judge0
     env_file: ./judge0.conf
     volumes:
       - postgres-data-judge0:/var/lib/postgresql/data/
@@ -47,7 +47,7 @@ services:
 
   redis:
     image: redis:7.2.4
-    container_name: mse1h2026-judge0-lti_redis
+    #container_name: mse1h2026-judge0-lti_redis
     command: [
       "bash", "-c",
       'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
@@ -76,7 +76,7 @@ services:
     image: mrkushalsm/judge0:cgv2
 
     env_file: ./judge0.conf
-    container_name: mse1h2026-judge0-lti_judge0-server
+    #container_name: mse1h2026-judge0-lti_judge0-server
     volumes:
       - ./judge0.conf:/judge0.conf:ro
     ports:
@@ -108,7 +108,7 @@ services:
   
   judge0_worker:
     image: mrkushalsm/judge0:cgv2
-    container_name: mse1h2026-judge0-lti_judge0-worker
+    #container_name: mse1h2026-judge0-lti_judge0-worker
     command: ["./scripts/workers"]
     volumes:
       - ./judge0.conf:/judge0.conf:ro
@@ -143,7 +143,7 @@ services:
 
   postgresdb_data:
     image: postgres:17-alpine
-    container_name: mse1h2026-judge0-lti_postgresdb-data
+    #container_name: mse1h2026-judge0-lti_postgresdb-data
     restart: unless-stopped
     <<: *default-logging
     env_file: 
@@ -172,7 +172,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: prod
-    container_name: backend-python-fastapi # mse1h2026-judge0-lti_backend-python-fastapi для этого надо поменять nginx.conf
+    container_name: backend-python-fastapi # чтобы убрать надо поменять nginx.conf
     restart: unless-stopped
     <<: *default-logging
     env_file:
@@ -204,7 +204,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: mse1h2026-judge0-lti_frontend-nginx-react
+    #container_name: mse1h2026-judge0-lti_frontend-nginx-react
     restart: unless-stopped
     <<: *default-logging
     env_file:

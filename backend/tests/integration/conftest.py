@@ -255,7 +255,7 @@ async def auth_client(client, create_test_user):
         role="admin",
     )
     jwt_service = JwtService(mock_get_settings())
-    token = jwt_service.create_access_token(user_id=user.id, role="admin")
+    token = jwt_service.create_access_token(user_id=user.id, role=models.UserTypeEnum.admin)
     client.headers.update({"Authorization": f"Bearer {token}"})
     class _User:
         id = user.id

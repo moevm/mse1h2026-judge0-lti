@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.database.models import UserTypeEnum
+
 
 class AuthRequest(BaseModel):
     username: str
@@ -10,4 +12,4 @@ class AuthResponse(BaseModel):
 
 class TokenUser(BaseModel):
     user_id: int
-    role: str
+    role: UserTypeEnum

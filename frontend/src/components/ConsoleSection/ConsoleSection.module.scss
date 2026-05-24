@@ -116,6 +116,17 @@
   color: $text-color;
 }
 
+.scoreInfo {
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid rgba($attempt-label-color, 0.45);
+  border-radius: 999px;
+  background: rgba($attempt-label-color, 0.12);
+  color: #ffd48a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .loaderContainer {
   display: flex;
   justify-content: center;

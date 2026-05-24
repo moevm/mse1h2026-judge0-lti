@@ -26,6 +26,7 @@ export interface UserTask {
     is_solved: boolean
     last_attempt_at: string | null
     test_count: number
+    score: number
 }
 
 export interface UserAttempt {
@@ -37,6 +38,7 @@ export interface UserAttempt {
     is_solved: boolean
     created_at: string
     source_code: string | null
+    score?: number | null
 }
 
 export interface UsersFilter {

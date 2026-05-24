@@ -6,6 +6,7 @@ export interface ConsoleOutput {
     error?: string;
     comment?: string;
     passed?: string;
+    score?: number | null;
 }
 
 interface ConsoleSectionProps {
@@ -17,7 +18,24 @@ interface ConsoleSectionProps {
     isLoading?: boolean;
 }
 
+const getScore = (output: ConsoleOutput | null) => {
+    if (!output) return null;
+    if (typeof output.score === 'number') return output.score;
+
+    const match = output.passed?.match(/(\d+)\s*\/\s*(\d+)/);
+    if (!match) return null;
+
+    const passed = Number(match[1]);
+    const total = Number(match[2]);
+
+    if (!Number.isFinite(passed) || !Number.isFinite(total) || total <= 0) return null;
+
+    return Math.floor((passed * 100) / total);
+};
+
 const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange, isLoading = false}: ConsoleSectionProps) => {
+    const score = getScore(output);
+
     return (
         <div className={styles.consoleSection}>
             <div className={styles.consoleHeader}>
@@ -68,6 +86,12 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                                 <div className={output.success ? styles.messageSuccess : styles.messageError}>
                                     {output.success ? "Passed" : "Failed"}
                                 </div>
+
+                                {score !== null && (
+                                    <div className={styles.scoreInfo}>
+                                        <strong>Баллы:</strong> {score}
+                                    </div>
+                                )}
 
                                 {output.comment && (
                                     <div className={styles.messageComment}>

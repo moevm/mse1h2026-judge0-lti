@@ -233,6 +233,10 @@ const AdminTaskSolutionAttempts = () => {
         return `${(ms / 1000).toFixed(2)} с`
     }
 
+    const formatScore = (score: number | null | undefined) => (
+        typeof score === 'number' ? `${score} баллов` : '—'
+    )
+
     const getStatusIcon = (status: string, isSolved: boolean) => {
         if (status === 'Accepted' && isSolved) return '✓'
         return '✗'
@@ -306,6 +310,7 @@ const AdminTaskSolutionAttempts = () => {
                                 </div>
                                 <div className={styles.itemMeta}>
                                     {formatDate(attempt.created_at)}
+                                    {' · '}{formatScore(attempt.score)}
                                     {' · '}{formatTime(attempt.time_ms)}
                                     {' · '}{formatMemory(attempt.memory_kb)}
                                 </div>

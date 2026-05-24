@@ -82,9 +82,24 @@
     font-weight: 500;
 }
 
-.attemptCount, .testCount {
+.attemptCount, .testCount, .score {
     width: 80px;
     text-align: center;
+}
+
+.score {
+    color: #5f3900;
+    font-weight: 600;
+}
+
+.score span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fff3d6;
 }
 
 .status {

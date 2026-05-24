@@ -29,6 +29,26 @@ class JudgeService:
         result["compile_output"] = self._decode(result.get("compile_output"))
         return result
 
+    async def submit(
+        self, source_code: str, language_id: int, stdin: str, timeout: int
+    ) -> dict:
+        if self.mock_judge0:
+            return {
+                "stdout": "mocked",
+                "stderr": None,
+                "compile_output": None,
+                "status": {"id": 3, "description": "Accepted"},
+            }
+
+        tokens = await self.submit_batch(
+            source_code=source_code,
+            language_id=language_id,
+            tests=[{"stdin": stdin}],
+            timeout=timeout,
+        )
+        results = await self.poll_batch(tokens)
+        return results[0]
+
     async def submit_batch(
         self,
         source_code: str,

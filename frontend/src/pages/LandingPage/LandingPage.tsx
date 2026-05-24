@@ -7,6 +7,8 @@ import repeatIcon from '../../assets/icons/repeat_icon.svg';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import { useAuth } from '../../hooks/queries/useAuth';
 import { useModule } from '../../hooks/queries/useModule';
+import { modulesApi } from '../../api/modules.api';
+import { toast } from 'sonner';
 
 
 const LandingPage = () => {
@@ -20,12 +22,28 @@ const LandingPage = () => {
     }
     const displayUsername = user?.username || user?.id.toString() || "Гость";
 
+    const openIde = async () => {
+        const numericModuleId = Number(moduleId);
+
+        if (!Number.isFinite(numericModuleId)) {
+            toast.error('Некорректный модуль');
+            return;
+        }
+
+        try {
+            await modulesApi.startModuleSession(numericModuleId);
+            navigate(`/task?module_id=${moduleId}`);
+        } catch {
+            toast.error('Не удалось начать прохождение модуля');
+        }
+    };
+
     const handleStart = () => {
-        navigate(`/task?module_id=${moduleId}`);
+        void openIde();
     };
 
     const handleRetake = () => {
-        navigate(`/task?module_id=${moduleId}`);
+        void openIde();
     };
 
     const handleAdminPanel = () => {

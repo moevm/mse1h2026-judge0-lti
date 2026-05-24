@@ -3,7 +3,11 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.tasks import InvalidLanguageException, TaskAttemptsExceededException, TaskNotFoundException
+from app.core.exceptions.tasks import (
+    InvalidLanguageException,
+    TaskAttemptsExceededException,
+    TaskNotFoundException,
+)
 from app.database.database import session_generator
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
@@ -24,8 +28,15 @@ class CheckResult:
     success: bool
     passed: int
     total: int
+    attempts_used: int
+    max_attempts: int | None
     error: str | None = None
     comment: str | None = None
+
+@dataclass
+class AttemptsInfo:
+    attempts_used: int
+    max_attempts: int | None
 
 
 class CheckService:
@@ -46,6 +57,18 @@ class CheckService:
         self.attempt_repo = attempt_repo
         self.judge = judge
         self.module_session_repo = module_session_repo
+
+    async def get_attempts_info(self, task_id: int, user_id: int) -> AttemptsInfo:
+        task = await self.task_repo.get_by_id(task_id)
+        if not task:
+            raise TaskNotFoundException()
+
+        attempts_used = await self.attempt_repo.count_by_user_and_task(user_id, task_id)
+
+        return AttemptsInfo(
+            attempts_used=attempts_used,
+            max_attempts=task.max_attempts,
+        )
 
     async def check_solution(
         self, task_id: int, user_id: int, body: CheckRequest
@@ -130,7 +153,12 @@ class CheckService:
                 comment = f'Тест "{tests[failed_idx].title}" — {status}'
 
             final_result = CheckResult(
-                success=False, passed=passed, total=total, comment=comment
+                success=False,
+                passed=passed,
+                total=total,
+                comment=comment,
+                attempts_used=attempts_used + 1,
+                max_attempts=task.max_attempts,
             )
             attempt_data = {
                 "is_solved": False,
@@ -140,7 +168,13 @@ class CheckService:
                 **self._extract_meta(r),
             }
         else:
-            final_result = CheckResult(success=True, passed=passed, total=total)
+            final_result = CheckResult(
+                success=True,
+                passed=passed,
+                total=total,
+                attempts_used=attempts_used + 1,
+                max_attempts=task.max_attempts,
+            )
             attempt_data = {
                 "is_solved": True,
                 "status": "Accepted",
@@ -194,8 +228,16 @@ def get_check_service(
     solution_repo: SolutionRepository = Depends(get_solution_repository),
     attempt_repo: AttemptRepository = Depends(get_attempt_repository),
     judge: JudgeService = Depends(get_judge_service),
-    module_session_repo: ModuleSessionRepository = Depends(get_module_session_repository),
+    module_session_repo: ModuleSessionRepository = Depends(
+        get_module_session_repository
+    ),
 ) -> CheckService:
     return CheckService(
-        db, task_repo, lang_repo, solution_repo, attempt_repo, judge, module_session_repo
+        db,
+        task_repo,
+        lang_repo,
+        solution_repo,
+        attempt_repo,
+        judge,
+        module_session_repo,
     )

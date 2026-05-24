@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.schemas.check import CheckRequest, CheckResponse
+from app.schemas.check import CheckRequest, CheckResponse, AttemptsInfoResponse
 from app.services.check import (
     CheckService,
     get_check_service,
@@ -21,3 +21,13 @@ async def check_solution(
 ) -> CheckResponse:
     result = await service.check_solution(task_id, user.user_id, body)
     return CheckMapper.to_response(result)
+
+
+@router.get("/{task_id}/attempts", response_model=AttemptsInfoResponse)
+async def get_attempts_info(
+    task_id: int,
+    user: TokenUser = Depends(get_current_user_payload),
+    service: CheckService = Depends(get_check_service),
+) -> AttemptsInfoResponse:
+    result = await service.get_attempts_info(task_id, user.user_id)
+    return CheckMapper.to_attempts_response(result)

@@ -146,7 +146,7 @@ class CheckService:
                 "status": "Accepted",
                 "message": "Все тесты пройдены успешно",
                 "score": 100,
-                **self._extract_meta(results[0]),
+                **self._extract_meta(results[0] if results else {}),
             }
 
         if score > solution.score:

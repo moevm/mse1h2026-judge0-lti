@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 pytestmark = pytest.mark.integration
@@ -57,7 +55,6 @@ async def test_refresh_success(client, create_test_user):
         json={"username": "refreshuser", "password": "correctpass"},
     )
     refresh_token = login_resp.cookies["refresh_token"]
-    time.sleep(1)
 
     refresh_resp = await client.post(
         "/api/auth/refresh", cookies={"refresh_token": refresh_token}

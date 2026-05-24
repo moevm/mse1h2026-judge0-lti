@@ -50,6 +50,7 @@ def get_current_admin(
         raise HTTPException(status_code=403, detail="Admin only")
     return payload
 
+
 def require_roles(*allowed_roles: UserTypeEnum) -> Callable:
     def dependency(payload: TokenUser = Depends(get_current_user_payload)) -> TokenUser:
         if payload.role not in allowed_roles:

@@ -1,5 +1,6 @@
 from fastapi.params import Depends
 import jwt
+import uuid
 from datetime import datetime, timedelta, timezone
 from app.core.config import Settings, get_settings
 from app.database.models import UserTypeEnum
@@ -32,6 +33,7 @@ class JwtService:
         payload = {
             "user_id": user_id,
             "type": "refresh",
+            "jti": str(uuid.uuid4()),
             "exp": expire_at,
         }
         token = jwt.encode(

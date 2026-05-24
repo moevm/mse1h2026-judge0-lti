@@ -17,7 +17,7 @@ from app.schemas.task import TaskResponse
 from app.services.module import get_module_service, ModuleService
 from app.mappers.module import ModuleMapper
 from app.schemas.module import ModuleCreate
-from app.core.dependencies import get_current_admin, get_current_user_payload, require_roles
+from app.core.dependencies import get_current_user_payload, require_roles
 from app.schemas.auth import TokenUser
 from app.services.module_session import ModuleSessionService, get_module_session_service
 

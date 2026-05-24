@@ -16,7 +16,7 @@ from app.services.analytics import (
     AnalyticsService,
     get_analytics_service,
 )
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 router = APIRouter(tags=["analytics"])
 

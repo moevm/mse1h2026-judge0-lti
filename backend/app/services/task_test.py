@@ -1,4 +1,3 @@
-from typing import List
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 

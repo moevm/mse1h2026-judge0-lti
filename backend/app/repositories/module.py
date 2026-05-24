@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy import select, delete, func, update, case, and_, asc, desc, or_
+from sqlalchemy import select, func, update, case, and_, asc, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 

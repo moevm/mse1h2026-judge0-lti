@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import Depends
 from sqlalchemy import select, asc, desc
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends
 
 from app.database.models import UserTypeEnum
-from app.services.users import UserService, get_user_service, UserNotFoundException
+from app.services.users import UserService, get_user_service
 from app.schemas.user import UserResponse, UserFilter, UserUpdateRequest
 from app.mappers.user import UserMapper
 from app.core.dependencies import get_current_user_payload, get_current_admin, require_roles

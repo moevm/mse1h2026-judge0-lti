@@ -32,12 +32,12 @@ def get_current_user_payload(
         raise InvalidAccessTokenException()
 
 
-def get_current_user(
+async def get_current_user(
     payload: dict = Depends(get_current_user_payload),
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> User:
     user_id = payload.get("user_id")
-    user = user_repo.get_by_id(user_id)
+    user = await user_repo.get_by_id(user_id)
     if not user:
         raise UserNotFoundException()
     return user

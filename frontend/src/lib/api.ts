@@ -12,13 +12,15 @@ const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL ?? '/api',
 })
 
+export const authApi = axios.create({
+    baseURL: import.meta.env.VITE_API_URL ?? '/api',
+})
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token')
-
     if (token) {
         config.headers.Authorization = `Bearer ${token}`
     }
-
     return config
 })
 
@@ -31,7 +33,7 @@ api.interceptors.response.use(
             originalRequest._retry = true
 
             try {
-                const res = await api.post('/auth/refresh', {}, { withCredentials: true })
+                const res = await authApi.post('/auth/refresh', {}, { withCredentials: true })
                 const access = res.data.access_token
 
                 localStorage.setItem('access_token', access)
@@ -40,7 +42,6 @@ api.interceptors.response.use(
                 return api(originalRequest)
             } catch {
                 localStorage.removeItem('access_token')
-                window.location.href = '/403'
                 return Promise.reject(error)
             }
         }

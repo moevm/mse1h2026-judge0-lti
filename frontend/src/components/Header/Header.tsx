@@ -8,6 +8,8 @@ import profileIcon from '../../assets/icons/profile_icon.svg';
 import logoutIcon from '../../assets/icons/logout_icon.svg';
 import IconButton from '../../UI/IconButton/IconButton.tsx';
 import { useEffect, useState } from 'react';
+import type { User } from '../../hooks/queries/useAuth.ts';
+
 
 interface HeaderProps {
     selectedLanguage: string | null;
@@ -17,6 +19,7 @@ interface HeaderProps {
     languages: string[];
     timeRemaining: number | null;
     canExecute: boolean;
+    user: User | null;
 }
 
 const Header = ({
@@ -26,7 +29,8 @@ const Header = ({
     onCheck,
     languages,
     timeRemaining,
-    canExecute
+    canExecute,
+    user
 }: HeaderProps) => {
 
     const [formattedTime, setFormattedTime] = useState<string>('');
@@ -108,7 +112,7 @@ const Header = ({
                 </button>
                 <div className={styles.infoBadge}>
                     <img src={profileIcon} alt="profile"/>
-                    <span className={styles.profileText}>username</span>
+                    <span className={styles.profileText}>{user?.username ?? 'Гость'}</span>
                 </div>
                 <button className={`${styles.infoBadge} ${styles.logoutBlock}`}>
                     <img src={logoutIcon} alt="logout"/>

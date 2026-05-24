@@ -14,6 +14,7 @@ import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
 import {useSearchParams} from "react-router-dom";
 import { useFinishModuleSession, useModuleSession } from '../../hooks/queries/useModuleSession.ts';
+import { useAuth } from '../../hooks/queries/useAuth.ts';
 
 const STORAGE_KEY = 'ide-task-codes';
 
@@ -179,7 +180,7 @@ const IDEPage = () => {
     }, [sessionData, refetchSession]);
 
     const canExecute = !!(!isSessionExpired && sessionData?.session && !sessionData.session.finished_at);
-
+    const { user } = useAuth();
     const editorLanguage = mapServerLangToMonaco(selectedLanguage || undefined);
 
     if (!sessionData?.session || sessionData.session.finished_at || isSessionExpired) {
@@ -204,6 +205,7 @@ const IDEPage = () => {
                 languages={availableLanguages}
                 timeRemaining={timeRemaining}
                 canExecute={canExecute}
+                user={user}
             />
 
             <PanelGroup direction="horizontal">

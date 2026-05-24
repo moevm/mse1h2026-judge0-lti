@@ -11,7 +11,7 @@ import { useFinishModuleSession, useModuleSession, useStartModuleSession } from 
 
 
 const LandingPage = () => {
-    const { user, isAdmin } = useAuth();
+    const { user, isAdmin, isTeacher } = useAuth();
     const navigate = useNavigate();
 
     const [searchParams] = useSearchParams();
@@ -21,7 +21,6 @@ const LandingPage = () => {
     const { data: sessionData, isLoading: isSessionLoading, refetch: refetchSession } = useModuleSession(moduleId ? Number(moduleId) : null);
     const { mutate: startSession, isPending: isStarting } = useStartModuleSession();
     const { mutate: finishSession, isPending: isFinishing } = useFinishModuleSession();
-
     if (!moduleId) {
         return <div>Ошибка: модуль не указан</div>;
     }
@@ -88,7 +87,7 @@ const LandingPage = () => {
                 <div className={styles.username}>
                     {`Username: ${displayUsername}`}
                 </div>
-                {isAdmin && (
+                {(isAdmin || isTeacher)&& (
                     <IconButton
                         icon={adminPanelIcon}
                         label="Админ-панель"

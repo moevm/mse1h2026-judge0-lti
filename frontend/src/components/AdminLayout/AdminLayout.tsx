@@ -1,40 +1,26 @@
-import { useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/queries/useAuth';
+import { NavLink, Outlet } from 'react-router-dom';
 import styles from './AdminLayout.module.scss';
+import {useAuth} from "../../hooks/queries/useAuth.ts";
 
 const navItems = [
-    { to: '/admin/students', label: 'Студенты', icon: 'groups' },
-    { to: '/admin/modules', label: 'Модули', icon: 'stars' },
-    { to: '/admin/tasks', label: 'Задачи', icon: 'grade' },
-    { to: '/admin/roles', label: 'Роли', icon: 'admin_panel_settings' }, 
+    { to: '/admin/students', label: 'Студенты', icon: 'groups', roles: ['admin', 'teacher'] },
+    { to: '/admin/modules', label: 'Модули', icon: 'stars', roles: ['admin', 'teacher'] },
+    { to: '/admin/tasks', label: 'Задачи', icon: 'grade', roles: ['admin', 'teacher'] },
+    { to: '/admin/roles', label: 'Роли', icon: 'admin_panel_settings', roles: ['admin'] },
 ];
 
 const AdminLayout = () => {
-    const navigate = useNavigate();
-    const { isAdmin, isLoading, isAuthenticated } = useAuth();
+    const { user, logout } = useAuth();
 
-    useEffect(() => {
-        if (!isLoading) {
-            if (!isAuthenticated || !isAdmin) {
-                navigate('/admin', { replace: true });
-            }
-        }
-    }, [isLoading, isAuthenticated, isAdmin, navigate]);
-
-    if (isLoading) {
-        return <div className={styles.loading}>Загрузка...</div>;
-    }
-
-    if (!isAuthenticated || !isAdmin) {
-        return null;
-    }
+    const visibleItems = navItems.filter(item =>
+        item.roles.includes(user?.role ?? '')
+    );
 
     return (
         <div className={styles.shell}>
             <aside className={styles.sidebar}>
                 <nav className={styles.nav} aria-label="Админ-панель">
-                    {navItems.map(item => (
+                    {visibleItems.map(item => (
                         <NavLink
                             key={item.to}
                             to={item.to}
@@ -48,6 +34,13 @@ const AdminLayout = () => {
                             <span className={styles.navLabel}>{item.label}</span>
                         </NavLink>
                     ))}
+
+                    <button className={styles.navItem} onClick={logout}>
+                        <span className={styles.navPill}>
+                            <md-icon>logout</md-icon>
+                        </span>
+                        <span className={styles.navLabel}>Выйти</span>
+                    </button>
                 </nav>
             </aside>
 

@@ -7,7 +7,6 @@ import TestPage from './pages/TestPage/TestPage.tsx'
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage.tsx'
 import ForbiddenPage from './pages/ForbiddenPage/ForbiddenPage.tsx'
 
-import ProtectedAdminRoute from './components/ProtectedAdminRoute/ProtectedAdminRoute.tsx'
 import AdminLayout from './components/AdminLayout/AdminLayout.tsx'
 import AdminModulesPage from './pages/AdminModulesPage/AdminModulesPage.tsx'
 import AdminModuleTasksPage from './pages/AdminModuleTasksPage/AdminModuleTasksPage.tsx'
@@ -41,7 +40,7 @@ function App() {
 
         <Route path="/admin" element={<AdminLoginPage />} />
 
-        <Route element={<ProtectedAdminRoute />}>
+        <Route element={<ProtectedRoute roles={['admin', 'teacher']} redirectTo="/admin" />}>
           <Route element={<AdminLayout />}>
 
             {/* Студенты */}
@@ -65,7 +64,9 @@ function App() {
             <Route path="/admin/tasks/:taskId/solutions/:solutionId/attempts" element={<AdminTaskSolutionAttempts />} />
 
             {/* Роли */}
-            <Route path="/admin/roles" element={<AdminRolesPage />} />
+            <Route element={<ProtectedRoute roles={['admin']} redirectTo="/403" />}>
+              <Route path="/admin/roles" element={<AdminRolesPage />} />
+            </Route>
           </Route>
         </Route>
 

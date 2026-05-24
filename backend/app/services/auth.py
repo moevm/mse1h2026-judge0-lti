@@ -105,7 +105,7 @@ class AuthService:
     def issue_access_token(self, user: User):
         access = self.jwt_service.create_access_token(
             user_id=user.id,
-            role=user.role.value,
+            role=user.role,
         )
         return access
 

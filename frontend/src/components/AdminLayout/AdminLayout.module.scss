@@ -27,6 +27,21 @@
   color: #49454f;
   text-decoration: none;
 }
+.nav button.navItem {
+  all: unset;
+  cursor: pointer;
+  height: 48px;
+  display: grid;
+  grid-template-rows: 32px 16px;
+  justify-items: center;
+  align-items: center;
+  color: #49454f;
+  margin-top: auto;
+
+  &:hover .navPill {
+    background: #e8def8;
+  }
+}
 
 .navPill {
   width: 56px;

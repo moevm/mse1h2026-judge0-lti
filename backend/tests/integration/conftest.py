@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.postgres import PostgresContainer
 
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_12345"
@@ -245,6 +245,21 @@ async def create_test_tasks(create_test_task):
         return tasks
     return _create_tasks
 
+@pytest_asyncio.fixture(autouse=True)
+async def mock_auth():
+    from app.core.dependencies import get_current_user_payload
+    from app.schemas.auth import TokenUser
+    from app.database.models import UserTypeEnum
+    async def _mock():
+        return TokenUser(
+            user_id=1,
+            role=UserTypeEnum.admin,  # или teacher для разных тестов
+        )
+    main_app.dependency_overrides[get_current_user_payload] = _mock
+    yield
+    main_app.dependency_overrides.pop(get_current_user_payload, None)
+
+
 @pytest_asyncio.fixture
 async def auth_client(client, create_test_user):
     from app.services.jwt import JwtService
@@ -255,7 +270,7 @@ async def auth_client(client, create_test_user):
         role="admin",
     )
     jwt_service = JwtService(mock_get_settings())
-    token = jwt_service.create_access_token(user_id=user.id, role="admin")
+    token = jwt_service.create_access_token(user_id=user.id, role=models.UserTypeEnum.admin)
     client.headers.update({"Authorization": f"Bearer {token}"})
     class _User:
         id = user.id

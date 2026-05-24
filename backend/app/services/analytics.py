@@ -1,10 +1,9 @@
-from datetime import timezone, datetime
 from fastapi import Depends
 
 from app.core.exceptions.analytics import AttemptNotFoundException
 from app.repositories.analytics import AnalyticsRepository, get_analytics_repository
 from app.schemas.analytics import UserModulesFilter, UserTasksFilter, AttemptsFilter
-from app.database.models import Module, Task, Solution, Attempt
+from app.database.models import Attempt
 
 
 class AnalyticsService:

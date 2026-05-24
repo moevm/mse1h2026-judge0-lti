@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from app.services.users import UserService, get_user_service, UserNotFoundException
+from fastapi import APIRouter, Depends
+
+from app.database.models import UserTypeEnum
+from app.services.users import UserService, get_user_service
 from app.schemas.user import UserResponse, UserFilter, UserUpdateRequest
 from app.mappers.user import UserMapper
-from app.core.dependencies import get_current_user_payload, get_current_admin
+from app.core.dependencies import get_current_user_payload, get_current_admin, require_roles
 from app.schemas.auth import TokenUser
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -31,7 +33,7 @@ async def get_me(
 )
 async def get_all_users(
     filters: UserFilter = Depends(),
-    current_user: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: UserService = Depends(get_user_service),
 ):
     rows = await service.get_all(filters)
@@ -49,7 +51,7 @@ async def get_all_users(
 )
 async def get_user(
     user_id: int,
-    current_user: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: UserService = Depends(get_user_service),
 ):
     user, solved_count = await service.get_with_solved_count(user_id)

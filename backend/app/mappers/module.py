@@ -1,4 +1,4 @@
-from app.database.models import Module, ModuleTaskOrder, Task
+from app.database.models import Module, Task
 from app.schemas.module import ModuleResponse, ModuleWithTaskIdResponse
 from app.schemas.task import TaskResponse
 

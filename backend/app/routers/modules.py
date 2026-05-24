@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter
 from fastapi.params import Depends
 
+from app.database.models import UserTypeEnum
 from app.mappers.module_session import ModuleSessionMapper
 from app.schemas.module import (
     ModuleWithTaskIdResponse,
@@ -16,7 +17,7 @@ from app.schemas.task import TaskResponse
 from app.services.module import get_module_service, ModuleService
 from app.mappers.module import ModuleMapper
 from app.schemas.module import ModuleCreate
-from app.core.dependencies import get_current_admin, get_current_user_payload
+from app.core.dependencies import get_current_user_payload, require_roles
 from app.schemas.auth import TokenUser
 from app.services.module_session import ModuleSessionService, get_module_session_service
 
@@ -39,7 +40,7 @@ async def get_modules(
 @router.post("/", response_model=ModuleResponse, summary="Создать новый модуль")
 async def create_module(
     body: ModuleCreate,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     return ModuleMapper.to_module_with_tasks(await service.create_module(body))
@@ -65,7 +66,7 @@ async def get_module(
 )
 async def delete_module(
     module_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     await service.delete_module(module_id)
@@ -92,7 +93,7 @@ async def get_module_tasks(
 async def patch_module(
     module_id: int,
     body: ModulePatch,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ) -> ModuleResponse:
     module = await service.patch_module(module_id, body)
@@ -107,7 +108,7 @@ async def patch_module(
 async def add_tasks_in_module(
     module_id: int,
     body: ModuleAddTasks,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ) -> ModuleResponse:
     return ModuleMapper.to_module_with_tasks(await service.add_tasks(module_id, body))
@@ -121,7 +122,7 @@ async def add_tasks_in_module(
 async def remove_task_from_module(
     module_id: int,
     task_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     return ModuleMapper.to_module_with_tasks(
@@ -137,7 +138,7 @@ async def remove_task_from_module(
 async def reorder_tasks_in_module(
     module_id: int,
     body: ModuleTasksReorder,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     return ModuleMapper.to_module_with_tasks(

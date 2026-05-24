@@ -1,10 +1,11 @@
 from typing import List
 from fastapi import APIRouter, Depends
 
+from app.database.models import UserTypeEnum
 from app.schemas.solution import SolutionFilter, SolutionWithUserResponse
 from app.schemas.attempt import AttemptResponse
 from app.services.solution import SolutionService, get_solution_service
-from app.core.dependencies import get_current_admin
+from app.core.dependencies import require_roles
 from app.schemas.auth import TokenUser
 from app.mappers.solution import SolutionMapper
 
@@ -31,7 +32,7 @@ router = APIRouter(prefix="/solutions", tags=["solutions"])
 async def get_task_solutions(
     task_id: int,
     filters: SolutionFilter = Depends(),
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: SolutionService = Depends(get_solution_service),
 ):
     solutions = await service.get_solutions_by_task(task_id, filters)
@@ -51,7 +52,7 @@ async def get_task_solutions(
 )
 async def get_solution_attempts(
     solution_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: SolutionService = Depends(get_solution_service),
 ):
     attempts = await service.get_solution_attempts(solution_id)

@@ -2,9 +2,8 @@
 
 import enum
 from sqlalchemy import *
-from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.dialects.postgresql import JSON, BIGINT, TIMESTAMP, ENUM
+from sqlalchemy.dialects.postgresql import BIGINT, TIMESTAMP, ENUM
 
 Base = declarative_base()
 

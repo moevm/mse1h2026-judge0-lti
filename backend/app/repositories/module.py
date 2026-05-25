@@ -1,8 +1,9 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy import select, delete, func, update, case, and_, asc, desc, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import select, func, update, case, and_, asc, desc, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database.database import session_generator
 from app.database.models import Module, ModuleTaskOrder, Task
@@ -10,10 +11,10 @@ from app.schemas.module import ModuleFilter
 
 
 class ModuleRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_all(self, filters: ModuleFilter) -> List[Module]:
+    async def get_all(self, filters: ModuleFilter) -> List[Module]:
         query = select(Module).options(
             selectinload(Module.task_links).selectinload(ModuleTaskOrder.task)
         )
@@ -41,98 +42,112 @@ class ModuleRepository:
                 query = query.order_by(asc(column))
             else:
                 query = query.order_by(desc(column))
-        return self.db.scalars(query).all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    def get_by_id(self, module_id: int) -> Module | None:
-        query = (
+    async def get_by_id(self, module_id: int) -> Module | None:
+        result = await self.db.execute(
             select(Module)
-            .options(selectinload(Module.task_links).selectinload(ModuleTaskOrder.task))
+            .options(
+                selectinload(Module.task_links)
+                .selectinload(ModuleTaskOrder.task)
+                .selectinload(Task.languages),
+                selectinload(Module.task_links)
+                .selectinload(ModuleTaskOrder.task)
+                .selectinload(Task.tests),
+            )
             .where(Module.id == module_id)
         )
-        return self.db.scalars(query).first()
+        return result.scalars().first()
 
-    def get_tasks(self, module_id: int) -> List[Task]:
-        query = (
+    async def get_tasks(self, module_id: int) -> List[Task]:
+        result = await self.db.execute(
             select(Task)
+            .options(
+                selectinload(Task.languages),
+                selectinload(Task.tests),
+            )
             .join(ModuleTaskOrder)
             .where(ModuleTaskOrder.module_id == module_id)
             .order_by(ModuleTaskOrder.order)
         )
-        return self.db.scalars(query).all()
+        return result.scalars().all()
 
-    def get_module_task_ids(self, module_id: int) -> set[int]:
-        query = select(ModuleTaskOrder.task_id).where(
-            ModuleTaskOrder.module_id == module_id
+    async def get_module_task_ids(self, module_id: int) -> set[int]:
+        result = await self.db.execute(
+            select(ModuleTaskOrder.task_id).where(ModuleTaskOrder.module_id == module_id)
         )
-        return set(self.db.scalars(query).all())
+        return set(result.scalars().all())
 
-    def get_max_order(self, module_id: int) -> int:
-        query = select(func.max(ModuleTaskOrder.order)).where(
-            ModuleTaskOrder.module_id == module_id
+    async def get_max_order(self, module_id: int) -> int:
+        result = await self.db.scalar(
+            select(func.max(ModuleTaskOrder.order)).where(ModuleTaskOrder.module_id == module_id)
         )
-        max_order = self.db.scalar(query)
-        return max_order or 0
+        return result or 0
 
-    def get_existing_task_ids(self, task_ids: List[int]) -> set[int]:
-        query = select(Task.id).where(Task.id.in_(task_ids))
-        return set(self.db.scalars(query).all())
+    async def get_existing_task_ids(self, task_ids: List[int]) -> set[int]:
+        result = await self.db.execute(
+            select(Task.id).where(Task.id.in_(task_ids))
+        )
+        return set(result.scalars().all())
 
-    def add_task_to_module(self, link: ModuleTaskOrder) -> None:
+    async def add_task_to_module(self, link: ModuleTaskOrder) -> None:
         self.db.add(link)
 
-    def create(self, module: Module) -> Module:
+    async def create(self, module: Module) -> Module:
         self.db.add(module)
-        self.db.flush()
         return module
 
-    def delete(self, module: Module) -> None:
-        self.db.delete(module)
+    async def delete(self, module: Module) -> None:
+        await self.db.delete(module)
 
-    def get_module_task_link(self, module_id: int, task_id: int) -> ModuleTaskOrder:
-        query = select(ModuleTaskOrder).where(
-            ModuleTaskOrder.module_id == module_id, ModuleTaskOrder.task_id == task_id
-        )
-        return self.db.scalar(query)
-
-    def get_module_task_links(self, module_id: int) -> List[ModuleTaskOrder]:
-        return self.db.scalars(
-            select(ModuleTaskOrder).where(ModuleTaskOrder.module_id == module_id)
-        ).all()
-
-    def get_module_task_links_dict(self, module_id: int):
-        return {l.task_id: l for l in self.get_module_task_links(module_id)}
-
-    def reorder_module_tasks(self, module_id: int, mapping: dict[int, int]) -> None:
-        query = (
-            update(ModuleTaskOrder)
-            .where(ModuleTaskOrder.module_id == module_id)
-            .values(order=case(mapping, value=ModuleTaskOrder.task_id))
-        )
-        self.db.execute(query)
-
-    def shift_orders_after(self, module_id: int, order: int) -> None:
-        self.db.execute(
-            update(ModuleTaskOrder)
-            .where(
-                ModuleTaskOrder.module_id == module_id, ModuleTaskOrder.order > order
-            )
-            .values(order=ModuleTaskOrder.order - 1)
-        )
-
-    def delete_link(self, module_id: int, task_id: int) -> None:
-        self.db.execute(
-            delete(ModuleTaskOrder).where(
+    async def get_module_task_link(
+        self, module_id: int, task_id: int
+    ) -> ModuleTaskOrder | None:
+        result = await self.db.scalar(
+            select(ModuleTaskOrder).where(
                 ModuleTaskOrder.module_id == module_id,
                 ModuleTaskOrder.task_id == task_id,
             )
         )
+        return result
 
-    def flush(self):
-        self.db.flush()
+    async def get_module_task_links(self, module_id: int) -> List[ModuleTaskOrder]:
+        result = await self.db.execute(
+            select(ModuleTaskOrder).where(ModuleTaskOrder.module_id == module_id)
+        )
+        return result.scalars().all()
 
-    def refresh(self, module: Module):
-        self.db.refresh(module)
+    async def get_module_task_links_dict(
+        self, module_id: int
+    ) -> dict[int, ModuleTaskOrder]:
+        links = await self.get_module_task_links(module_id)
+        return {l.task_id: l for l in links}
+
+    async def reorder_module_tasks(
+        self, module_id: int, mapping: dict[int, int]
+    ) -> None:
+        await self.db.execute(
+            update(ModuleTaskOrder)
+            .where(ModuleTaskOrder.module_id == module_id)
+            .values(order=case(mapping, value=ModuleTaskOrder.task_id))
+        )
+
+    async def shift_orders_after(self, module_id: int, order: int) -> None:
+        await self.db.execute(
+            update(ModuleTaskOrder)
+            .where(
+                ModuleTaskOrder.module_id == module_id,
+                ModuleTaskOrder.order > order,
+            )
+            .values(order=ModuleTaskOrder.order - 1)
+        )
+
+    async def delete_link(self, module_id: int, task_id: int) -> None:
+        link = await self.db.get(ModuleTaskOrder, (module_id, task_id))
+        if link:
+            await self.db.delete(link)
 
 
-def get_module_repository(db: Session = Depends(session_generator)):
+def get_module_repository(db: AsyncSession = Depends(session_generator)):
     return ModuleRepository(db)

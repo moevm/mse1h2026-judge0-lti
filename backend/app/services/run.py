@@ -12,7 +12,7 @@ class RunService:
         self.judge = judge
 
     async def run_code(self, body: RunRequest):
-        language = self.lang_repo.get_language_by_name(body.language)
+        language = await self.lang_repo.get_language_by_name(body.language)
         if not language:
             raise InvalidLanguageException()
         return await self.judge.submit(body.code, language.id, body.stdin, 5)

@@ -21,6 +21,7 @@ interface UseAuthReturn {
     user: User | null;
     isAuthenticated: boolean;
     isAdmin: boolean;
+    isTeacher: boolean; 
     isLoading: boolean;
     login: (credentials: LoginCredentials) => Promise<AuthResponse>;
     logout: () => Promise<void>;
@@ -110,7 +111,7 @@ export const useAuth = (): UseAuthReturn => {
             console.error('Logout error:', error);
         } finally {
             clearAuthData();
-            navigate('/login', { replace: true });
+            navigate('/admin', { replace: true });
         }
     }, [clearAuthData, navigate]);
 
@@ -161,11 +162,13 @@ export const useAuth = (): UseAuthReturn => {
 
     const isAuthenticated = !!user;
     const isAdmin = user?.role === 'admin';
+    const isTeacher = user?.role === 'teacher';
 
     return {
         user,
         isAuthenticated,
         isAdmin,
+        isTeacher,
         isLoading,
         login,
         logout,

@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, UploadFile, File
 from pydantic import ValidationError
+from app.database.models import UserTypeEnum
 from app.schemas.task import TaskResponse, TaskCreate, TaskFilter
 from app.services.task import get_task_service
 from app.services.task import TaskService
@@ -19,7 +20,7 @@ from app.schemas.task_test import (
     TaskTestResponse,
     TaskTestPatch,
 )
-from app.core.dependencies import get_current_admin
+from app.core.dependencies import require_roles
 from app.schemas.auth import TokenUser
 from app.core.exceptions.tasks import InvalidTaskTestsFileException
 
@@ -29,22 +30,22 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 @router.get(
     "/", response_model=List[TaskResponse], summary="Получить список всех задач"
 )
-def get_tasks(
+async def get_tasks(
     filters: TaskFilter = Depends(),
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskService = Depends(get_task_service),
 ) -> List[TaskResponse]:
-    tasks = service.get_filtered_tasks(filters)
+    tasks = await service.get_filtered_tasks(filters)
     return TaskMapper.to_task_list_response(tasks)
 
 
 @router.get("/{task_id}", response_model=TaskResponse, summary="Получить задачу по ID")
 async def get_task(
     task_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.get_task_by_id(task_id)
+    task = await service.get_task_by_id(task_id)
     return TaskMapper.to_task_response(task)
 
 
@@ -52,10 +53,10 @@ async def get_task(
 async def patch_task(
     task_id: int,
     body: TaskPatch,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.update_task(task_id, body)
+    task = await service.update_task(task_id, body)
     return TaskMapper.to_task_response(task)
 
 
@@ -63,19 +64,19 @@ async def patch_task(
 async def create_task(
     body: TaskCreate,
     service: TaskService = Depends(get_task_service),
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
 ):
-    task = service.create_task(body)
+    task = await service.create_task(body)
     return TaskMapper.to_task_response(task)
 
 
 @router.delete("/{task_id}", status_code=204, summary="Удалить задачу")
 async def delete_task(
     task_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskService = Depends(get_task_service),
 ):
-    service.delete_task(task_id)
+    await service.delete_task(task_id)
 
 
 @router.get(
@@ -85,11 +86,10 @@ async def delete_task(
 )
 async def get_task_test(
     task_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    tests = service.get_tests(task_id)
-    return tests
+    return await service.get_tests(task_id)
 
 
 @router.post(
@@ -100,11 +100,10 @@ async def get_task_test(
 async def create_task_test(
     task_id: int,
     body: TaskTestCreate,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskTestService = Depends(get_task_test_service),
 ) -> TaskTestResponse:
-    test = service.create_test(task_id, body)
-    return test
+    return await service.create_test(task_id, body)
 
 
 @router.delete(
@@ -115,10 +114,10 @@ async def create_task_test(
 async def delete_task_test(
     task_id: int,
     test_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    service.delete_test(task_id, test_id)
+    await service.delete_test(task_id, test_id)
 
 
 @router.post(
@@ -129,14 +128,14 @@ async def delete_task_test(
 async def upload_task_tests(
     task_id: int,
     file: UploadFile = File(...),
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskTestService = Depends(get_task_test_service),
 ):
     try:
         content = await file.read()
         data = json.loads(content)
         parsed = TaskTestFileSchema.model_validate(data)
-        tests = service.create_tests_bulk(task_id, parsed)
+        tests = await service.create_tests_bulk(task_id, parsed)
         return tests
 
     except (json.JSONDecodeError, ValidationError):
@@ -152,8 +151,8 @@ async def patch_task_test(
     task_id: int,
     test_id: int,
     body: TaskTestPatch,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: TaskTestService = Depends(get_task_test_service),
 ):
-    test = service.update_test(task_id, test_id, body)
+    test = await service.update_test(task_id, test_id, body)
     return test

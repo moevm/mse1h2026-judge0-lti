@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter
 from fastapi.params import Depends
 
+from app.database.models import UserTypeEnum
 from app.mappers.module_session import ModuleSessionMapper
 from app.schemas.module import (
     ModuleWithTaskIdResponse,
@@ -16,7 +17,7 @@ from app.schemas.task import TaskResponse
 from app.services.module import get_module_service, ModuleService
 from app.mappers.module import ModuleMapper
 from app.schemas.module import ModuleCreate
-from app.core.dependencies import get_current_admin, get_current_user_payload
+from app.core.dependencies import get_current_user_payload, require_roles
 from app.schemas.auth import TokenUser
 from app.services.module_session import ModuleSessionService, get_module_session_service
 
@@ -28,21 +29,21 @@ router = APIRouter(prefix="/modules", tags=["modules"])
     response_model=List[ModuleWithTaskIdResponse],
     summary="Получить список модулей",
 )
-def get_modules(
+async def get_modules(
     filters: ModuleFilter = Depends(),
     service: ModuleService = Depends(get_module_service),
 ) -> List[ModuleWithTaskIdResponse]:
-    modules = service.get_all_modules(filters)
+    modules = await service.get_all_modules(filters)
     return [ModuleMapper.to_module_with_task_ids(m) for m in modules]
 
 
 @router.post("/", response_model=ModuleResponse, summary="Создать новый модуль")
 async def create_module(
     body: ModuleCreate,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
-    return ModuleMapper.to_module_with_tasks(service.create_module(body))
+    return ModuleMapper.to_module_with_tasks(await service.create_module(body))
 
 
 @router.get(
@@ -54,7 +55,7 @@ async def get_module(
     module_id: int,
     service: ModuleService = Depends(get_module_service),
 ) -> ModuleResponse:
-    module = service.get_module_by_id(module_id)
+    module = await service.get_module_by_id(module_id)
     return ModuleMapper.to_module_with_tasks(module)
 
 
@@ -65,10 +66,10 @@ async def get_module(
 )
 async def delete_module(
     module_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
-    service.delete_module(module_id)
+    await service.delete_module(module_id)
 
 
 @router.get(
@@ -80,7 +81,7 @@ async def get_module_tasks(
     module_id: int,
     service: ModuleService = Depends(get_module_service),
 ) -> List[TaskResponse]:
-    tasks = service.get_module_tasks(module_id)
+    tasks = await service.get_module_tasks(module_id)
     return ModuleMapper.to_task_list(tasks)
 
 
@@ -92,10 +93,10 @@ async def get_module_tasks(
 async def patch_module(
     module_id: int,
     body: ModulePatch,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ) -> ModuleResponse:
-    module = service.patch_module(module_id, body)
+    module = await service.patch_module(module_id, body)
     return ModuleMapper.to_module_with_tasks(module)
 
 
@@ -107,10 +108,10 @@ async def patch_module(
 async def add_tasks_in_module(
     module_id: int,
     body: ModuleAddTasks,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ) -> ModuleResponse:
-    return ModuleMapper.to_module_with_tasks(service.add_tasks(module_id, body))
+    return ModuleMapper.to_module_with_tasks(await service.add_tasks(module_id, body))
 
 
 @router.delete(
@@ -121,11 +122,11 @@ async def add_tasks_in_module(
 async def remove_task_from_module(
     module_id: int,
     task_id: int,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     return ModuleMapper.to_module_with_tasks(
-        service.remove_task_from_module(module_id, task_id)
+        await service.remove_task_from_module(module_id, task_id)
     )
 
 
@@ -137,11 +138,11 @@ async def remove_task_from_module(
 async def reorder_tasks_in_module(
     module_id: int,
     body: ModuleTasksReorder,
-    admin: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: ModuleService = Depends(get_module_service),
 ):
     return ModuleMapper.to_module_with_tasks(
-        service.reorder_tasks_in_module(module_id, body)
+        await service.reorder_tasks_in_module(module_id, body)
     )
 
 
@@ -150,7 +151,7 @@ async def reorder_tasks_in_module(
     response_model=ModuleSessionResponse,
     summary="Старт прохождения модуля",
 )
-def start_module_session(
+async def start_module_session(
     module_id: int,
     user: TokenUser = Depends(get_current_user_payload),
     service: ModuleSessionService = Depends(get_module_session_service),
@@ -161,7 +162,7 @@ def start_module_session(
     - ограниченной по времени (expires_at установлен)
     - без ограничения времени (expires_at = NULL)
     """
-    session = service.start_session(module_id, user)
+    session = await service.start_session(module_id, user)
     return ModuleSessionMapper.to_response(session)
 
 
@@ -170,7 +171,7 @@ def start_module_session(
     response_model=ModuleSessionResponse,
     summary="Получить активную сессию прохождения модуля (или её отсутствие)",
 )
-def get_module_session(
+async def get_module_session(
     module_id: int,
     user: TokenUser = Depends(get_current_user_payload),
     service: ModuleSessionService = Depends(get_module_session_service),
@@ -183,11 +184,11 @@ def get_module_session(
     
     Если активной сессии нет — возвращается {"session": null}.
     """
-    session = service.get_session(module_id, user)
+    session = await service.get_session(module_id, user)
     return ModuleSessionMapper.to_response(session)
 
 @router.get("/{module_id}/session/finish", summary="Завершить активную сессию прохождения модуля")
-def finish_module_session(
+async def finish_module_session(
     module_id: int,
     user: TokenUser = Depends(get_current_user_payload),
     service: ModuleSessionService = Depends(get_module_session_service),
@@ -195,5 +196,5 @@ def finish_module_session(
     """
     Завершает активную сессию пользователя для указанного модуля.
     """
-    session = service.finish_session(module_id, user)
+    session = await service.finish_session(module_id, user)
     return ModuleSessionMapper.to_response(session)

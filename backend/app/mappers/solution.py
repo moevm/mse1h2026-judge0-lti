@@ -1,4 +1,3 @@
-from typing import Optional
 from app.database.models import Solution, Attempt
 from app.schemas.solution import SolutionWithUserResponse
 from app.schemas.attempt import AttemptResponse

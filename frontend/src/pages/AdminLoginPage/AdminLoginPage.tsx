@@ -7,16 +7,16 @@ import {useAuth} from "../../hooks/queries/useAuth.ts";
 
 const AdminLoginPage = () => {
     const navigate = useNavigate();
-    const { login, isAdmin, isLoading: isAuthLoading } = useAuth();
+    const { login, isLoading: isAuthLoading, isAuthenticated } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        if (!isAuthLoading && isAdmin) {
+        if (!isAuthLoading && isAuthenticated) {
             navigate('/admin/modules', { replace: true });
         }
-    }, [navigate, isAdmin, isAuthLoading]);
+    }, [isAuthenticated, isAuthLoading]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();

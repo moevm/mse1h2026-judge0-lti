@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional
 from app.database.models import UserTypeEnum
 
 

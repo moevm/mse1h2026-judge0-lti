@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Navigate, Outlet, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/queries/useAuth';
-import api from '../../lib/api';
+import {authApi} from '../../lib/api';
 
-const ProtectedRoute = () => {
-    const { isAuthenticated, isLoading, refreshUser, getAccessToken } = useAuth();
+interface Props {
+    roles?: string[];
+    redirectTo?: string;
+}
+const ProtectedRoute = ({ roles, redirectTo = '/403' }: Props) => {
+    const { isAuthenticated, isLoading, refreshUser, getAccessToken, user } = useAuth();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
     const hasLti = searchParams.has('lti');
     const needsRefresh = hasLti || !getAccessToken();
-
     const [isRefreshing, setIsRefreshing] = useState(() => needsRefresh);
 
     useEffect(() => {
         if (!needsRefresh) return;
 
-        api.post('/auth/refresh', {}, { withCredentials: true, silent: true })
+        authApi.post('/auth/refresh', {}, { withCredentials: true, silent: true })
             .then(async res => {
                 localStorage.setItem('access_token', res.data.access_token);
                 await refreshUser();
@@ -27,7 +30,7 @@ const ProtectedRoute = () => {
                 }
             })
             .catch(() => {
-                navigate('/403', { replace: true });
+                navigate(redirectTo, { replace: true });
             })
             .finally(() => {
                 setIsRefreshing(false);
@@ -36,7 +39,13 @@ const ProtectedRoute = () => {
 
     if (isLoading || isRefreshing) return <div>Загрузка...</div>;
 
-    return isAuthenticated ? <Outlet /> : <Navigate to="/403" replace />;
+    if (!isAuthenticated) return <Navigate to={redirectTo} replace />;
+
+    if (roles && roles.length > 0 && !roles.includes(user?.role ?? '')) {
+        return <Navigate to={redirectTo} replace />;
+    }
+
+    return <Outlet />;
 };
 
 export default ProtectedRoute;

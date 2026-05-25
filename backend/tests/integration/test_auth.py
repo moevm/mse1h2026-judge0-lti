@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 pytestmark = pytest.mark.integration
@@ -8,7 +6,7 @@ pytestmark = pytest.mark.integration
 @pytest.mark.asyncio
 async def test_login_success(client, create_test_user):
     """Успешный вход"""
-    create_test_user(username="logintest", password="correctpass")
+    await create_test_user(username="logintest", password="correctpass")
 
     response = await client.post(
         "/api/auth/login", json={"username": "logintest", "password": "correctpass"}
@@ -25,7 +23,7 @@ async def test_login_success(client, create_test_user):
 @pytest.mark.asyncio
 async def test_login_wrong_password(client, create_test_user):
     """Неверный пароль"""
-    create_test_user(username="wrongpassuser", password="correctpass")
+    await create_test_user(username="wrongpassuser", password="correctpass")
 
     response = await client.post(
         "/api/auth/login",
@@ -50,14 +48,13 @@ async def test_login_nonexistent_user(client):
 @pytest.mark.asyncio
 async def test_refresh_success(client, create_test_user):
     """Успешное обновление токена"""
-    create_test_user(username="refreshuser", password="correctpass")
+    await create_test_user(username="refreshuser", password="correctpass")
 
     login_resp = await client.post(
         "/api/auth/login",
         json={"username": "refreshuser", "password": "correctpass"},
     )
     refresh_token = login_resp.cookies["refresh_token"]
-    time.sleep(1)
 
     refresh_resp = await client.post(
         "/api/auth/refresh", cookies={"refresh_token": refresh_token}
@@ -92,7 +89,7 @@ async def test_refresh_invalid_token(client):
 @pytest.mark.asyncio
 async def test_logout_success(client, create_test_user):
     """Успешный выход"""
-    create_test_user(username="logoutuser", password="correctpass")
+    await create_test_user(username="logoutuser", password="correctpass")
 
     login_resp = await client.post(
         "/api/auth/login",
@@ -125,7 +122,7 @@ async def test_logout_without_token(client):
 @pytest.mark.asyncio
 async def test_session_success(client, create_test_user):
     """Успешное получение сессии"""
-    create_test_user(username="sessionuser", password="correctpass")
+    await create_test_user(username="sessionuser", password="correctpass")
 
     login_resp = await client.post(
         "/api/auth/login",

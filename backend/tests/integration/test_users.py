@@ -9,8 +9,8 @@ class TestGetAllUsers:
     @pytest.mark.asyncio
     async def test_get_all_users_success(self, client, create_test_user):
         """Успешное получение списка пользователей"""
-        create_test_user(username="user1", full_name="User One")
-        create_test_user(username="user2", full_name="User Two")
+        await create_test_user(username="user1", full_name="User One")
+        await create_test_user(username="user2", full_name="User Two")
 
         response = await client.get("/api/users/")
 
@@ -31,9 +31,9 @@ class TestGetAllUsers:
     @pytest.mark.asyncio
     async def test_get_all_users_with_search(self, client, create_test_user):
         """Фильтрация пользователей по поиску"""
-        create_test_user(username="john_doe", full_name="John Doe")
-        create_test_user(username="jane_doe", full_name="Jane Doe")
-        create_test_user(username="bob_smith", full_name="Bob Smith")
+        await create_test_user(username="john_doe", full_name="John Doe")
+        await create_test_user(username="jane_doe", full_name="Jane Doe")
+        await create_test_user(username="bob_smith", full_name="Bob Smith")
 
         response = await client.get("/api/users/?search=doe")
 
@@ -47,8 +47,8 @@ class TestGetAllUsers:
     @pytest.mark.asyncio
     async def test_get_all_users_exclude_deleted(self, client, create_test_user):
         """Исключение удаленных пользователей"""
-        create_test_user(username="active_user")
-        create_test_user(username="deleted_user", deleted=True)
+        await create_test_user(username="active_user")
+        await create_test_user(username="deleted_user", deleted=True)
 
         response = await client.get("/api/users/?include_deleted=false")
 
@@ -60,8 +60,8 @@ class TestGetAllUsers:
     @pytest.mark.asyncio
     async def test_get_all_users_include_deleted(self, client, create_test_user):
         """Включение удаленных пользователей"""
-        create_test_user(username="active_user")
-        create_test_user(username="deleted_user", deleted=True)
+        await create_test_user(username="active_user")
+        await create_test_user(username="deleted_user", deleted=True)
 
         response = await client.get("/api/users/?include_deleted=true")
 
@@ -76,7 +76,7 @@ class TestGetUser:
     @pytest.mark.asyncio
     async def test_get_user_success(self, client, create_test_user):
         """Успешное получение пользователя по ID"""
-        user = create_test_user(username="target_user", full_name="Target User")
+        user = await create_test_user(username="target_user", full_name="Target User")
 
         response = await client.get(f"/api/users/{user.id}")
 
@@ -100,7 +100,7 @@ class TestUpdateUser:
     @pytest.mark.asyncio
     async def test_update_user_success(self, client, create_test_user):
         """Успешное обновление пользователя"""
-        user = create_test_user(full_name="Original Name", role="student")
+        user = await create_test_user(full_name="Original Name", role="student")
 
         response = await client.patch(
             f"/api/users/{user.id}",
@@ -115,7 +115,7 @@ class TestUpdateUser:
     @pytest.mark.asyncio
     async def test_update_user_partial(self, client, create_test_user):
         """Частичное обновление пользователя"""
-        user = create_test_user(full_name="Original Name", role="student")
+        user = await create_test_user(full_name="Original Name", role="student")
 
         response = await client.patch(
             f"/api/users/{user.id}", json={"full_name": "Only Name Updated"}
@@ -140,7 +140,7 @@ class TestDeleteUser:
     @pytest.mark.asyncio
     async def test_delete_user_success(self, client, create_test_user):
         """Успешное мягкое удаление пользователя"""
-        user = create_test_user(username="to_delete")
+        user = await create_test_user(username="to_delete")
 
         response = await client.delete(f"/api/users/{user.id}")
 
@@ -163,7 +163,7 @@ class TestFullUserFlow:
 
     @pytest.mark.asyncio
     async def test_full_user_flow(self, client, create_test_user):
-        user = create_test_user(
+        user = await create_test_user(
             username="flow_user", full_name="Flow User", role="student"
         )
 

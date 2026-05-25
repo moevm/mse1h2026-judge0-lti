@@ -17,8 +17,8 @@ class TestGetModules:
     @pytest.mark.asyncio
     async def test_get_modules_with_data(self, client, create_test_module):
         """Получение списка модулей с данными"""
-        create_test_module(title="Module 1", description="Desc 1")
-        create_test_module(title="Module 2", description="Desc 2")
+        await create_test_module(title="Module 1", description="Desc 1")
+        await create_test_module(title="Module 2", description="Desc 2")
 
         response = await client.get("/api/modules/")
 
@@ -29,9 +29,9 @@ class TestGetModules:
     @pytest.mark.asyncio
     async def test_get_modules_with_search(self, client, create_test_module):
         """Фильтрация модулей по поиску"""
-        create_test_module(title="Python Basics", description="Learn Python")
-        create_test_module(title="Java Basics", description="Learn Java")
-        create_test_module(title="Advanced Python", description="Advanced topics")
+        await create_test_module(title="Python Basics", description="Learn Python")
+        await create_test_module(title="Java Basics", description="Learn Java")
+        await create_test_module(title="Advanced Python", description="Advanced topics")
 
         response = await client.get("/api/modules/?search=Python")
 
@@ -49,7 +49,7 @@ class TestGetModule:
     @pytest.mark.asyncio
     async def test_get_module_success(self, client, create_test_module):
         """Получение модуля по ID"""
-        module = create_test_module(title="Test Module", description="Test Desc")
+        module = await create_test_module(title="Test Module", description="Test Desc")
 
         response = await client.get(f"/api/modules/{module.id}")
 
@@ -100,7 +100,7 @@ class TestPatchModule:
     @pytest.mark.asyncio
     async def test_patch_module_success(self, client, create_test_module):
         """Успешное обновление модуля"""
-        module = create_test_module(title="Original Title", description="Original Desc")
+        module = await create_test_module(title="Original Title", description="Original Desc")
 
         response = await client.patch(
             f"/api/modules/{module.id}", json={"title": "Updated Title"}
@@ -125,7 +125,7 @@ class TestDeleteModule:
     @pytest.mark.asyncio
     async def test_delete_module_success(self, client, create_test_module):
         """Успешное удаление модуля"""
-        module = create_test_module(title="To Delete")
+        module = await create_test_module(title="To Delete")
 
         response = await client.delete(f"/api/modules/{module.id}")
 
@@ -148,7 +148,7 @@ class TestGetModuleTasks:
     @pytest.mark.asyncio
     async def test_get_module_tasks_empty(self, client, create_test_module):
         """Получение задач пустого модуля"""
-        module = create_test_module(title="Empty Module")
+        module = await create_test_module(title="Empty Module")
 
         response = await client.get(f"/api/modules/{module.id}/tasks")
 
@@ -169,9 +169,9 @@ class TestAddTasksToModule:
     async def test_add_tasks_success(
         self, client, create_test_module, create_test_tasks
     ):
-        task1, task2, task3 = create_test_tasks(3)
+        task1, task2, task3 = await create_test_tasks(3)
 
-        module = create_test_module(title="Module With Tasks")
+        module = await create_test_module(title="Module With Tasks")
 
         response = await client.post(
             f"/api/modules/{module.id}/tasks",
@@ -194,7 +194,7 @@ class TestAddTasksToModule:
     @pytest.mark.asyncio
     async def test_add_tasks_with_duplicates(self, client, create_test_module):
         """Добавление дублирующихся задач в запросе"""
-        module = create_test_module(title="Module")
+        module = await create_test_module(title="Module")
 
         response = await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [1, 1, 2, 2]}
@@ -211,9 +211,9 @@ class TestRemoveTaskFromModule:
     async def test_remove_task_success(
         self, client, create_test_module, create_test_tasks
     ):
-        task1, task2, task3 = create_test_tasks(3)
+        task1, task2, task3 = await create_test_tasks(3)
 
-        module = create_test_module(title="Module")
+        module = await create_test_module(title="Module")
 
         await client.post(
             f"/api/modules/{module.id}/tasks",
@@ -221,10 +221,12 @@ class TestRemoveTaskFromModule:
         )
 
         response = await client.delete(f"/api/modules/{module.id}/tasks/{task1.id}")
-
+        resp = await client.get(f"/api/modules/{module.id}")
+        print(resp.json())
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == module.id
+        # print(data["tasks"])
         task_ids = [task["id"] for task in data["tasks"]]
         assert task1.id not in task_ids
 
@@ -243,9 +245,9 @@ class TestReorderTasks:
     async def test_reorder_tasks_success(
         self, client, create_test_module, create_test_tasks
     ):
-        task1, task2, task3 = create_test_tasks(3)
+        task1, task2, task3 = await create_test_tasks(3)
 
-        module = create_test_module(title="Module")
+        module = await create_test_module(title="Module")
 
         await client.post(
             f"/api/modules/{module.id}/tasks",
@@ -270,7 +272,7 @@ class TestReorderTasks:
     @pytest.mark.asyncio
     async def test_reorder_tasks_module_not_found(self, client, create_test_tasks):
         """Изменение порядка в несуществующем модуле"""
-        tasks = create_test_tasks(2)
+        tasks = await create_test_tasks(2)
 
         response = await client.patch(
             "/api/modules/999/tasks/reorder",
@@ -289,10 +291,10 @@ class TestReorderTasks:
         self, client, create_test_module, create_test_tasks
     ):
         """Изменение порядка с дублирующимися order"""
-        tasks = create_test_tasks(2)
+        tasks = await create_test_tasks(2)
         task1, task2 = tasks
 
-        module = create_test_module(title="Module")
+        module = await create_test_module(title="Module")
 
         await client.post(
             f"/api/modules/{module.id}/tasks", json={"task_ids": [task1.id, task2.id]}
@@ -316,7 +318,7 @@ class TestFullModuleFlow:
 
     @pytest.mark.asyncio
     async def test_full_module_flow(self, client, create_test_tasks):
-        tasks = create_test_tasks(3)
+        tasks = await create_test_tasks(3)
         task1, task2, task3 = tasks
 
         create_response = await client.post(

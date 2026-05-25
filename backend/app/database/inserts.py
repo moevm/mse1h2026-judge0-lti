@@ -1,4 +1,5 @@
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import (
     User,
@@ -12,14 +13,13 @@ from app.database.models import (
     UserTypeEnum,
     TaskTest,
 )
-from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.core.config import get_settings
 settings = get_settings()
 
 
-def insert_languages(db: Session) -> list[Language]:
+async def insert_languages(db: AsyncSession) -> list[Language]:
     languages = [
         Language(id=43, language="Plain Text"),
         Language(id=44, language="Executable"),
@@ -70,11 +70,11 @@ def insert_languages(db: Session) -> list[Language]:
         Language(id=89, language="Multi-file program"),
     ]
     db.add_all(languages)
-    db.flush()
+    await db.flush()
     return languages
 
 
-def insert_users(db: Session) -> list[User]:
+async def insert_users(db: AsyncSession) -> list[User]:
     users = [
         User(id=1, username=settings.admin_username,        full_name="Администратор",      role=UserTypeEnum.admin, password_hash=hash_password(settings.admin_password)),
         User(id=2, username="teacher_ivan", full_name="Иван Петров",        role=UserTypeEnum.teacher),
@@ -82,29 +82,31 @@ def insert_users(db: Session) -> list[User]:
         User(id=4, username="student_oleg", full_name="Олег Васильев",      role=UserTypeEnum.student),
     ]
     db.add_all(users)
-    db.flush()
+    await db.flush()
     return users
 
 
-def insert_modules(db: Session) -> list[Module]:
+async def insert_modules(db: AsyncSession) -> list[Module]:
     modules = [
         Module(
             id=1,
             title="Введение в Python",
             description="Базовые конструкции языка Python",
+            duration_seconds=30
         ),
         Module(
             id=2,
             title="Алгоритмы и структуры",
             description="Сортировки, деревья, графы",
+            duration_seconds=None
         ),
     ]
     db.add_all(modules)
-    db.flush()
+    await db.flush()
     return modules
 
 
-def insert_tasks(db: Session) -> list[Task]:
+async def insert_tasks(db: AsyncSession) -> list[Task]:
     tasks = [
         Task(
             id=1,
@@ -128,22 +130,22 @@ def insert_tasks(db: Session) -> list[Task]:
 
     db.add_all(tasks)
 
-    db.flush()
+    await db.flush()
 
     return tasks
 
 
-def insert_module_task_orders(db: Session) -> None:
+async def insert_module_task_orders(db: AsyncSession) -> None:
     orders = [
         ModuleTaskOrder(module_id=1, task_id=1, order=1),
         ModuleTaskOrder(module_id=1, task_id=2, order=2),
         ModuleTaskOrder(module_id=2, task_id=3, order=1),
     ]
     db.add_all(orders)
-    db.flush()
+    await db.flush()
 
 
-def insert_task_languages(db: Session) -> None:
+async def insert_task_languages(db: AsyncSession) -> None:
     links = [
         TaskLanguage(task_id=1, language_id=71),  # python
         TaskLanguage(task_id=1, language_id=63),  # javascript
@@ -152,10 +154,10 @@ def insert_task_languages(db: Session) -> None:
         TaskLanguage(task_id=3, language_id=62),  # java
     ]
     db.add_all(links)
-    db.flush()
+    await db.flush()
 
 
-def insert_task_tests(db: Session):
+async def insert_task_tests(db: AsyncSession):
     tests = [
         TaskTest(
             task_id=1,
@@ -184,10 +186,10 @@ def insert_task_tests(db: Session):
     ]
 
     db.add_all(tests)
-    db.flush()
+    await db.flush()
 
 
-def insert_solutions(db: Session) -> list[Solution]:
+async def insert_solutions(db: AsyncSession) -> list[Solution]:
     solutions = [
         Solution(
             id=1,
@@ -219,11 +221,11 @@ def insert_solutions(db: Session) -> list[Solution]:
         ),
     ]
     db.add_all(solutions)
-    db.flush()
+    await db.flush()
     return solutions
 
 
-def insert_attempts(db: Session, solutions: list[Solution]) -> None:
+async def insert_attempts(db: AsyncSession, solutions: list[Solution]) -> None:
     attempt1 = Attempt(
         solution_id=solutions[0].id,
         source_code='print("Hello, World!")',
@@ -290,23 +292,23 @@ def insert_attempts(db: Session, solutions: list[Solution]) -> None:
 
     attempts = [attempt1, attempt2, attempt3, attempt4, attempt5]
     db.add_all(attempts)
-    db.flush()
+    await db.flush()
 
 
-def fix_sequence(db: Session, table: str):
-    db.execute(text(f"""
+async def fix_sequence(db: AsyncSession, table: str):
+    await db.execute(text(f"""
         SELECT setval(
             pg_get_serial_sequence('{table}', 'id'),
             (SELECT COALESCE(MAX(id), 1) FROM {table})
         )
     """))
 
-def fix_sequences(db: Session):
+async def fix_sequences(db: AsyncSession):
     for table in ["users", "tasks", "languages", "modules", "solutions", "attempts"]:
-        fix_sequence(db, table)
+        await fix_sequence(db, table)
 
 
-def run_seed(db: Session) -> None:
+async def run_seed(db: AsyncSession) -> None:
     """
     Заполняет базу данных тестовыми данными.
 
@@ -318,34 +320,34 @@ def run_seed(db: Session) -> None:
     """
 
     # Языки программирования — независимая таблица, вставляем первой
-    insert_languages(db)
+    await insert_languages(db)
 
     # Пользователи — тоже независимы от других таблиц
-    insert_users(db)
+    await insert_users(db)
 
     # Модули — контейнеры для задач, нужны раньше самих задач
-    insert_modules(db)
+    await insert_modules(db)
 
     # Задачи — ссылаются на модули (module_id), поэтому после них
-    insert_tasks(db)
+    await insert_tasks(db)
 
-    insert_task_tests(db)
+    await insert_task_tests(db)
 
     # Порядок задач внутри модулей — ссылается и на модули, и на задачи
-    insert_module_task_orders(db)
+    await insert_module_task_orders(db)
 
     # Связь задач с языками — ссылается на tasks и languages
-    insert_task_languages(db)
+    await insert_task_languages(db)
 
     # Решения студентов — ссылаются на пользователей и задачи
-    solutions = insert_solutions(db)
+    solutions = await insert_solutions(db)
 
     # Попытки — ссылаются на решения, поэтому самые последние
-    insert_attempts(db, solutions)
-    fix_sequences(db)
+    await insert_attempts(db, solutions)
+    await fix_sequences(db)
 
     # Фиксируем все изменения в базе одной транзакцией.
     # Если что-то выше упало — db.rollback() в seed_database откатит всё целиком
-    db.commit()
+    await db.commit()
 
     print("OK: Seed data inserted")

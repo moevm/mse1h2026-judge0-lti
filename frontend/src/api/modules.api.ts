@@ -41,19 +41,6 @@ export interface ModulePayload {
     description: string
 }
 
-export interface ModuleSession {
-    id: number
-    user_id: number
-    module_id: number
-    started_at: string
-    expires_at: string | null
-    finished_at: string | null
-}
-
-export interface ModuleSessionResponse {
-    session: ModuleSession | null
-}
-
 export interface ModuleFilters {
     search?: string
     created_from?: string
@@ -76,6 +63,19 @@ export interface TaskFilters {
     sort_order?: 'asc' | 'desc'
 }
 
+export interface ModuleSession {
+    id: number
+    user_id: number
+    module_id: number
+    started_at: string
+    expires_at: string | null
+    finished_at: string | null
+}
+
+export interface ModuleSessionResponse {
+    session: ModuleSession | null
+    server_time_now: string
+}
 
 export const modulesApi = {
     getModules: async (filters?: ModuleFilters): Promise<Module[]> => {
@@ -93,11 +93,6 @@ export const modulesApi = {
 
     getModuleTasks: async (moduleId: number): Promise<Task[]> => {
         const { data } = await api.get<Task[]>(`/modules/${moduleId}/tasks`, { silent: true })
-        return data
-    },
-
-    startModuleSession: async (moduleId: number): Promise<ModuleSessionResponse> => {
-        const { data } = await api.post<ModuleSessionResponse>(`/modules/${moduleId}/start`)
         return data
     },
 
@@ -128,6 +123,21 @@ export const modulesApi = {
                 order: index + 1,
             })),
         })
+        return data
+    },
+
+    startModuleSession: async (moduleId: number): Promise<ModuleSessionResponse> => {
+        const { data } = await api.post<ModuleSessionResponse>(`/modules/${moduleId}/start`)
+        return data
+    },
+
+    getModuleSession: async (moduleId: number): Promise<ModuleSessionResponse> => {
+        const { data } = await api.get<ModuleSessionResponse>(`/modules/${moduleId}/session`, { silent: true })
+        return data
+    },
+
+    finishModuleSession: async (moduleId: number): Promise<ModuleSessionResponse> => {
+        const { data } = await api.get<ModuleSessionResponse>(`/modules/${moduleId}/session/finish`)
         return data
     },
 }

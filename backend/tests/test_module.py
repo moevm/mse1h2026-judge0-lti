@@ -5,7 +5,6 @@ with patch("app.database.database.create_engine"), \
     patch("app.database.models.Base.metadata.create_all"):
     from fastapi.testclient import TestClient
     from app.main import app
-    from app.database.database import session_generator
     from app.services.module import get_module_service
 
 client = TestClient(app)

@@ -3,7 +3,6 @@ testpaths = [
     "tests/functional",
     "tests/integration",
 ]
-asyncio_default_fixture_loop_scope = "function"
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*", "*Test"]
 python_functions = ["test_*", "*_test"]
@@ -24,5 +23,7 @@ markers = [
 ]
 
 asyncio_mode = "auto"
+
+asyncio_default_fixture_loop_scope = "session"
 
 norecursedirs = [".git", "__pycache__", "venv", ".venv", ".env", ".pytest_cache"]

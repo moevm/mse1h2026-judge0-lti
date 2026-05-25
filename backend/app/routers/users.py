@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from app.services.users import UserService, get_user_service, UserNotFoundException
+from fastapi import APIRouter, Depends
+
+from app.database.models import UserTypeEnum
+from app.services.users import UserService, get_user_service
 from app.schemas.user import UserResponse, UserFilter, UserUpdateRequest
 from app.mappers.user import UserMapper
-from app.core.dependencies import get_current_user_payload, get_current_admin
+from app.core.dependencies import get_current_user_payload, get_current_admin, require_roles
 from app.schemas.auth import TokenUser
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(
+async def get_me(
     current_user: TokenUser = Depends(get_current_user_payload),
     service: UserService = Depends(get_user_service),
 ):
-    user, solved_count = service.get_with_solved_count(current_user.user_id)
+    user, solved_count = await service.get_with_solved_count(current_user.user_id)
     return UserMapper.to_response(user, solved_count)
 
 
@@ -29,12 +31,12 @@ def get_me(
         "- **include_deleted** - показывать мягко удалённых пользователей (true/false)"
     ),
 )
-def get_all_users(
+async def get_all_users(
     filters: UserFilter = Depends(),
-    current_user: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: UserService = Depends(get_user_service),
 ):
-    rows = service.get_all(filters)
+    rows = await service.get_all(filters)
     return [UserMapper.to_response(user, solved_count) for user, solved_count in rows]
 
 
@@ -47,12 +49,12 @@ def get_all_users(
         "Доступно только для администратора."
     ),
 )
-def get_user(
+async def get_user(
     user_id: int,
-    current_user: TokenUser = Depends(get_current_admin),
+    user: TokenUser = Depends(require_roles(UserTypeEnum.admin, UserTypeEnum.teacher)),
     service: UserService = Depends(get_user_service),
 ):
-    user, solved_count = service.get_with_solved_count(user_id)
+    user, solved_count = await service.get_with_solved_count(user_id)
     return UserMapper.to_response(user, solved_count)
 
 
@@ -67,14 +69,14 @@ def get_user(
         "- **role** - новая роль (admin/student/teacher)"
     ),
 )
-def update_user(
+async def update_user(
     user_id: int,
     body: UserUpdateRequest,
     current_user: TokenUser = Depends(get_current_admin),
     service: UserService = Depends(get_user_service),
 ):
-    user = service.update(user_id, body)
-    solved_count = service.repo.get_solved_count(user_id)
+    user = await service.update(user_id, body)
+    solved_count = await service.repo.get_solved_count(user_id)
     return UserMapper.to_response(user, solved_count)
 
 
@@ -87,9 +89,9 @@ def update_user(
         "Пользователь не удаляется из БД, но скрывается из списков. "
     ),
 )
-def delete_user(
+async def delete_user(
     user_id: int,
     current_user: TokenUser = Depends(get_current_admin),
     service: UserService = Depends(get_user_service),
 ):
-    service.delete(user_id)
+    await service.delete(user_id)

@@ -1,7 +1,9 @@
 from fastapi.params import Depends
 import jwt
+import uuid
 from datetime import datetime, timedelta, timezone
 from app.core.config import Settings, get_settings
+from app.database.models import UserTypeEnum
 
 ALGORITHM = "HS256"
 EXPIRE_HOURS = 24
@@ -15,10 +17,10 @@ class JwtService:
         self.access_expire_minutes = settings.access_token_expire_minutes
         self.refresh_expire_days = settings.refresh_token_expire_days
 
-    def create_access_token(self, user_id: int, role: str) -> str:
+    def create_access_token(self, user_id: int, role: UserTypeEnum) -> str:
         payload = {
             "user_id": user_id,
-            "role": role,
+            "role": role.value,
             "type": "access",
             "exp": datetime.now(timezone.utc) + timedelta(minutes=self.access_expire_minutes),
         }
@@ -31,6 +33,7 @@ class JwtService:
         payload = {
             "user_id": user_id,
             "type": "refresh",
+            "jti": str(uuid.uuid4()),
             "exp": expire_at,
         }
         token = jwt.encode(

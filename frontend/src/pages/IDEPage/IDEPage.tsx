@@ -9,16 +9,25 @@ import ConsoleSection, {
 import Header from '../../components/Header/Header';
 import {useCheckSolution} from '../../hooks/queries/useCheckSolution.ts';
 import {useRunSolution} from '../../hooks/queries/useRunSolution.ts';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {mapServerLangToMonaco} from '../../utils/languageMap.ts';
 import type {Task} from '../../api/modules.api';
 import {useSearchParams} from "react-router-dom";
+import { useFinishModuleSession, useModuleSession } from '../../hooks/queries/useModuleSession.ts';
+import { useAuth } from '../../hooks/queries/useAuth.ts';
 
 const STORAGE_KEY = 'ide-task-codes';
 
 const IDEPage = () => {
     const [searchParams] = useSearchParams();
     const moduleId = Number(searchParams.get('module_id'));
+
+    const { data: sessionData, refetch: refetchSession } = useModuleSession(moduleId);
+    const { mutate: finishSession } = useFinishModuleSession();
+    
+    // Таймер
+    const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+    const [isSessionExpired, setIsSessionExpired] = useState(false);
 
     // Задачи
     const {mutate: checkSolution, isPending: isChecking} = useCheckSolution();
@@ -122,7 +131,69 @@ const IDEPage = () => {
         );
     };
 
+    useEffect(() => {
+        if (!sessionData?.session || sessionData.session.finished_at) {
+            setTimeRemaining(null);
+            setIsSessionExpired(false);
+            return;
+        }
+
+        const session = sessionData.session;
+        const serverTime = new Date(sessionData.server_time_now);
+        
+        if (session.expires_at && new Date(session.expires_at) <= serverTime) {
+            setIsSessionExpired(true);
+            setTimeRemaining(0);
+            return;
+        }
+
+        if (!session.expires_at) {
+            setTimeRemaining(null);
+            setIsSessionExpired(false);
+            return;
+        }
+
+        const calculateTimeRemaining = () => {
+            const now = new Date(sessionData.server_time_now);
+            const expiresAt = new Date(session.expires_at!);
+            const clientNow = new Date();
+            const timeDiff = clientNow.getTime() - now.getTime();
+            const remaining = expiresAt.getTime() - (clientNow.getTime() - timeDiff);
+            
+            return Math.max(0, Math.floor(remaining / 1000));
+        };
+
+        const updateTimer = () => {
+            const remaining = calculateTimeRemaining();
+            setTimeRemaining(remaining);
+            
+            if (remaining <= 0) {
+                setIsSessionExpired(true);
+                finishSession(moduleId);
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+
+        return () => clearInterval(interval);
+    }, [sessionData, refetchSession]);
+
+    const canExecute = !!(!isSessionExpired && sessionData?.session && !sessionData.session.finished_at);
+    const { user } = useAuth();
     const editorLanguage = mapServerLangToMonaco(selectedLanguage || undefined);
+
+    if (!sessionData?.session || sessionData.session.finished_at || isSessionExpired) {
+        return (
+            <div className={styles.expiredSession}>
+                <h2>Время вышло</h2>
+                <p>Время прохождения модуля закончилось.</p>
+                <button onClick={() => window.location.href = `/?module_id=${moduleId}`}>
+                    Вернуться к модулю
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -132,6 +203,9 @@ const IDEPage = () => {
                 onRun={handleRun}
                 onCheck={handleCheck}
                 languages={availableLanguages}
+                timeRemaining={timeRemaining}
+                canExecute={canExecute}
+                user={user}
             />
 
             <PanelGroup direction="horizontal">

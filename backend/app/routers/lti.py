@@ -29,8 +29,8 @@ async def lti_launch(
     full_name = form_data.get("lis_person_name_full", f"User {user_id}")
     roles = form_data.get("roles", "Student")
 
-    user = lti_service.upsert_user(user_id, username, full_name, roles)
-    access_token, refresh_token = auth_service.issue_lti_session(user)
+    user = await lti_service.upsert_user(user_id, username, full_name, roles)
+    access_token, refresh_token = await auth_service.issue_lti_session(user)
 
     response = RedirectResponse(
         url=f"http://localhost?lti=1&module_id={module_id}",
@@ -96,8 +96,8 @@ async def lti13_launch(
     custom = decoded.get("https://purl.imsglobal.org/spec/lti/claim/custom", {})
     module_id = custom.get("module_id") or decoded.get("custom_module_id") or 1
 
-    user = lti_service.upsert_user(user_id, username, full_name, roles)
-    _, refresh_token = auth_service.issue_lti_session(user)
+    user = await lti_service.upsert_user(user_id, username, full_name, roles)
+    _, refresh_token = await auth_service.issue_lti_session(user)
 
     response = RedirectResponse(
         url=f"http://localhost?lti=1&module_id={module_id}",
@@ -120,11 +120,11 @@ async def public_key():
 
 
 @router.get("/session", summary="Exchange refresh cookie → access token")
-def session(request: Request, auth_service: AuthService = Depends(get_auth_service)):
+async def session(request: Request, auth_service: AuthService = Depends(get_auth_service)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise RefreshTokenMissingException()
-    user = auth_service.get_user_from_refresh(refresh_token)
+    user = await auth_service.get_user_from_refresh(refresh_token)
 
     return {"access_token": auth_service.issue_access_token(user)}
 

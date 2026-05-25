@@ -4,6 +4,7 @@
 
 ### Требования 
 
+- Запуск только на Linux
 - Docker
 - docker-compose (необязательно, нужен для запуска скрипта start-example.sh)
 

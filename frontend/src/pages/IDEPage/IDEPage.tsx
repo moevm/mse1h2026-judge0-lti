@@ -15,6 +15,7 @@ import type {Task} from '../../api/modules.api';
 import {useSearchParams} from "react-router-dom";
 import { useFinishModuleSession, useModuleSession } from '../../hooks/queries/useModuleSession.ts';
 import { useAuth } from '../../hooks/queries/useAuth.ts';
+import { useCheckAttempts } from '../../hooks/queries/useCheckAttempts.ts';
 
 const STORAGE_KEY = 'ide-task-codes';
 
@@ -33,6 +34,9 @@ const IDEPage = () => {
     const {mutate: checkSolution, isPending: isChecking} = useCheckSolution();
     const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
+
+    // Попытки
+    const { data: attemptsData, refetch: refetchAttempts } = useCheckAttempts(activeTaskId);
 
     // Запуск решения 
     const {mutate: runSolution, isPending: isRunning} = useRunSolution();
@@ -56,6 +60,12 @@ const IDEPage = () => {
             setSelectedLanguage(null);
         }
     };
+
+    useEffect(() => {
+        if (activeTaskId) {
+            refetchAttempts();
+        }
+    }, [activeTaskId, refetchAttempts]);
 
     const handleStdinChange = (value: string | null) => {
         setStdinValue(value);
@@ -126,6 +136,7 @@ const IDEPage = () => {
                         [activeTaskId]: data,
                     }));
                     setConsoleTab('output');
+                    refetchAttempts();
                 },
             }
         );
@@ -206,6 +217,8 @@ const IDEPage = () => {
                 timeRemaining={timeRemaining}
                 canExecute={canExecute}
                 user={user}
+                attemptsUsed={attemptsData?.attempts_used}
+                maxAttempts={attemptsData?.max_attempts}
             />
 
             <PanelGroup direction="horizontal">

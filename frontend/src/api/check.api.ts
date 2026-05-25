@@ -5,4 +5,8 @@ export const checkApi = {
         const response = await api.post(`/check/${taskId}`, data)
         return response.data
     },
+    getAttemptsInfo: async (taskId: number) => {
+        const response = await api.get(`/check/${taskId}/attempts`)
+        return response.data
+    },
 }

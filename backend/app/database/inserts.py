@@ -92,7 +92,7 @@ async def insert_modules(db: AsyncSession) -> list[Module]:
             id=1,
             title="Введение в Python",
             description="Базовые конструкции языка Python",
-            duration_seconds=30
+            duration_seconds=300
         ),
         Module(
             id=2,
@@ -113,12 +113,14 @@ async def insert_tasks(db: AsyncSession) -> list[Task]:
             title="Hello World",
             description="Напишите программу, которая выводит 'Hello, World!'",
             timeout=5,
+            max_attempts=2
         ),
         Task(
             id=2,
             title="Сумма двух чисел",
             description="Дано два числа. Выведите их сумму.",
             timeout=5,
+            max_attempts=5
         ),
         Task(
             id=3,

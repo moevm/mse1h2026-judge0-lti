@@ -20,6 +20,8 @@ interface HeaderProps {
     timeRemaining: number | null;
     canExecute: boolean;
     user: User | null;
+    attemptsUsed?: number;
+    maxAttempts?: number | null;
 }
 
 const Header = ({
@@ -30,7 +32,9 @@ const Header = ({
     languages,
     timeRemaining,
     canExecute,
-    user
+    user,
+    attemptsUsed = 0,
+    maxAttempts = null
 }: HeaderProps) => {
 
     const [formattedTime, setFormattedTime] = useState<string>('');
@@ -54,6 +58,10 @@ const Header = ({
         
         setFormattedTime(formatTime(timeRemaining));
     }, [timeRemaining]);
+
+    const attemptsText = maxAttempts === null 
+        ? `${attemptsUsed}/∞`
+        : `${attemptsUsed}/${maxAttempts}`
 
     return (
         <div className={styles.header}>
@@ -98,7 +106,7 @@ const Header = ({
                 <div className={styles.infoBadge}>
                     <img src={attemptIcon} alt="attempts"/>
                     <span className={styles.attemptText}>
-                        3/5 попыток
+                        {attemptsText} попыток
                     </span>
                 </div>
                 <div className={styles.infoBadge}>

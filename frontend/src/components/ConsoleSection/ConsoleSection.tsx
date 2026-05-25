@@ -92,10 +92,6 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                             <div className={styles.messageInfo}>Нет вывода</div>
                         ) : (
                             <div className={styles.outputContainer}>
-                                <div className={output.success ? styles.messageSuccess : styles.messageError}>
-                                    {output.success ? "Passed" : "Failed"}
-                                </div>
-
                                 {(score !== null || passedText) && (
                                     <div className={styles.resultMetrics}>
                                         {score !== null && (
@@ -112,6 +108,10 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                                         )}
                                     </div>
                                 )}
+
+                                <div className={output.success ? styles.messageSuccess : styles.messageError}>
+                                    {output.success ? "Passed" : "Failed"}
+                                </div>
 
                                 {output.comment && (
                                     <div className={styles.messageComment}>

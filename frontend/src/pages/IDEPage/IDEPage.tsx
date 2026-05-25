@@ -23,12 +23,13 @@ const IDEPage = () => {
     const [searchParams] = useSearchParams();
     const moduleId = Number(searchParams.get('module_id'));
 
-    const { data: sessionData, refetch: refetchSession } = useModuleSession(moduleId);
-    const { mutate: finishSession } = useFinishModuleSession();
+    const { data: sessionData } = useModuleSession(moduleId);
+    const { mutate: finishSession, isPending: isFinishingSession } = useFinishModuleSession();
     
     // Таймер
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
     const [isSessionExpired, setIsSessionExpired] = useState(false);
+    const [sessionEndReason, setSessionEndReason] = useState<'manual' | 'expired' | null>(null);
 
     // Задачи
     const {mutate: checkSolution, isPending: isChecking} = useCheckSolution();
@@ -142,17 +143,35 @@ const IDEPage = () => {
         );
     };
 
+    const handleFinish = () => {
+        if (!moduleId || !sessionData?.session || sessionData.session.finished_at) return;
+        setSessionEndReason('manual');
+        finishSession(moduleId, {
+            onSuccess: () => {
+                setIsSessionExpired(false);
+            },
+        });
+    };
+
     useEffect(() => {
-        if (!sessionData?.session || sessionData.session.finished_at) {
+        if (!sessionData?.session) {
             setTimeRemaining(null);
             setIsSessionExpired(false);
             return;
         }
 
         const session = sessionData.session;
+        if (session.finished_at) {
+            setTimeRemaining(null);
+            setIsSessionExpired(false);
+            return;
+        }
+
+        setSessionEndReason(null);
         const serverTime = new Date(sessionData.server_time_now);
         
         if (session.expires_at && new Date(session.expires_at) <= serverTime) {
+            setSessionEndReason('expired');
             setIsSessionExpired(true);
             setTimeRemaining(0);
             return;
@@ -164,13 +183,14 @@ const IDEPage = () => {
             return;
         }
 
+        const serverStartedAt = new Date(sessionData.server_time_now).getTime();
+        const clientStartedAt = Date.now();
+        const expiresAt = new Date(session.expires_at).getTime();
+
         const calculateTimeRemaining = () => {
-            const now = new Date(sessionData.server_time_now);
-            const expiresAt = new Date(session.expires_at!);
-            const clientNow = new Date();
-            const timeDiff = clientNow.getTime() - now.getTime();
-            const remaining = expiresAt.getTime() - (clientNow.getTime() - timeDiff);
-            
+            const estimatedServerNow = serverStartedAt + (Date.now() - clientStartedAt);
+            const remaining = expiresAt - estimatedServerNow;
+
             return Math.max(0, Math.floor(remaining / 1000));
         };
 
@@ -179,26 +199,41 @@ const IDEPage = () => {
             setTimeRemaining(remaining);
             
             if (remaining <= 0) {
+                setSessionEndReason('expired');
                 setIsSessionExpired(true);
                 finishSession(moduleId);
+                return true;
             }
+
+            return false;
         };
 
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
+        if (updateTimer()) return;
+
+        const interval = setInterval(() => {
+            if (updateTimer()) {
+                clearInterval(interval);
+            }
+        }, 1000);
 
         return () => clearInterval(interval);
-    }, [sessionData, refetchSession]);
+    }, [sessionData, finishSession, moduleId]);
 
     const canExecute = !!(!isSessionExpired && sessionData?.session && !sessionData.session.finished_at);
     const { user } = useAuth();
     const editorLanguage = mapServerLangToMonaco(selectedLanguage || undefined);
 
     if (!sessionData?.session || sessionData.session.finished_at || isSessionExpired) {
+        const isTimeExpired = sessionEndReason === 'expired' || (isSessionExpired && sessionEndReason !== 'manual');
+
         return (
             <div className={styles.expiredSession}>
-                <h2>Время вышло</h2>
-                <p>Время прохождения модуля закончилось.</p>
+                <h2>{isTimeExpired ? 'Время вышло' : 'Прохождение завершено'}</h2>
+                <p>
+                    {isTimeExpired
+                        ? 'Время прохождения модуля закончилось.'
+                        : 'Вы завершили прохождение модуля.'}
+                </p>
                 <button onClick={() => window.location.href = `/?module_id=${moduleId}`}>
                     Вернуться к модулю
                 </button>
@@ -216,6 +251,8 @@ const IDEPage = () => {
                 languages={availableLanguages}
                 timeRemaining={timeRemaining}
                 canExecute={canExecute}
+                onFinish={handleFinish}
+                isFinishing={isFinishingSession}
                 user={user}
                 attemptsUsed={attemptsData?.attempts_used}
                 maxAttempts={attemptsData?.max_attempts}

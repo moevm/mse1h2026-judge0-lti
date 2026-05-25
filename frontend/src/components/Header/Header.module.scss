@@ -90,15 +90,31 @@
   color: $text-color;
 }
 
-.themeBlock{
+.finishButton{
+  min-height: 40px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
+  border-radius: 8px;
+  background-color: #fceeee;
+  color: #b3261e;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 14px 14px;
+  transition: background-color 0.2s, opacity 0.2s;
 }
 
-.logoutBlock{
-    border: none;
-  cursor: pointer;
-  padding: 14px 14px;
+.finishButton:hover:not(:disabled){
+  background-color: #f9dedc;
 }
 
+.finishButton:disabled{
+  cursor: default;
+  opacity: 0.55;
+}
+
+.finishButton md-icon{
+  font-size: 20px;
+}

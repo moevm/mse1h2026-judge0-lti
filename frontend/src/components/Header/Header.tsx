@@ -3,9 +3,7 @@ import runIcon from '../../assets/icons/run_icon.svg';
 import submitIcon from '../../assets/icons/submit_icon.svg';
 import attemptIcon from '../../assets/icons/attempt_icon.svg';
 import timeIcon from '../../assets/icons/time_icon.svg';
-import themeIcon from '../../assets/icons/theme_icon.svg';
 import profileIcon from '../../assets/icons/profile_icon.svg';
-import logoutIcon from '../../assets/icons/logout_icon.svg';
 import IconButton from '../../UI/IconButton/IconButton.tsx';
 import { useEffect, useState } from 'react';
 import type { User } from '../../hooks/queries/useAuth.ts';
@@ -19,6 +17,8 @@ interface HeaderProps {
     languages: string[];
     timeRemaining: number | null;
     canExecute: boolean;
+    onFinish: () => void;
+    isFinishing?: boolean;
     user: User | null;
     attemptsUsed?: number;
     maxAttempts?: number | null;
@@ -32,6 +32,8 @@ const Header = ({
     languages,
     timeRemaining,
     canExecute,
+    onFinish,
+    isFinishing = false,
     user,
     attemptsUsed = 0,
     maxAttempts = null
@@ -115,15 +117,18 @@ const Header = ({
                 </div>
             </div>
             <div className={styles.profile}>
-                <button className={`${styles.infoBadge} ${styles.themeBlock}`}>
-                    <img src={themeIcon} alt="theme"/>
-                </button>
                 <div className={styles.infoBadge}>
                     <img src={profileIcon} alt="profile"/>
                     <span className={styles.profileText}>{user?.username ?? 'Гость'}</span>
                 </div>
-                <button className={`${styles.infoBadge} ${styles.logoutBlock}`}>
-                    <img src={logoutIcon} alt="logout"/>
+                <button
+                    type="button"
+                    className={styles.finishButton}
+                    onClick={onFinish}
+                    disabled={!canExecute || isFinishing}
+                >
+                    <md-icon>flag</md-icon>
+                    <span>{isFinishing ? 'Завершение...' : 'Завершить'}</span>
                 </button>
             </div>
         </div>
@@ -131,5 +136,4 @@ const Header = ({
 };
 
 export default Header;
-
 

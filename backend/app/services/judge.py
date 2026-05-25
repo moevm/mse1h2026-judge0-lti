@@ -1,4 +1,7 @@
+import asyncio
 import base64
+import time
+
 import httpx
 from fastapi import Request
 from fastapi.params import Depends
@@ -12,6 +15,20 @@ class JudgeService:
         self.client = client
         self.mock_judge0 = settings.mock_judge0 == "true"
 
+    def _encode(self, text: str) -> str:
+        return base64.b64encode(text.encode("utf-8")).decode()
+
+    def _decode(self, text: str | None) -> str | None:
+        if not text:
+            return None
+        return base64.b64decode(text).decode("utf-8")
+
+    def _decode_result(self, result: dict) -> dict:
+        result["stdout"] = self._decode(result.get("stdout"))
+        result["stderr"] = self._decode(result.get("stderr"))
+        result["compile_output"] = self._decode(result.get("compile_output"))
+        return result
+
     async def submit(
         self, source_code: str, language_id: int, stdin: str, timeout: int
     ) -> dict:
@@ -19,37 +36,73 @@ class JudgeService:
             return {
                 "stdout": "mocked",
                 "stderr": None,
+                "compile_output": None,
                 "status": {"id": 3, "description": "Accepted"},
             }
-        # кодируем код и stdin в base64
-        encoded_code = base64.b64encode(source_code.encode("utf-8")).decode()
-        encoded_stdin = base64.b64encode(stdin.encode("utf-8")).decode()
-        response = await self.client.post(
-            f"{self.judge0_url}/submissions?wait=true",
-            json={
-                "source_code": encoded_code,
+
+        tokens = await self.submit_batch(
+            source_code=source_code,
+            language_id=language_id,
+            tests=[{"stdin": stdin}],
+            timeout=timeout,
+        )
+        results = await self.poll_batch(tokens)
+        return results[0]
+
+    async def submit_batch(
+        self,
+        source_code: str,
+        language_id: int,
+        tests: list[dict],
+        timeout: int,
+    ) -> list[str]:
+        if self.mock_judge0:
+            return [f"mock-token-{i}" for i in range(len(tests))]
+
+        submissions = [
+            {
+                "source_code": self._encode(source_code),
                 "language_id": language_id,
-                "stdin": encoded_stdin,
+                "stdin": self._encode(test["stdin"] or ""),
                 "cpu_time_limit": timeout,
                 "base64_encoded": True,
-            },
+            }
+            for test in tests
+        ]
+
+        response = await self.client.post(
+            f"{self.judge0_url}/submissions/batch?base64_encoded=true",
+            json={"submissions": submissions},
         )
 
         if response.status_code not in (200, 201):
             raise JudgeException()
 
-        result = response.json()
-        # декодируем ответ из base64
-        if result.get("stdout"):
-            result["stdout"] = base64.b64decode(result["stdout"]).decode("utf-8")
-        if result.get("stderr"):
-            result["stderr"] = base64.b64decode(result["stderr"]).decode("utf-8")
-        if result.get("compile_output"):
-            result["compile_output"] = base64.b64decode(
-                result["compile_output"]
-            ).decode("utf-8")
+        return [item["token"] for item in response.json()]
 
-        return result
+    async def poll_batch(
+        self, tokens: list[str], interval: float = 0.5, timeout: float = 60.0
+    ) -> list[dict]:
+        deadline = time.monotonic() + timeout
+
+        while True:
+            if time.monotonic() > deadline:
+                raise JudgeException()
+
+            response = await self.client.get(
+                f"{self.judge0_url}/submissions/batch",
+                params={"tokens": ",".join(tokens), "base64_encoded": "true"},
+            )
+
+            if response.status_code != 200:
+                raise JudgeException()
+
+            results = [self._decode_result(r) for r in response.json()["submissions"]]
+
+            if all(r["status"]["id"] > 2 for r in results):
+                return results
+
+            await asyncio.sleep(interval)
 
 
 def get_judge_service(request: Request, settings: Settings = Depends(get_settings)):

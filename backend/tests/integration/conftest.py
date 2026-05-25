@@ -107,16 +107,29 @@ async def mock_judge_service():
     from app.services.judge import get_judge_service
 
     mock_service = MagicMock()
-    mock_service.execute_code = AsyncMock(
-        return_value={
-            "stdout": "mocked output",
-            "stderr": None,
-            "compile_output": None,
-            "status": {"id": 3, "description": "Accepted"},
-        }
+    mock_service.submit_batch = AsyncMock(
+        side_effect=lambda source_code, language_id, tests, timeout: [
+            f"mock-token-{i}" for i in range(len(tests))
+        ]
+    )
+    mock_service.poll_batch = AsyncMock(
+        side_effect=lambda tokens, **kwargs: [
+            {
+                "token": token,
+                "stdout": "mocked",
+                "stderr": None,
+                "compile_output": None,
+                "status": {"id": 3, "description": "Accepted"},
+                "exit_code": 0,
+                "memory": None,
+                "time": None,
+            }
+            for token in tokens
+        ]
     )
     async def _mock():
         return mock_service
+
     main_app.dependency_overrides[get_judge_service] = _mock
     yield
     main_app.dependency_overrides.pop(get_judge_service, None)

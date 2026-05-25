@@ -12,3 +12,9 @@ class CheckResponse(BaseModel):
     error: Optional[str] = None
     comment: str | None = None
     passed: str
+    attempts_used: int
+    max_attempts: int | None
+
+class AttemptsInfoResponse(BaseModel):
+    attempts_used: int
+    max_attempts: int | None

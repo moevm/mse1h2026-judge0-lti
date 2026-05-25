@@ -3,7 +3,11 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.tasks import InvalidLanguageException, TaskAttemptsExceededException, TaskNotFoundException
+from app.core.exceptions.tasks import (
+    InvalidLanguageException,
+    TaskAttemptsExceededException,
+    TaskNotFoundException,
+)
 from app.database.database import session_generator
 from app.schemas.check import CheckRequest
 from app.services.judge import JudgeService, get_judge_service
@@ -24,8 +28,15 @@ class CheckResult:
     success: bool
     passed: int
     total: int
+    attempts_used: int
+    max_attempts: int | None
     error: str | None = None
     comment: str | None = None
+
+@dataclass
+class AttemptsInfo:
+    attempts_used: int
+    max_attempts: int | None
 
 
 class CheckService:
@@ -47,6 +58,18 @@ class CheckService:
         self.judge = judge
         self.module_session_repo = module_session_repo
 
+    async def get_attempts_info(self, task_id: int, user_id: int) -> AttemptsInfo:
+        task = await self.task_repo.get_by_id(task_id)
+        if not task:
+            raise TaskNotFoundException()
+
+        attempts_used = await self.attempt_repo.count_by_user_and_task(user_id, task_id)
+
+        return AttemptsInfo(
+            attempts_used=attempts_used,
+            max_attempts=task.max_attempts,
+        )
+
     async def check_solution(
         self, task_id: int, user_id: int, body: CheckRequest
     ) -> CheckResult:
@@ -61,7 +84,9 @@ class CheckService:
                 module_id = getattr(link, "module_id", None)
                 if module_id is None:
                     continue
-                active = await self.module_session_repo.get_active_session(user_id, module_id)
+                active = await self.module_session_repo.get_active_session(
+                    user_id, module_id
+                )
                 if active:
                     active_found = True
                     break
@@ -80,140 +105,120 @@ class CheckService:
         solution = await self.solution_repo.get(user_id, task_id)
         if not solution:
             solution = Solution(
-                user_id=user_id,
-                task_id=task_id,
-                is_solved=False,
-                score=0,
+                user_id=user_id, task_id=task_id, is_solved=False, score=0
             )
             solution = await self.solution_repo.create(solution)
             await self.db.flush()
 
         tests = task.tests
         total = len(tests)
+
+        # отправляем все тесты батчем
+        tokens = await self.judge.submit_batch(
+            source_code=body.code,
+            language_id=language.id,
+            tests=[{"stdin": t.stdin, "stdout": t.stdout} for t in tests],
+            timeout=task.timeout,
+        )
+
+        # ждём результаты
+        results = await self.judge.poll_batch(tokens)
+
+        # считаем
         passed = 0
-        final_result = None
-        last_attempt_data = None
+        failed_idx = None
 
-        for test in tests:
-            result = await self.judge.submit(
-                source_code=body.code,
-                language_id=language.id,
-                stdin=test.stdin or "",
-                timeout=task.timeout,
-            )
-
-            expected = (test.stdout or "").strip()
+        for i, result in enumerate(results):
+            expected = (tests[i].stdout or "").strip()
             stdout = (result.get("stdout") or "").strip()
 
-            if result["status"]["id"] not in (3, 4):
-                final_result = CheckResult(
-                    success=False,
-                    passed=passed,
-                    total=total,
-                    error=result.get("stderr")
-                    or result.get("compile_output")
-                    or "Ошибка выполнения",
-                    comment=f'Тест "{test.title}" — {result["status"]["description"]}',
-                )
-                last_attempt_data = {
-                    "status": result["status"]["description"],
-                    "exit_code": result.get("exit_code"),
-                    "stdout": result.get("stdout"),
-                    "stderr": result.get("stderr"),
-                    "compile_output": result.get("compile_output"),
-                    "memory_kb": (
-                        int(result.get("memory"))
-                        if result.get("memory") is not None
-                        else None
-                    ),
-                    "time_ms": (
-                        int(float(result.get("time", 0)) * 1000)
-                        if result.get("time") is not None
-                        else None
-                    ),
-                    "is_solved": False,
-                    "message": final_result.comment,
-                    "score": (passed * 100) // total if total > 0 else 0,
-                }
-                break
-
-            if stdout == expected:
+            if result["status"]["id"] == 3 and stdout == expected:
                 passed += 1
-            else:
-                final_result = CheckResult(
-                    success=False,
-                    passed=passed,
-                    total=total,
-                    error=None,
-                    comment=f'Тест "{test.title}" не прошёл. Ожидалось: "{expected}", получено: "{stdout}"',
-                )
-                last_attempt_data = {
-                    "status": "Wrong Answer",
-                    "exit_code": result.get("exit_code"),
-                    "stdout": result.get("stdout"),
-                    "stderr": result.get("stderr"),
-                    "compile_output": result.get("compile_output"),
-                    "memory_kb": (
-                        int(result.get("memory"))
-                        if result.get("memory") is not None
-                        else None
-                    ),
-                    "time_ms": (
-                        int(float(result.get("time", 0)) * 1000)
-                        if result.get("time") is not None
-                        else None
-                    ),
-                    "is_solved": False,
-                    "message": final_result.comment,
-                    "score": (passed * 100) // total if total > 0 else 0,
-                }
-                break
+            elif failed_idx is None:
+                failed_idx = i
 
-        if final_result is None:
+        score = (passed * 100) // total if total > 0 else 0
+
+        if failed_idx is not None:
+            r = results[failed_idx]
+            if r["status"]["id"] == 3:
+                status = "Wrong Answer"
+                comment = (
+                    f'Тест "{tests[failed_idx].title}" не прошёл. '
+                    f'Ожидалось: "{(tests[failed_idx].stdout or "").strip()}", '
+                    f'получено: "{(r.get("stdout") or "").strip()}"'
+                )
+            else:
+                status = r["status"]["description"]
+                comment = f'Тест "{tests[failed_idx].title}" — {status}'
+
             final_result = CheckResult(
-                success=True, passed=passed, total=total, comment=None
+                success=False,
+                passed=passed,
+                total=total,
+                comment=comment,
+                attempts_used=attempts_used + 1,
+                max_attempts=task.max_attempts,
             )
-            last_attempt_data = {
-                "status": "Accepted",
-                "exit_code": 0,
-                "stdout": None,
-                "stderr": None,
-                "compile_output": None,
-                "memory_kb": None,
-                "time_ms": None,
+            attempt_data = {
+                "is_solved": False,
+                "status": status,
+                "message": comment,
+                "score": score,
+                **self._extract_meta(r),
+            }
+        else:
+            final_result = CheckResult(
+                success=True,
+                passed=passed,
+                total=total,
+                attempts_used=attempts_used + 1,
+                max_attempts=task.max_attempts,
+            )
+            attempt_data = {
                 "is_solved": True,
+                "status": "Accepted",
                 "message": "Все тесты пройдены успешно",
-                "score": (passed * 100) // total if total > 0 else 0,
+                "score": 100,
+                **self._extract_meta(results[0] if results else {}),
             }
 
-        new_score = (passed * 100) // total if total > 0 else 0
-
-        if new_score > solution.score:
-            solution.score = new_score
-
+        if score > solution.score:
+            solution.score = score
         if not solution.is_solved and passed == total:
             solution.is_solved = True
-
 
         attempt = Attempt(
             solution_id=solution.id,
             source_code=body.code,
             language=body.language,
-            is_solved=last_attempt_data["is_solved"],
-            status=last_attempt_data["status"],
-            exit_code=last_attempt_data.get("exit_code"),
-            stdout=last_attempt_data.get("stdout"),
-            stderr=last_attempt_data.get("stderr"),
-            compile_output=last_attempt_data.get("compile_output"),
-            memory_kb=last_attempt_data.get("memory_kb"),
-            time_ms=last_attempt_data.get("time_ms"),
-            message=last_attempt_data.get("message"),
-            score=last_attempt_data.get("score"),
+            is_solved=attempt_data["is_solved"],
+            status=attempt_data["status"],
+            exit_code=attempt_data.get("exit_code"),
+            stdout=attempt_data.get("stdout"),
+            stderr=attempt_data.get("stderr"),
+            compile_output=attempt_data.get("compile_output"),
+            memory_kb=attempt_data.get("memory_kb"),
+            time_ms=attempt_data.get("time_ms"),
+            message=attempt_data.get("message"),
+            score=attempt_data.get("score"),
         )
         await self.attempt_repo.create(attempt)
         await self.db.commit()
 
         return final_result
+
+    def _extract_meta(self, result: dict) -> dict:
+        return {
+            "exit_code": result.get("exit_code"),
+            "stdout": result.get("stdout"),
+            "stderr": result.get("stderr"),
+            "compile_output": result.get("compile_output"),
+            "memory_kb": int(result["memory"]) if result.get("memory") else None,
+            "time_ms": (
+                int(float(result["time"]) * 1000) if result.get("time") else None
+            ),
+        }
 
 
 def get_check_service(
@@ -223,8 +228,16 @@ def get_check_service(
     solution_repo: SolutionRepository = Depends(get_solution_repository),
     attempt_repo: AttemptRepository = Depends(get_attempt_repository),
     judge: JudgeService = Depends(get_judge_service),
-    module_session_repo: ModuleSessionRepository = Depends(get_module_session_repository),
+    module_session_repo: ModuleSessionRepository = Depends(
+        get_module_session_repository
+    ),
 ) -> CheckService:
     return CheckService(
-        db, task_repo, lang_repo, solution_repo, attempt_repo, judge, module_session_repo
+        db,
+        task_repo,
+        lang_repo,
+        solution_repo,
+        attempt_repo,
+        judge,
+        module_session_repo,
     )

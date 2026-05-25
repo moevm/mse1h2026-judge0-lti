@@ -80,6 +80,30 @@ class JudgeService:
 
         return [item["token"] for item in response.json()]
 
+    async def fetch_batch(self, tokens: list[str]) -> list[dict]:
+        """Один запрос к judge0 без ожидания."""
+        if self.mock_judge0:
+            return [
+                {
+                    "stdout": "mocked",
+                    "stderr": None,
+                    "compile_output": None,
+                    "status": {"id": 3, "description": "Accepted"},
+                }
+                for _ in tokens
+            ]
+
+        response = await self.client.get(
+            f"{self.judge0_url}/submissions/batch",
+            params={"tokens": ",".join(tokens), "base64_encoded": "true"},
+            timeout=10.0,
+        )
+
+        if response.status_code != 200:
+            raise JudgeException()
+
+        return [self._decode_result(r) for r in response.json()["submissions"]]
+
     async def poll_batch(
         self, tokens: list[str], interval: float = 0.5, timeout: float = 60.0
     ) -> list[dict]:

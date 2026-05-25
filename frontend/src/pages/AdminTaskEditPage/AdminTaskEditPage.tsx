@@ -37,6 +37,8 @@ const AdminTaskEditPage = () => {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [timeout, setTimeout] = useState<number>(2)
+    const [maxAttempts, setMaxAttempts] = useState('')
+    const [attemptsUnlimited, setAttemptsUnlimited] = useState(true)
     const [languages, setLanguages] = useState<string[]>([])
     const [selectedLanguage, setSelectedLanguage] = useState('')
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([])
@@ -55,6 +57,8 @@ const AdminTaskEditPage = () => {
             setTitle(task.title)
             setDescription(task.description)
             setTimeout(task.timeout)
+            setMaxAttempts(task.max_attempts ? String(task.max_attempts) : '')
+            setAttemptsUnlimited(task.max_attempts == null)
             setLanguages(task.languages)
             setTests(task.tests.map(t => ({
                 title: t.title,
@@ -118,10 +122,18 @@ const AdminTaskEditPage = () => {
 
     const saveMutation = useMutation({
         mutationFn: async () => {
+            if (!attemptsUnlimited) {
+                const attemptsValue = Number(maxAttempts)
+                if (!maxAttempts || Number.isNaN(attemptsValue) || attemptsValue < 1) {
+                    throw new Error('Введите количество попыток больше 0 или включите режим без ограничения')
+                }
+            }
+
             const payload: TaskPayload = {
                 title: title.trim(),
                 description: description.trim(),
                 timeout,
+                max_attempts: attemptsUnlimited ? null : Number(maxAttempts),
                 languages,
                 tests: tests.filter(t => t.title.trim() && t.stdout.trim()),
             }
@@ -145,7 +157,7 @@ const AdminTaskEditPage = () => {
             }
         },
         onError: (error: any) => {
-            const message = error?.response?.data?.detail || 'Не удалось сохранить задачу'
+            const message = error?.message || error?.response?.data?.detail || 'Не удалось сохранить задачу'
             toast.error(message)
         },
     })
@@ -256,6 +268,31 @@ const AdminTaskEditPage = () => {
                                     step={1}
                                 />
                             </label>
+
+                            <div className={styles.attemptsField}>
+                                <label className={styles.attemptsLabel}>
+                                    <span>Количество попыток</span>
+                                    <input
+                                        type="number"
+                                        className={styles.attemptsInput}
+                                        value={maxAttempts}
+                                        onChange={e => setMaxAttempts(e.target.value)}
+                                        min={1}
+                                        step={1}
+                                        disabled={attemptsUnlimited}
+                                        placeholder="3"
+                                    />
+                                </label>
+
+                                <label className={styles.unlimitedAttempts}>
+                                    <input
+                                        type="checkbox"
+                                        checked={attemptsUnlimited}
+                                        onChange={e => setAttemptsUnlimited(e.target.checked)}
+                                    />
+                                    Без ограничения
+                                </label>
+                            </div>
                         </div>
                     )}
 
@@ -347,7 +384,12 @@ const AdminTaskEditPage = () => {
                         type="button"
                         className={styles.saveButton}
                         onClick={() => saveMutation.mutate()}
-                        disabled={!title.trim() || languages.length === 0 || saveMutation.isPending}
+                        disabled={
+                            !title.trim()
+                            || languages.length === 0
+                            || (!attemptsUnlimited && (!maxAttempts || Number(maxAttempts) < 1))
+                            || saveMutation.isPending
+                        }
                     >
                         {saveMutation.isPending ? 'Сохранение...' : 'Сохранить'}
                     </button>

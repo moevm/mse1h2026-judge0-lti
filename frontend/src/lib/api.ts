@@ -47,9 +47,17 @@ api.interceptors.response.use(
         }
 
         if (!originalRequest?.silent) {
-            const message = error.response?.data?.detail
-                ?? error.response?.data?.message
-                ?? `Ошибка запроса: ${error.message}`
+            const detail = error.response?.data?.detail
+            let message: string
+            if (Array.isArray(detail)) {
+                message = detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+            } else if (typeof detail === 'string') {
+                message = detail
+            } else if (error.response?.data?.message) {
+                message = error.response.data.message
+            } else {
+                message = `Ошибка запроса: ${error.message}`
+            }
             toast.error('Что-то пошло не так', { description: message })
         }
 

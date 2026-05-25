@@ -9,8 +9,7 @@ export const useModuleSession = (moduleId: number | null) => {
         queryFn: () => modulesApi.getModuleSession(moduleId!),
         enabled: !!moduleId,
         staleTime: 30 * 1000,
-        refetchInterval: 1000,
-        refetchIntervalInBackground: false,
+        refetchOnMount: 'always',
     });
 }
 

@@ -5,6 +5,7 @@ export interface Module {
     id: number
     title: string
     description: string
+    duration_seconds: number | null
     tasks: number[] | Task[]
     created_at: string
     updated_at: string | null
@@ -15,6 +16,7 @@ export interface Task {
     title: string
     description: string
     timeout: number
+    max_attempts: number | null
     languages: string[]
     created_at: string
     updated_at: string | null
@@ -32,6 +34,7 @@ export interface TaskPayload {
     title: string
     description: string
     timeout: number
+    max_attempts?: number | null
     languages: string[]
     tests?: TaskTest[]
 }
@@ -39,6 +42,7 @@ export interface TaskPayload {
 export interface ModulePayload {
     title: string
     description: string
+    duration_seconds?: number | null
 }
 
 export interface ModuleFilters {
@@ -104,6 +108,10 @@ export const modulesApi = {
     updateModule: async (moduleId: number, payload: Partial<ModulePayload>): Promise<Module> => {
         const { data } = await api.patch<Module>(`/modules/${moduleId}`, payload)
         return data
+    },
+
+    deleteModule: async (moduleId: number): Promise<void> => {
+        await api.delete(`/modules/${moduleId}`)
     },
 
     addModuleTasks: async (moduleId: number, taskIds: number[]): Promise<Module> => {

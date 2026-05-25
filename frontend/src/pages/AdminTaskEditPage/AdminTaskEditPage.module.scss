@@ -160,7 +160,8 @@
 }
 
 .descriptionLabel,
-.timeoutLabel {
+.timeoutLabel,
+.attemptsLabel {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -183,7 +184,8 @@
     }
 }
 
-.timeoutInput {
+.timeoutInput,
+.attemptsInput {
     width: 120px;
     padding: 10px 12px;
     border: 1px solid #e0e0e0;
@@ -195,6 +197,35 @@
         border-color: #6750a4;
         box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.1);
     }
+}
+
+.attemptsField {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.attemptsInput:disabled {
+    background: #f5f5f5;
+    color: #79747e;
+    cursor: not-allowed;
+}
+
+.unlimitedAttempts {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: #49454f;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.unlimitedAttempts input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #6750a4;
 }
 
 .testsHeader {

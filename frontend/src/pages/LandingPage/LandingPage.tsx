@@ -40,11 +40,14 @@ const LandingPage = () => {
         return "Перепройти";
     };
 
-    const handleStart = () => {
+    const handleStart = async () => {
+        const moduleIdNumber = Number(moduleId);
+
         if (isSessionActive) {
+            await refetchSession();
             navigate(`/task?module_id=${moduleId}`);
         } else {
-            startSession(Number(moduleId), {
+            startSession(moduleIdNumber, {
                 onSuccess: () => {
                     navigate(`/task?module_id=${moduleId}`);
                 },

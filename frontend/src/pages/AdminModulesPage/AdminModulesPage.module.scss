@@ -13,6 +13,10 @@
 }
 
 .card {
+  position: relative;
+}
+
+.cardLink {
   display: block;
   color: #1d1b20;
   text-decoration: none;
@@ -111,6 +115,43 @@
   color: #49454f;
   font-size: 12px;
   line-height: 16px;
+}
+
+.deleteButton {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 251, 254, 0.88);
+  color: #49454f;
+  cursor: pointer;
+  opacity: 0;
+  box-shadow: 0 2px 8px rgba(29, 27, 32, 0.12);
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+
+.card:hover .deleteButton,
+.deleteButton:focus-visible {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: #fceeee;
+  color: #d32f2f;
+}
+
+.deleteButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.deleteButton md-icon {
+  font-size: 20px;
 }
 
 .description {

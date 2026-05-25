@@ -461,7 +461,7 @@ const AdminModuleTasksPage = () => {
                                                 setModuleMenuOpen(false)
                                             }}
                                         >
-                                            Переименовать
+                                            Редактировать
                                         </button>
                                         <button
                                             className={`${styles.moduleMenuItem} ${styles.moduleMenuItemDanger}`}

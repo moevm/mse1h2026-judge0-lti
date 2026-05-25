@@ -109,13 +109,18 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                                     </div>
                                 )}
 
-                                <div className={output.success ? styles.messageSuccess : styles.messageError}>
+                                <div
+                                    className={`${styles.statusMessage} ${
+                                        output.success ? styles.statusSuccess : styles.statusError
+                                    }`}
+                                >
                                     {output.success ? "Passed" : "Failed"}
                                 </div>
 
                                 {output.comment && (
                                     <div className={styles.messageComment}>
-                                        <strong>Комментарий:</strong> {output.comment}
+                                        <strong>Комментарий:</strong>
+                                        <div>{output.comment}</div>
                                     </div>
                                 )}
 

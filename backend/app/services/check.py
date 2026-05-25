@@ -137,7 +137,6 @@ class CheckService:
     async def get_result(
         self, task_id: int, user_id: int, body: ResultRequest
     ) -> CheckResult | None:
-        """Возвращает None если тесты ещё не готовы."""
         task = await self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException()

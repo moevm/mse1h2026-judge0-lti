@@ -81,7 +81,6 @@ class JudgeService:
         return [item["token"] for item in response.json()]
 
     async def fetch_batch(self, tokens: list[str]) -> list[dict]:
-        """Один запрос к judge0 без ожидания."""
         if self.mock_judge0:
             return [
                 {

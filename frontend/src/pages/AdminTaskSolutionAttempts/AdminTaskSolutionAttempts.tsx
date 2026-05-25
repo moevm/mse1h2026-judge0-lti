@@ -305,12 +305,18 @@ const AdminTaskSolutionAttempts = () => {
                                 </span>
                             </div>
                             <div className={styles.itemContent}>
-                                <div className={styles.itemTitle}>
-                                    {attempt.language} · {getStatusText(attempt.status)}
+                                <div className={styles.itemHeader}>
+                                    <div className={styles.itemTitle}>
+                                        {attempt.language}
+                                    </div>
+                                    <div className={styles.resultSummary}>
+                                        <span>{getStatusText(attempt.status)}</span>
+                                        <span>·</span>
+                                        <span>{formatScore(attempt.score)}</span>
+                                    </div>
                                 </div>
                                 <div className={styles.itemMeta}>
                                     {formatDate(attempt.created_at)}
-                                    {' · '}{formatScore(attempt.score)}
                                     {' · '}{formatTime(attempt.time_ms)}
                                     {' · '}{formatMemory(attempt.memory_kb)}
                                 </div>

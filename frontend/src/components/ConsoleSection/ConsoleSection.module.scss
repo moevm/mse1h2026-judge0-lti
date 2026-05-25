@@ -116,15 +116,37 @@
   color: $text-color;
 }
 
-.scoreInfo {
+.resultMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resultMetric {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   width: fit-content;
   padding: 5px 10px;
-  border: 1px solid rgba($attempt-label-color, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 999px;
-  background: rgba($attempt-label-color, 0.12);
-  color: #ffd48a;
+  background: rgba(255, 255, 255, 0.07);
+  color: $text-color;
   font-size: 12px;
   font-weight: 600;
+
+  span {
+    color: $text-color;
+  }
+
+  strong {
+    min-width: 28px;
+    padding: 1px 8px;
+    border: 1px solid rgba($attempt-label-color, 0.68);
+    border-radius: 999px;
+    color: #ffd48a;
+    text-align: center;
+  }
 }
 
 .loaderContainer {

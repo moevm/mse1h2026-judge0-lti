@@ -33,8 +33,17 @@ const getScore = (output: ConsoleOutput | null) => {
     return Math.floor((passed * 100) / total);
 };
 
+const getPassedText = (output: ConsoleOutput | null) => {
+    const value = output?.passed?.trim();
+    if (!value) return null;
+
+    const match = value.match(/(\d+)\s*\/\s*(\d+)/);
+    return match ? `${match[1]}/${match[2]}` : value;
+};
+
 const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputValueChange, isLoading = false}: ConsoleSectionProps) => {
     const score = getScore(output);
+    const passedText = getPassedText(output);
 
     return (
         <div className={styles.consoleSection}>
@@ -87,21 +96,26 @@ const ConsoleSection = ({output, activeTab, onTabChange, inputValue="", onInputV
                                     {output.success ? "Passed" : "Failed"}
                                 </div>
 
-                                {score !== null && (
-                                    <div className={styles.scoreInfo}>
-                                        <strong>Баллы:</strong> {score}
+                                {(score !== null || passedText) && (
+                                    <div className={styles.resultMetrics}>
+                                        {score !== null && (
+                                            <div className={styles.resultMetric}>
+                                                <span>Баллы</span>
+                                                <strong>{score}</strong>
+                                            </div>
+                                        )}
+                                        {passedText && (
+                                            <div className={styles.resultMetric}>
+                                                <span>Тестов пройдено</span>
+                                                <strong>{passedText}</strong>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 {output.comment && (
                                     <div className={styles.messageComment}>
                                         <strong>Комментарий:</strong> {output.comment}
-                                    </div>
-                                )}
-
-                                {output.passed !== undefined && (
-                                    <div className={styles.messageInfo}>
-                                        {output.passed}
                                     </div>
                                 )}
 

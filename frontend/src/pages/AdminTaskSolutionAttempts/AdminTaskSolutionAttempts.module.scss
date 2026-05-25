@@ -72,9 +72,26 @@
     gap: 4px;
 }
 
+.itemHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .itemTitle {
     font-size: 14px;
     font-weight: 500;
+}
+
+.resultSummary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgb(103, 80, 164);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .itemMeta {

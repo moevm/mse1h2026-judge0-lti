@@ -9,7 +9,7 @@ from app.core.exceptions.tasks import (
     TaskNotFoundException,
 )
 from app.database.database import session_generator
-from app.schemas.check import CheckRequest
+from app.schemas.check import CheckRequest, ResultRequest
 from app.services.judge import JudgeService, get_judge_service
 from app.repositories.task import TaskRepository, get_task_repository
 from app.repositories.language import LanguageRepository, get_language_repository
@@ -33,10 +33,21 @@ class CheckResult:
     error: str | None = None
     comment: str | None = None
 
+
 @dataclass
 class AttemptsInfo:
     attempts_used: int
     max_attempts: int | None
+
+
+@dataclass
+class SubmitContext:
+    tokens: list[str]
+    task_id: int
+    user_id: int
+    solution_id: int
+    language_id: int
+    language: str
 
 
 class CheckService:
@@ -64,15 +75,11 @@ class CheckService:
             raise TaskNotFoundException()
 
         attempts_used = await self.attempt_repo.count_by_user_and_task(user_id, task_id)
+        return AttemptsInfo(attempts_used=attempts_used, max_attempts=task.max_attempts)
 
-        return AttemptsInfo(
-            attempts_used=attempts_used,
-            max_attempts=task.max_attempts,
-        )
-
-    async def check_solution(
+    async def submit(
         self, task_id: int, user_id: int, body: CheckRequest
-    ) -> CheckResult:
+    ) -> SubmitContext:
         task = await self.task_repo.get_by_id(task_id)
         if not task:
             raise TaskNotFoundException()
@@ -109,29 +116,44 @@ class CheckService:
             )
             solution = await self.solution_repo.create(solution)
             await self.db.flush()
+            await self.db.commit()
 
-        tests = task.tests
-        total = len(tests)
-
-        # отправляем все тесты батчем
         tokens = await self.judge.submit_batch(
             source_code=body.code,
             language_id=language.id,
-            tests=[{"stdin": t.stdin, "stdout": t.stdout} for t in tests],
+            tests=[{"stdin": t.stdin, "stdout": t.stdout} for t in task.tests],
             timeout=task.timeout,
         )
 
-        # ждём результаты
-        results = await self.judge.poll_batch(tokens)
+        return SubmitContext(
+            tokens=tokens,
+            task_id=task_id,
+            user_id=user_id,
+            solution_id=solution.id,
+            language_id=language.id,
+            language=body.language,
+        )
 
-        # считаем
+    async def get_result(
+        self, task_id: int, user_id: int, body: ResultRequest
+    ) -> CheckResult | None:
+        task = await self.task_repo.get_by_id(task_id)
+        if not task:
+            raise TaskNotFoundException()
+
+        results = await self.judge.fetch_batch(body.tokens)
+
+        if not all(r["status"]["id"] > 2 for r in results):
+            return None
+
+        tests = task.tests
+        total = len(tests)
         passed = 0
         failed_idx = None
 
         for i, result in enumerate(results):
             expected = (tests[i].stdout or "").strip()
             stdout = (result.get("stdout") or "").strip()
-
             if result["status"]["id"] == 3 and stdout == expected:
                 passed += 1
             elif failed_idx is None:
@@ -157,7 +179,7 @@ class CheckService:
                 passed=passed,
                 total=total,
                 comment=comment,
-                attempts_used=attempts_used + 1,
+                attempts_used=0,
                 max_attempts=task.max_attempts,
             )
             attempt_data = {
@@ -172,7 +194,7 @@ class CheckService:
                 success=True,
                 passed=passed,
                 total=total,
-                attempts_used=attempts_used + 1,
+                attempts_used=0,
                 max_attempts=task.max_attempts,
             )
             attempt_data = {
@@ -183,13 +205,14 @@ class CheckService:
                 **self._extract_meta(results[0] if results else {}),
             }
 
+        solution = await self.solution_repo.get_by_id(body.solution_id)
         if score > solution.score:
             solution.score = score
         if not solution.is_solved and passed == total:
             solution.is_solved = True
 
         attempt = Attempt(
-            solution_id=solution.id,
+            solution_id=body.solution_id,
             source_code=body.code,
             language=body.language,
             is_solved=attempt_data["is_solved"],
@@ -205,6 +228,9 @@ class CheckService:
         )
         await self.attempt_repo.create(attempt)
         await self.db.commit()
+
+        attempts_used = await self.attempt_repo.count_by_user_and_task(user_id, task_id)
+        final_result.attempts_used = attempts_used
 
         return final_result
 

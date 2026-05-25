@@ -17,6 +17,7 @@ os.environ["POSTGRES_PORT"] = "5433"
 
 from app.core.config import Settings
 
+
 def mock_get_settings():
     return Settings(
         postgres_user=os.environ["POSTGRES_USER"],
@@ -33,19 +34,25 @@ def mock_get_settings():
         admin_password="adminpass",
     )
 
+
 import app.core.config
+
 app.core.config.get_settings = mock_get_settings
 
 from app.main import app as main_app
 from app.database.database import session_generator
 from app.database import models
 
+
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:17-alpine") as postgres:
         yield postgres
 
+
 from sqlalchemy.pool import NullPool
+
+
 @pytest_asyncio.fixture(scope="session")
 async def engine(postgres_container):
     url = postgres_container.get_connection_url()
@@ -57,6 +64,7 @@ async def engine(postgres_container):
 
     async with async_sessionmaker(engine, expire_on_commit=False)() as session:
         from app.database.models import Language
+
         for lang_name in ["python", "javascript", "java", "cpp", "c", "go", "rust"]:
             result = await session.execute(
                 select(Language).where(Language.language == lang_name)
@@ -68,6 +76,7 @@ async def engine(postgres_container):
     yield engine
     await engine.dispose()
 
+
 @pytest_asyncio.fixture(scope="session")
 async def session_factory(engine):
     return async_sessionmaker(
@@ -76,30 +85,38 @@ async def session_factory(engine):
         autoflush=False,
     )
 
+
 @pytest_asyncio.fixture(autouse=True)
 async def override_db(session_factory):
     async def override_get_db():
         async with session_factory() as session:
             yield session
+
     main_app.dependency_overrides[session_generator] = override_get_db
     yield
     main_app.dependency_overrides.clear()
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def truncate_tables(engine):
     yield
     async with engine.begin() as conn:
-        await conn.execute(text(
-            "TRUNCATE TABLE attempts, solutions, module_sessions, "
-            "refresh_tokens, tasks_languages, module_tasks_order, task_tests, tasks, "
-            "modules, users RESTART IDENTITY CASCADE"
-        ))
+        await conn.execute(
+            text(
+                "TRUNCATE TABLE attempts, solutions, module_sessions, "
+                "refresh_tokens, tasks_languages, module_tasks_order, task_tests, tasks, "
+                "modules, users RESTART IDENTITY CASCADE"
+            )
+        )
+
+
 @pytest_asyncio.fixture
 async def client():
     async with AsyncClient(
         transport=ASGITransport(app=main_app), base_url="http://test"
     ) as client:
         yield client
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def mock_judge_service():
@@ -112,8 +129,8 @@ async def mock_judge_service():
             f"mock-token-{i}" for i in range(len(tests))
         ]
     )
-    mock_service.poll_batch = AsyncMock(
-        side_effect=lambda tokens, **kwargs: [
+    mock_service.fetch_batch = AsyncMock(
+        side_effect=lambda tokens: [
             {
                 "token": token,
                 "stdout": "mocked",
@@ -127,12 +144,14 @@ async def mock_judge_service():
             for token in tokens
         ]
     )
+
     async def _mock():
         return mock_service
 
     main_app.dependency_overrides[get_judge_service] = _mock
     yield
     main_app.dependency_overrides.pop(get_judge_service, None)
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def mock_admin_auth():
@@ -146,9 +165,11 @@ async def mock_admin_auth():
         admin.full_name = "Admin User"
         admin.role = UserTypeEnum.admin
         return admin
+
     main_app.dependency_overrides[get_current_admin] = _mock
     yield
     main_app.dependency_overrides.pop(get_current_admin, None)
+
 
 @pytest_asyncio.fixture
 async def create_test_user(session_factory):
@@ -180,7 +201,9 @@ async def create_test_user(session_factory):
             await session.commit()
             await session.refresh(user)
             return user
+
     return _create_user
+
 
 @pytest_asyncio.fixture
 async def create_test_task(session_factory):
@@ -211,7 +234,9 @@ async def create_test_task(session_factory):
             await session.commit()
             await session.refresh(task)
             return task
+
     return _create_task
+
 
 @pytest_asyncio.fixture
 async def create_test_module(session_factory):
@@ -230,7 +255,9 @@ async def create_test_module(session_factory):
             await session.commit()
             await session.refresh(module)
             return module
+
     return _create_module
+
 
 @pytest_asyncio.fixture
 async def create_test_test(session_factory):
@@ -247,7 +274,9 @@ async def create_test_test(session_factory):
             await session.commit()
             await session.refresh(test)
             return test
+
     return _create_test
+
 
 @pytest_asyncio.fixture
 async def create_test_tasks(create_test_task):
@@ -256,18 +285,22 @@ async def create_test_tasks(create_test_task):
         for i in range(1, count + 1):
             tasks.append(await create_test_task(title=f"Task {i}"))
         return tasks
+
     return _create_tasks
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def mock_auth():
     from app.core.dependencies import get_current_user_payload
     from app.schemas.auth import TokenUser
     from app.database.models import UserTypeEnum
+
     async def _mock():
         return TokenUser(
             user_id=1,
             role=UserTypeEnum.admin,  # или teacher для разных тестов
         )
+
     main_app.dependency_overrides[get_current_user_payload] = _mock
     yield
     main_app.dependency_overrides.pop(get_current_user_payload, None)
@@ -283,9 +316,13 @@ async def auth_client(client, create_test_user):
         role="admin",
     )
     jwt_service = JwtService(mock_get_settings())
-    token = jwt_service.create_access_token(user_id=user.id, role=models.UserTypeEnum.admin)
+    token = jwt_service.create_access_token(
+        user_id=user.id, role=models.UserTypeEnum.admin
+    )
     client.headers.update({"Authorization": f"Bearer {token}"})
+
     class _User:
         id = user.id
         username = user.username
+
     return client, _User()

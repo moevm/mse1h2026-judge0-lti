@@ -41,6 +41,10 @@ const AdminStudentAttemptPage = () => {
         }).format(new Date(value))
 
     // Парсим тесты из message или создаем фейковые для демо
+    const formatScore = (score: number | null | undefined) => (
+        typeof score === 'number' ? `${score} баллов` : null
+    )
+
     const tests: TestDetail[] = [
         { id: 1, title: 'Test #1', status: 'failed', input: '[2, 4, 8, 16]', expected: '32', output: 'NaN' },
         { id: 2, title: 'Test #2', status: 'failed', input: '[1, 2, 3]', expected: '6', output: '3' },
@@ -58,6 +62,10 @@ const AdminStudentAttemptPage = () => {
                 <div className={attempt.is_solved ? styles.statusSuccess : styles.statusFail}>
                     {attempt.is_solved ? 'Все тесты пройдены' : 'Пройдены не все тесты'}
                 </div>
+
+                {formatScore(attempt.score) ? (
+                    <div className={styles.scoreBadge}>{formatScore(attempt.score)}</div>
+                ) : null}
 
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>Тесты</div>

@@ -53,6 +53,16 @@
     width: fit-content;
 }
 
+.scoreBadge {
+    width: fit-content;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #fff3d6;
+    color: #5f3900;
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .section {
     display: flex;
     flex-direction: column;

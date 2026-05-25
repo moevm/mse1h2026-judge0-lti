@@ -263,6 +263,10 @@ const AdminStudentTaskPage = () => {
         return `${(ms / 1000).toFixed(2)} с`
     }
 
+    const formatScore = (score: number | null | undefined) => (
+        typeof score === 'number' ? `${score} баллов` : null
+    )
+
     const handleFilterChange = (fieldId: string, value: string | number | undefined) => {
         setFilters((prev: FilterValues) => ({ ...prev, [fieldId]: value }))
     }
@@ -310,6 +314,7 @@ const AdminStudentTaskPage = () => {
                                 </div>
                                 <div className={styles.itemMeta}>
                                     {formatDate(attempt.created_at)}
+                                    {formatScore(attempt.score) ? <> · {formatScore(attempt.score)}</> : null}
                                     {' · '}{formatTime(attempt.time_ms)}
                                     {' · '}{formatMemory(attempt.memory_mb)}
                                 </div>

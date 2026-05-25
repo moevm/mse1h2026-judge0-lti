@@ -98,6 +98,10 @@ const formatDate = (value: string | null) => {
     }).format(new Date(value))
 }
 
+const formatScore = (score: number | null | undefined) => (
+    typeof score === 'number' ? score : '—'
+)
+
 const AdminTaskSolutions = () => {
     const { taskId } = useParams<{taskId: string}>()
     const navigate = useNavigate()
@@ -178,7 +182,7 @@ const AdminTaskSolutions = () => {
                             <thead>
                             <tr>
                                 <th>Пользователь</th>
-                                <th>Результат</th>
+                                <th>Лучший балл</th>
                                 <th>Статус</th>
                                 <th>Обновлено</th>
                                 <th></th>
@@ -192,7 +196,7 @@ const AdminTaskSolutions = () => {
                                             <div className={styles.userLogin}>@{solution.username}</div>
                                         </td>
                                     <td className={styles.score}>
-                                        {solution.score}
+                                        <span>{formatScore(solution.score)}</span>
                                     </td>
                                     <td className={styles.status}>
                                         <span className={solution.is_solved ? styles.statusPassed : styles.statusFailed}>

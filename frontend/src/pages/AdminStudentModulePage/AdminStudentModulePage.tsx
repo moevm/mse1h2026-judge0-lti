@@ -243,6 +243,7 @@ const AdminStudentModulePage = () => {
                             <th>Тесты</th>
                             <th>Статус</th>
                             <th>Последняя попытка</th>
+                            <th>Баллы</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -265,6 +266,9 @@ const AdminStudentModulePage = () => {
                                 </td>
                                 <td className={styles.lastAttempt}>
                                     {formatDate(task.last_attempt_at)}
+                                </td>
+                                <td className={styles.score}>
+                                    <span>{task.score}</span>
                                 </td>
                                 <td className={styles.actions}>
                                     <button

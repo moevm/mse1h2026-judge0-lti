@@ -11,6 +11,7 @@ import { useModuleTasks } from '../../hooks/queries/useModuleTasks'
 import { useLanguages } from '../../hooks/queries/useLanguages'
 import { getGeneratedArtworkStyle } from '../../lib/generatedArtwork'
 import { moduleKeys, taskKeys } from '../../lib/query-keys'
+import ConfirmModal from '../../UI/ConfirmModal/ConfirmModal'
 import styles from './AdminModuleTasksPage.module.scss'
 
 const Artwork = ({ seed, large = false }: { seed: string | number, large?: boolean }) => (
@@ -113,7 +114,10 @@ const AdminModuleTasksPage = () => {
     const [isEditingModule, setIsEditingModule] = useState(isNewModule)
     const [moduleTitle, setModuleTitle] = useState('')
     const [moduleDescription, setModuleDescription] = useState('')
+    const [moduleDuration, setModuleDuration] = useState('')
+    const [moduleUnlimited, setModuleUnlimited] = useState(false)
     const [isReorderSyncing, setIsReorderSyncing] = useState(false)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
     const moduleMenuRef = useRef<HTMLDivElement | null>(null)
 
     const { data: module } = useQuery({
@@ -144,6 +148,8 @@ const AdminModuleTasksPage = () => {
         if (!module || isNewModule) return
         setModuleTitle(module.title)
         setModuleDescription(module.description)
+        setModuleDuration(module.duration_seconds ? String(module.duration_seconds) : '')
+        setModuleUnlimited(module.duration_seconds == null)
     }, [isNewModule, module])
 
     useEffect(() => {
@@ -283,13 +289,22 @@ const AdminModuleTasksPage = () => {
             toast.success('Модуль создан')
             navigate(`/admin/modules/${createdModule.id}`, { replace: true })
         },
+        onError: (error: any) => {
+            const detail = error?.response?.data?.detail
+            let message = 'Не удалось создать модуль'
+            if (Array.isArray(detail)) {
+                message = detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+            } else if (typeof detail === 'string') {
+                message = detail
+            } else if (error?.response?.data?.message) {
+                message = error.response.data.message
+            }
+            toast.error('Ошибка', { description: message })
+        },
     })
 
     const updateModuleMutation = useMutation({
-        mutationFn: () => modulesApi.updateModule(moduleId, {
-            title: moduleTitle.trim(),
-            description: moduleDescription.trim(),
-        }),
+        mutationFn: (payload: Partial<Record<string, any>>) => modulesApi.updateModule(moduleId, payload as any),
         onSuccess: async updatedModule => {
             setModuleTitle(updatedModule.title)
             setModuleDescription(updatedModule.description)
@@ -298,6 +313,30 @@ const AdminModuleTasksPage = () => {
             await queryClient.invalidateQueries({ queryKey: moduleKeys.detail(moduleId) })
             await queryClient.invalidateQueries({ queryKey: moduleKeys.lists() })
             toast.success('Модуль обновлен')
+        },
+        onError: (error: any) => {
+            const detail = error?.response?.data?.detail
+            let message = 'Не удалось обновить модуль'
+            if (Array.isArray(detail)) {
+                message = detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+            } else if (typeof detail === 'string') {
+                message = detail
+            } else if (error?.response?.data?.message) {
+                message = error.response.data.message
+            }
+            toast.error('Ошибка', { description: message })
+        },
+    })
+
+    const deleteModuleMutation = useMutation({
+        mutationFn: () => modulesApi.deleteModule(moduleId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: moduleKeys.all })
+            toast.success('Модуль удалён')
+            navigate('/admin/modules', { replace: true })
+        },
+        onError: () => {
+            toast.error('Не удалось удалить модуль')
         },
     })
 
@@ -311,7 +350,7 @@ const AdminModuleTasksPage = () => {
         navigate(`/admin/tasks/new`)
     }
 
-    const saveModule = () => {
+    const saveModule = async () => {
         const title = moduleTitle.trim()
         const description = moduleDescription.trim()
 
@@ -319,13 +358,50 @@ const AdminModuleTasksPage = () => {
             toast.error('Введите название и описание модуля')
             return
         }
+        const payload = { title, description, duration_seconds: moduleUnlimited ? null : Number(moduleDuration) }
 
         if (isNewModule) {
-            createModuleMutation.mutate({ title, description })
+            try {
+                await createModuleMutation.mutateAsync(payload)
+            } catch (error: any) {
+                console.log(error)
+                const detail = error?.response?.data?.detail
+                console.log(detail)
+                let message = 'Не удалось создать модуль'
+                if (Array.isArray(detail)) {
+                    message = detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+                } else if (typeof detail === 'string') {
+                    message = detail
+                } else if (error?.response?.data?.message) {
+                    message = error.response.data.message
+                }
+                toast.error('Ошибка', { description: message })
+            }
             return
         }
 
-        updateModuleMutation.mutate()
+        if (!moduleUnlimited) {
+            const v = Number(moduleDuration)
+            if (!moduleDuration || Number.isNaN(v) || v <= 0) {
+                toast.error('Введите время в секундах (>0) или отметьте «Не ограничивать время»')
+                return
+            }
+        }
+
+        try {
+            await updateModuleMutation.mutateAsync(payload)
+        } catch (error: any) {
+            const detail = error?.response?.data?.detail
+            let message = 'Не удалось обновить модуль'
+            if (Array.isArray(detail)) {
+                message = detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+            } else if (typeof detail === 'string') {
+                message = detail
+            } else if (error?.response?.data?.message) {
+                message = error.response.data.message
+            }
+            toast.error('Ошибка', { description: message })
+        }
     }
 
     const moduleActionPending = createModuleMutation.isPending || updateModuleMutation.isPending
@@ -343,13 +419,14 @@ const AdminModuleTasksPage = () => {
     }
 
     return (
-        <section className="page">
-            <Link className="backLink" to="/admin/modules">
-                <md-icon>arrow_back</md-icon>
-                <span>Вернуться</span>
-            </Link>
+        <>
+            <section className="page">
+                <Link className="backLink" to="/admin/modules">
+                    <md-icon>arrow_back</md-icon>
+                    <span>Вернуться</span>
+                </Link>
 
-            <section className={styles.hero}>
+                <section className={styles.hero}>
                 <Artwork seed={module?.id ? `${module.id}-${module.title}` : `${moduleId}-${moduleTitle || 'new'}`} large />
                 <div className={styles.heroText}>
                     <div className={styles.moduleHeader}>
@@ -375,30 +452,66 @@ const AdminModuleTasksPage = () => {
                                     <md-icon>more_vert</md-icon>
                                 </md-icon-button>
                                 {moduleMenuOpen ? (
-                                    <button
-                                        className={styles.moduleMenuItem}
-                                        type="button"
-                                        onClick={() => {
-                                            setIsEditingModule(true)
-                                            setModuleMenuOpen(false)
-                                        }}
-                                    >
-                                        Переименовать
-                                    </button>
+                                    <div className={styles.moduleMenuDropdown}>
+                                        <button
+                                            className={styles.moduleMenuItem}
+                                            type="button"
+                                            onClick={() => {
+                                                setIsEditingModule(true)
+                                                setModuleMenuOpen(false)
+                                            }}
+                                        >
+                                            Переименовать
+                                        </button>
+                                        <button
+                                            className={`${styles.moduleMenuItem} ${styles.moduleMenuItemDanger}`}
+                                            type="button"
+                                            onClick={() => {
+                                                setDeleteModalOpen(true)
+                                                setModuleMenuOpen(false)
+                                            }}
+                                        >
+                                            Удалить
+                                        </button>
+                                    </div>
                                 ) : null}
                             </div>
                         ) : null}
                     </div>
 
                     {isEditingModule ? (
-                        <label className={styles.moduleDescriptionInput}>
-                            <textarea
-                                value={moduleDescription}
-                                onChange={event => setModuleDescription(event.target.value)}
-                                placeholder="Описание модуля"
-                                rows={4}
-                            />
-                        </label>
+                        <>
+                            <label className={styles.moduleDescriptionInput}>
+                                <textarea
+                                    value={moduleDescription}
+                                    onChange={event => setModuleDescription(event.target.value)}
+                                    placeholder="Описание модуля"
+                                    rows={4}
+                                />
+                            </label>
+
+                            <div className={styles.moduleDurationRow}>
+                                <label className={styles.durationInput}>
+                                    Время (секунды)
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={moduleDuration}
+                                        onChange={e => setModuleDuration(e.target.value)}
+                                        disabled={moduleUnlimited}
+                                    />
+                                </label>
+
+                                <label className={styles.unlimitedCheckbox}>
+                                    <input
+                                        type="checkbox"
+                                        checked={moduleUnlimited}
+                                        onChange={e => setModuleUnlimited(e.target.checked)}
+                                    />
+                                    Не ограничивать время
+                                </label>
+                            </div>
+                        </>
                     ) : moduleDescription || module?.description ? (
                         <p>{moduleDescription || module?.description}</p>
                     ) : null}
@@ -430,18 +543,18 @@ const AdminModuleTasksPage = () => {
                         ) : null}
                     </div>
                 </div>
-            </section>
+                </section>
 
-            <div className={styles.listTitle}>
+                <div className={styles.listTitle}>
                 <h2>Список задач</h2>
                 <md-icon>arrow_downward</md-icon>
-            </div>
+                </div>
 
-            {isLoading ? <div className={styles.state}>Загрузка задач...</div> : null}
-            {isError ? <div className={styles.state}>Не удалось загрузить задачи</div> : null}
-            {isNewModule ? <div className={styles.state}>Сохраните модуль, чтобы добавлять задачи</div> : null}
+                {isLoading ? <div className={styles.state}>Загрузка задач...</div> : null}
+                {isError ? <div className={styles.state}>Не удалось загрузить задачи</div> : null}
+                {isNewModule ? <div className={styles.state}>Сохраните модуль, чтобы добавлять задачи</div> : null}
 
-            <div className={styles.taskList}>
+                <div className={styles.taskList}>
                 {!isLoading && !isError ? (
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={sortedTaskIds} strategy={verticalListSortingStrategy}>
@@ -460,19 +573,31 @@ const AdminModuleTasksPage = () => {
                 {!isLoading && !isError && sortedTasks.length === 0 ? (
                     <div className={styles.state}>Задачи не найдены</div>
                 ) : null}
-            </div>
+                </div>
 
-            <TaskModal
-                moduleTitle={module?.title}
-                languages={languages}
-                excludedTaskIds={sortedTaskIds}
-                isOpen={isModalOpen}
-                isSaving={addTasksMutation.isPending}
-                onClose={() => setIsModalOpen(false)}
-                onAddExisting={addExistingTasks}
-                onCreateNew={openCreateTaskPage}
+                <TaskModal
+                    moduleTitle={module?.title}
+                    languages={languages}
+                    excludedTaskIds={sortedTaskIds}
+                    isOpen={isModalOpen}
+                    isSaving={addTasksMutation.isPending}
+                    onClose={() => setIsModalOpen(false)}
+                    onAddExisting={addExistingTasks}
+                    onCreateNew={openCreateTaskPage}
+                />
+            </section>
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                title="Удаление модуля"
+                message={`Вы уверены, что хотите удалить модуль «${moduleTitle || module?.title || ''}»?`}
+                confirmText="Удалить"
+                cancelText="Отмена"
+                confirmVariant="danger"
+                isLoading={deleteModuleMutation.isPending}
+                onConfirm={() => deleteModuleMutation.mutate()}
+                onCancel={() => setDeleteModalOpen(false)}
             />
-        </section>
+        </>
     )
 }
 

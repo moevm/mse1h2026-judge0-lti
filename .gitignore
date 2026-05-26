@@ -13,3 +13,6 @@ docker-compose.override.yml
 
 .DS_Store
 *.db
+
+*.key
+*.pem

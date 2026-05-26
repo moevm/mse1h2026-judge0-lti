@@ -9,20 +9,10 @@ x-logging:
       max-file: ${LOG_MAX_FILE:-3}
       compress: "${LOG_COMPRESS:-true}"
 
-x-resource-limits:
-  &default-limits
-  resources:
-    limits:
-      cpus: '1.0'
-      memory: 1G
-    reservations:
-      cpus: '0.5'
-      memory: 512M
-
 services:
   postgresdb:
     image: postgres:17-alpine
-    #container_name: mse1h2026-judge0-lti_postgresql-judge0
+    container_name: mse1h2026-judge0-lti_postgresql-judge0
     env_file: ./judge0.conf
     volumes:
       - postgres-data-judge0:/var/lib/postgresql/data/
@@ -36,18 +26,10 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
 
   redis:
     image: redis:7.2.4
-    #container_name: mse1h2026-judge0-lti_redis
+    container_name: mse1h2026-judge0-lti_redis
     command: [
       "bash", "-c",
       'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
@@ -63,25 +45,15 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
 
   judge0_server:
     image: mrkushalsm/judge0:cgv2
+    platform: linux/amd64
 
     env_file: ./judge0.conf
-    #container_name: mse1h2026-judge0-lti_judge0-server
+    container_name: mse1h2026-judge0-lti_judge0-server
     volumes:
       - ./judge0.conf:/judge0.conf:ro
-    ports:
-      - "2358:2358" # В проде надо будет закрыть порт 
-    privileged: true   # нехорошо            <---------
     <<: *default-logging
     restart: unless-stopped
     depends_on:
@@ -97,22 +69,14 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
   
   judge0_worker:
+    platform: linux/amd64
     image: mrkushalsm/judge0:cgv2
-    #container_name: mse1h2026-judge0-lti_judge0-worker
+    container_name: mse1h2026-judge0-lti_judge0-worker
     command: ["./scripts/workers"]
     volumes:
       - ./judge0.conf:/judge0.conf:ro
-    privileged: true   # нехорошо            <---------
     <<: *default-logging
     depends_on:
       redis:
@@ -130,20 +94,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    deploy:
-      mode: replicated
-      replicas: 2  # Для 10-20 студентов. Для большего количества увеличить
-      resources:
-        limits:
-          cpus: '0.8'
-          memory: 768M
-        reservations:
-          cpus: '0.4'
-          memory: 384M
+
 
   postgresdb_data:
     image: postgres:17-alpine
-    #container_name: mse1h2026-judge0-lti_postgresdb-data
+    container_name: mse1h2026-judge0-lti_postgresdb-data
     restart: unless-stopped
     <<: *default-logging
     env_file: 
@@ -157,14 +112,6 @@ services:
       retries: 5
     networks:
       - app-net
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
 
   backend:
     image: mse1h2026-judge0-lti_backend-python-fastapi:v.0.4
@@ -172,7 +119,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: prod
-    container_name: backend-python-fastapi # чтобы убрать надо поменять nginx.conf
+    container_name: backend-python-fastapi
     restart: unless-stopped
     <<: *default-logging
     env_file:
@@ -190,27 +137,19 @@ services:
       start_period: 10s
     networks:
       - app-net
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
 
   frontend:
     image: mse1h2026-judge0-lti_frontend-nginx-react:v.0.4
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    #container_name: mse1h2026-judge0-lti_frontend-nginx-react
+    container_name: mse1h2026-judge0-lti_frontend-nginx-react
     restart: unless-stopped
     <<: *default-logging
     env_file:
       - .env
     ports:
-      - "80:80"
+      - "80:${FRONTEND_PORT}"
     depends_on:
       backend:
         condition: service_healthy
@@ -222,14 +161,6 @@ services:
       start_period: 10s
     networks:
       - app-net
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
 
 
 volumes:
